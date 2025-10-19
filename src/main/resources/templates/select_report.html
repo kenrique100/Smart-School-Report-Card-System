@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Reports</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Select Class and Term</h1>
+<form th:action="@{/reports/class}" method="get">
+    <label>Class:</label>
+    <select name="classId" required>
+        <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
+    </select><br>
+    <label>Term:</label>
+    <select name="term" required>
+        <option value="1">Term 1</option>
+        <option value="2">Term 2</option>
+        <option value="3">Term 3</option>
+    </select><br>
+    <button type="submit">Generate Reports</button>
+</form>
+<a th:href="@{/}">Home</a>
+</body>
+</html>

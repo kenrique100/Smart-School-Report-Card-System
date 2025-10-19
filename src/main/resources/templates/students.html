@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Students</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Students</h1>
+<a th:href="@{/students/add}">Add Student</a>
+<table>
+    <thead>
+    <tr>
+        <th>Roll No</th>
+        <th>Full Name</th>
+        <th>Gender</th>
+        <th>Date of Birth</th>
+        <th>Class</th>
+        <th>Department</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="student : ${students}">
+        <td th:text="${student.rollNumber}"></td>
+        <td th:text="${student.fullName}"></td>
+        <td th:text="${student.gender}"></td>
+        <td th:text="${student.dateOfBirth}"></td>
+        <td th:text="${student.classRoom.name}"></td>
+        <td th:text="${student.department != null ? student.department.name : 'N/A'}"></td>
+        <td>
+            <a th:href="@{'/students/delete/' + ${student.id}}"
+               th:attr="data-name=${student.fullName}"
+               class="delete-link">Delete</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<a th:href="@{/}">Home</a>
+<script th:src="@{/js/index.js}"></script>
+</body>
+</html>

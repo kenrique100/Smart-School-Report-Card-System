@@ -17,13 +17,13 @@ public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id;  // primary key
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
     @Column(name = "roll_number", nullable = false)
-    private String rollNumber;
+    private String rollNumber; // auto-generated now
 
     @ManyToOne
     @JoinColumn(name = "classroom_id", nullable = false)
@@ -34,6 +34,6 @@ public class Student {
     private Department department;
 
     private String gender;
-    private LocalDate dateOfBirth;
 
+    private LocalDate dateOfBirth;
 }

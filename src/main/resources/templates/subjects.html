@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Subjects</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Subjects</h1>
+<a th:href="@{/subjects/add}">Add Subject</a>
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Coefficient</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="subject : ${subjects}">
+        <td th:text="${subject.name}"></td>
+        <td th:text="${subject.coefficient}"></td>
+        <td>
+            <a th:href="@{'/subjects/delete/' + ${subject.id}}"
+               th:attr="data-name=${subject.name}"
+               class="delete-link">Delete</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<a th:href="@{/}">Home</a>
+<script th:src="@{/js/index.js}"></script>
+</body>
+</html>

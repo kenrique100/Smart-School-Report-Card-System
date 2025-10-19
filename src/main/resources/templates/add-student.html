@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Student</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Add Student</h1>
+<form th:action="@{/students/add}" th:object="${student}" method="post">
+    <label>Full Name:</label>
+    <input type="text" th:field="*{fullName}" required><br>
+
+    <label>Class:</label>
+    <select th:field="*{classRoom}" required>
+        <option th:each="c : ${classes}" th:value="${c}" th:text="${c.name}"></option>
+    </select><br>
+
+    <label>Department (optional):</label>
+    <select th:field="*{department}">
+        <option th:value="">None</option>
+        <option th:each="d : ${departments}" th:value="${d}" th:text="${d.name}"></option>
+    </select><br>
+
+    <label>Gender:</label>
+    <input type="radio" th:field="*{gender}" value="Male" required> Male
+    <input type="radio" th:field="*{gender}" value="Female"> Female<br>
+
+    <label>Date of Birth:</label>
+    <input type="date" th:field="*{dateOfBirth}" required><br>
+
+    <button type="submit">Save</button>
+</form>
+<a th:href="@{/students}">Back to Students</a>
+</body>
+</html>

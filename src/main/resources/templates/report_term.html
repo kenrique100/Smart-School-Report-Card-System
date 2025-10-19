@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Card</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1 th:text="'Report Card - ' + ${report.student.fullName} + ' (Term ' + ${report.term} + ')'"></h1>
+<p>Class: <span th:text="${report.student.classRoom.name}"></span></p>
+<p>Department: <span th:text="${report.student.department != null ? report.student.department.name : 'N/A'}"></span></p>
+<table border="1">
+    <thead>
+    <tr>
+        <th>Subject</th>
+        <th>Coeff</th>
+        <th>Assessment1</th>
+        <th>Assessment2</th>
+        <th>Exam</th>
+        <th>Average</th>
+        <th>Grade</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="s : ${report.subjectReports}">
+        <td th:text="${s.subjectName}"></td>
+        <td th:text="${s.coefficient}"></td>
+        <td th:text="${s.assessment1 != null ? s.assessment1 : '-'}"></td>
+        <td th:text="${s.assessment2 != null ? s.assessment2 : '-'}"></td>
+        <td th:text="${s.exam != null ? s.exam : '-'}"></td>
+        <td th:text="${s.subjectAverage}"></td>
+        <td th:text="${s.letterGrade}"></td>
+    </tr>
+    </tbody>
+</table>
+<p>Term Average: <span th:text="${report.termAverage}"></span></p>
+<p>Rank in Class: <span th:text="${report.rankInClass}"></span></p>
+<p>Remarks: <span th:text="${report.remarks}"></span></p>
+<button onclick="window.print()">Print Report</button>
+<a th:href="@{/}">Home</a>
+<script th:src="@{/js/index.js}"></script>
+</body>
+</html>

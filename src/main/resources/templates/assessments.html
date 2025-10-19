@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Enter Assessments</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Enter Assessment</h1>
+<form th:action="@{/assessments/save}" th:object="${assessment}" method="post">
+    <label>Student:</label>
+    <select th:field="*{student}" required>
+        <option th:each="s : ${students}" th:value="${s}" th:text="${s.fullName}"></option>
+    </select><br>
+    <label>Subject:</label>
+    <select th:field="*{subject}" required>
+        <option th:each="sub : ${subjects}" th:value="${sub}" th:text="${sub.name}"></option>
+    </select><br>
+    <label>Term:</label>
+    <select th:field="*{term}" required>
+        <option value="1">Term 1</option>
+        <option value="2">Term 2</option>
+        <option value="3">Term 3</option>
+    </select><br>
+    <label>Type:</label>
+    <select th:field="*{type}" required>
+        <option value="Assessment1">Assessment1</option>
+        <option value="Assessment2">Assessment2</option>
+        <option value="Exam">Exam</option>
+    </select><br>
+    <label>Score (0-20):</label>
+    <input type="number" th:field="*{score}" name="score_${assessment.subject != null ? assessment.subject.id : 0}" min="0" max="20" step="0.01" required><br>
+    <p>Term Average: <span id="term-average">0</span></p>
+    <button type="submit">Save</button>
+</form>
+<a th:href="@{/}">Home</a>
+<script th:src="@{/js/index.js}"></script>
+</body>
+</html>

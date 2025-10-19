@@ -1,6 +1,7 @@
 package com.akentech.schoolreport.service;
 
 import com.akentech.schoolreport.model.ClassRoom;
+import com.akentech.schoolreport.model.Department;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,15 +33,19 @@ public class StudentService {
 
     @Transactional
     public Student save(Student student) {
-        // Minimal validation: ensure no duplicate roll in same class
-        studentRepository.findByRollNumberAndClassRoom(student.getRollNumber(), student.getClassRoom())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(student.getId())) {
-                        throw new IllegalArgumentException("Duplicate roll number in same class");
-                    }
-                });
+        // Auto-generate roll number based on class and department
+        if (student.getRollNumber() == null || student.getRollNumber().isEmpty()) {
+            String classCode = student.getClassRoom().getName().replaceAll("\\s+", "").toUpperCase();
+            String deptCode = student.getDepartment() != null ? student.getDepartment().getName().substring(0,3).toUpperCase() : "GEN";
+
+            // Count existing students in the same class and department
+            long count = studentRepository.countByClassRoomAndDepartment(student.getClassRoom(), student.getDepartment()) + 1;
+            String roll = classCode + "-" + deptCode + "-" + String.format("%03d", count);
+            student.setRollNumber(roll);
+        }
+
         Student s = studentRepository.save(student);
-        log.info("Saved student: {} (id={})", s.getFullName(), s.getId());
+        log.info("Saved student: {} (id={}, roll={})", s.getFullName(), s.getId(), s.getRollNumber());
         return s;
     }
 

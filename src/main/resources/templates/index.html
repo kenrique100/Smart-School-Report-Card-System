@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart School Report</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<h1>Welcome to Smart School Report System</h1>
+<ul>
+    <li><a th:href="@{/students}">Manage Students</a></li>
+    <li><a th:href="@{/subjects}">Manage Subjects</a></li>
+    <li><a th:href="@{/assessments/entry}">Enter Assessments</a></li>
+    <li><a th:href="@{/reports/select}">Generate Reports</a></li>
+</ul>
+</body>
+</html>
