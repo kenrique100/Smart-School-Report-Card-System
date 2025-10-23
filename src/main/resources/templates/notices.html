@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notices - Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Student Management</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            </a>
+            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-calendar-check mr-2"></i>Attendance
+            </a>
+            <a th:href="@{/notices}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-bullhorn mr-2"></i>Notices
+            </a>
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            </a>
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-pie mr-2"></i>Reports
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Notice Management</h1>
+            </div>
+        </div>
+
+        <main class="p-6">
+            <!-- New Notice Form -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">New Notice</h2>
+                <form th:action="@{/notices/add}" th:object="${notice}" method="post" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" th:field="*{title}" required
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter notice title">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                        <textarea th:field="*{content}" required
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Enter notice content" rows="4"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                        <select th:field="*{teacher}"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select Teacher (Optional)</option>
+                            <option th:each="teacher : ${teachers}" th:value="${teacher.id}" th:text="${teacher.firstName + ' ' + teacher.lastName}"></option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" th:field="*{isActive}" id="isActive" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="isActive" class="ml-2 text-sm text-gray-700">Active Notice</label>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                        Create Notice
+                    </button>
+                </form>
+            </div>
+
+            <!-- All Notices -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">All Notices</h2>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-4">
+                            <span>Show</span>
+                            <select class="border border-gray-300 rounded px-2 py-1">
+                                <option>10</option>
+                                <option>25</option>
+                                <option>50</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <div>
+                            <input type="text" placeholder="Search:" class="border border-gray-300 rounded px-3 py-1">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 font-medium">Title</th>
+                                <th class="px-4 py-2 font-medium">Content</th>
+                                <th class="px-4 py-2 font-medium">Teacher</th>
+                                <th class="px-4 py-2 font-medium">Created Date</th>
+                                <th class="px-4 py-2 font-medium">Status</th>
+                                <th class="px-4 py-2 font-medium">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                            <tr th:each="notice : ${notices}" class="hover:bg-gray-50">
+                                <td class="px-4 py-2 font-medium" th:text="${notice.title}">School Reopening</td>
+                                <td class="px-4 py-2" th:text="${#strings.abbreviate(notice.content, 50)}">School will reopen on January 15th...</td>
+                                <td class="px-4 py-2" th:text="${notice.teacher != null ? notice.teacher.firstName + ' ' + notice.teacher.lastName : 'System'}">Nimal Soyza</td>
+                                <td class="px-4 py-2" th:text="${#temporals.format(notice.createdDate, 'yyyy-MM-dd HH:mm')}">2024-01-10 14:30</td>
+                                <td class="px-4 py-2">
+                                    <span th:if="${notice.isActive}" class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span>
+                                    <span th:unless="${notice.isActive}" class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Inactive</span>
+                                </td>
+                                <td class="px-4 py-2 space-x-2">
+                                    <a th:href="@{'/notices/edit/' + ${notice.id}}" class="text-blue-600 hover:text-blue-800">Edit</a>
+                                    <a th:href="@{'/notices/toggle/' + ${notice.id}}" class="text-yellow-600 hover:text-yellow-800">
+                                        <span th:if="${notice.isActive}">Deactivate</span>
+                                        <span th:unless="${notice.isActive}">Activate</span>
+                                    </a>
+                                    <a th:href="@{'/notices/delete/' + ${notice.id}}"
+                                       th:attr="data-name=${notice.title}"
+                                       class="text-red-600 hover:text-red-800 delete-link">Delete</a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-4">
+                        <div class="text-sm text-gray-600">
+                            Showing 1 to <span th:text="${notices != null ? notices.size() : 0}">0</span> of <span th:text="${notices != null ? notices.size() : 0}">0</span> entries
+                        </div>
+                        <div class="space-x-2">
+                            <button class="px-3 py-1 border rounded disabled:opacity-50" disabled>Previous</button>
+                            <button class="px-3 py-1 border rounded hover:bg-gray-100">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Confirm deletion links
+        const deleteLinks = document.querySelectorAll("a.delete-link");
+        deleteLinks.forEach(link => {
+            link.addEventListener("click", function (e) {
+                const name = this.getAttribute("data-name");
+                if (!confirm("Are you sure you want to delete the notice: " + name + "?")) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

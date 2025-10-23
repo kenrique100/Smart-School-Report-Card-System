@@ -1,45 +1,139 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="'Class Report - ' + ${classRoom.name} + ' Term ' + ${term}"></title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${classRoom.name} + ' - Term ' + ${term} + ' Reports'">Class Reports</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<h1 th:text="'Class Report - ' + ${classRoom.name} + ' Term ' + ${term}"></h1>
-<div th:each="report : ${reports}">
-    <h2 th:text="${report.student.fullName}"></h2>
-    <table border="1">
-        <thead>
-        <tr>
-            <th>Subject</th>
-            <th>Coeff</th>
-            <th>Assessment1</th>
-            <th>Assessment2</th>
-            <th>Exam</th>
-            <th>Average</th>
-            <th>Grade</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="s : ${report.subjectReports}">
-            <td th:text="${s.subjectName}"></td>
-            <td th:text="${s.coefficient}"></td>
-            <td th:text="${s.assessment1 != null ? s.assessment1 : '-'}"></td>
-            <td th:text="${s.assessment2 != null ? s.assessment2 : '-'}"></td>
-            <td th:text="${s.exam != null ? s.exam : '-'}"></td>
-            <td th:text="${s.subjectAverage}"></td>
-            <td th:text="${s.letterGrade}"></td>
-        </tr>
-        </tbody>
-    </table>
-    <p>Term Average: <span th:text="${report.termAverage}"></span></p>
-    <p>Rank in Class: <span th:text="${report.rankInClass}"></span></p>
-    <p>Remarks: <span th:text="${report.remarks}"></span></p>
-    <hr>
+<body class="bg-gray-50 text-gray-800">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Student Management</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            </a>
+            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-calendar-check mr-2"></i>Attendance
+            </a>
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-bullhorn mr-2"></i>Notices
+            </a>
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            </a>
+            <a th:href="@{/reports/select}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-chart-pie mr-2"></i>Reports
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800" th:text="${classRoom.name} + ' - Term ' + ${term} + ' Reports'">Class Reports</h1>
+                <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                    <i class="fas fa-print mr-2"></i>Print Reports
+                </button>
+            </div>
+        </div>
+
+        <main class="p-6">
+            <div class="max-w-6xl mx-auto">
+                <div th:each="report : ${reports}" class="bg-white shadow rounded-2xl p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-blue-600 mb-3" th:text="${report.student.firstName + ' ' + report.student.lastName}">Student Name</h2>
+                    <table class="w-full text-sm border-collapse">
+                        <thead class="bg-blue-100 text-blue-700">
+                        <tr>
+                            <th class="py-2 px-3 text-left">Subject</th>
+                            <th class="py-2 px-3">Coeff</th>
+                            <th class="py-2 px-3">A1</th>
+                            <th class="py-2 px-3">A2</th>
+                            <th class="py-2 px-3">Exam</th>
+                            <th class="py-2 px-3">Average</th>
+                            <th class="py-2 px-3">Grade</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="sub : ${report.subjectReports}" class="border-t">
+                            <td class="py-2 px-3" th:text="${sub.subjectName}">Mathematics</td>
+                            <td class="py-2 px-3 text-center" th:text="${sub.coefficient}">4</td>
+                            <td class="py-2 px-3 text-center" th:text="${sub.assessment1 != null ? sub.assessment1 : '-'}">15.5</td>
+                            <td class="py-2 px-3 text-center" th:text="${sub.assessment2 != null ? sub.assessment2 : '-'}">16.0</td>
+                            <td class="py-2 px-3 text-center" th:text="${sub.exam != null ? sub.exam : '-'}">17.5</td>
+                            <td class="py-2 px-3 text-center font-semibold" th:text="${sub.subjectAverage}">16.3</td>
+                            <td class="py-2 px-3 text-center" th:text="${sub.letterGrade}">B</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-4 text-right text-gray-700">
+                        <span class="font-medium">Term Average:</span>
+                        <span th:text="${report.termAverage}" class="font-semibold text-blue-600 ml-1"></span> |
+                        <span class="font-medium ml-4">Position:</span>
+                        <span th:text="${report.rankInClass}" class="font-semibold text-blue-600 ml-1"></span> |
+                        <span class="font-medium ml-4">Remarks:</span>
+                        <span th:text="${report.remarks}" class="ml-1"></span>
+                    </div>
+                </div>
+
+                <div class="text-center mt-6">
+                    <a th:href="@{/reports/select}" class="text-blue-600 hover:underline">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Report Selection
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
 </div>
-<button onclick="window.print()">Print Class Reports</button>
-<a th:href="@{/}">Home</a>
-<script th:src="@{/js/index.js}"></script>
+
+<script>
+    // Highlight failing grades
+    document.addEventListener("DOMContentLoaded", function () {
+        const gradeCells = document.querySelectorAll("td");
+        gradeCells.forEach(cell => {
+            const text = cell.textContent.trim();
+            // Check for failing grades (F) or low scores
+            if (text === 'F' || text === 'FAIL') {
+                cell.style.color = "red";
+                cell.style.fontWeight = "bold";
+            }
+
+            // Check for numeric scores below 10
+            const value = parseFloat(text);
+            if (!isNaN(value) && value < 10) {
+                cell.style.color = "red";
+                cell.style.fontWeight = "bold";
+            }
+        });
+    });
+</script>
 </body>
 </html>

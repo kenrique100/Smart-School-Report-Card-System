@@ -1,25 +1,41 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Select Reports</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<h1>Select Class and Term</h1>
-<form th:action="@{/reports/class}" method="get">
-    <label>Class:</label>
-    <select name="classId" required>
-        <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
-    </select><br>
-    <label>Term:</label>
-    <select name="term" required>
-        <option value="1">Term 1</option>
-        <option value="2">Term 2</option>
-        <option value="3">Term 3</option>
-    </select><br>
-    <button type="submit">Generate Reports</button>
-</form>
-<a th:href="@{/}">Home</a>
+<body class="bg-gray-50 text-gray-800">
+<div class="max-w-xl mx-auto mt-16 bg-white shadow rounded-2xl p-8">
+    <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">Generate Reports</h1>
+
+    <form th:action="@{/reports/class}" method="get" class="space-y-6">
+        <div>
+            <label class="block font-medium text-gray-700 mb-1">Select Class</label>
+            <select name="classId" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Choose Class</option>
+                <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-medium text-gray-700 mb-1">Select Term</label>
+            <select name="term" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <option value="1">Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+            </select>
+        </div>
+
+        <div class="flex justify-center mt-6">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Generate Report</button>
+        </div>
+    </form>
+
+    <div class="text-center mt-8">
+        <a th:href="@{/}" class="text-blue-600 hover:underline">← Back to Home</a>
+    </div>
+</div>
 </body>
 </html>

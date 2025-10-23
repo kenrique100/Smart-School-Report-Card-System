@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Take Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Take Attendance - <span th:text="${today}"></span></h2>
+    <form th:action="@{/attendance/take}" th:object="${attendance}" method="post">
+        <div class="mb-3">
+            <label class="form-label">Student</label>
+            <select class="form-control" th:field="*{student}">
+                <option th:each="student : ${students}"
+                        th:value="${student.id}"
+                        th:text="${student.firstName + ' ' + student.lastName}"></option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Class</label>
+            <select class="form-control" th:field="*{classRoom}">
+                <option th:each="classRoom : ${classRooms}"
+                        th:value="${classRoom.id}"
+                        th:text="${classRoom.name}"></option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" th:field="*{attendanceDate}" th:value="${today}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-control" th:field="*{status}">
+                <option value="PRESENT">Present</option>
+                <option value="ABSENT">Absent</option>
+                <option value="LATE">Late</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Remarks</label>
+            <input type="text" class="form-control" th:field="*{remarks}" placeholder="Optional remarks">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Attendance</button>
+        <a th:href="@{/attendance}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+</body>
+</html>

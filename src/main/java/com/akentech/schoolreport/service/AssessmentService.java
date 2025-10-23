@@ -30,8 +30,13 @@ public class AssessmentService {
     @Transactional
     public Assessment save(Assessment assessment) {
         Assessment a = assessmentRepository.save(assessment);
-        log.info("Saved assessment: student={} subject={} term={} type={} score={}",
-                a.getStudent().getFullName(), a.getSubject().getName(), a.getTerm(), a.getType(), a.getScore());
+        log.info("Saved assessment: student={} {} subject={} term={} type={} score={}",
+                a.getStudent().getFirstName(),
+                a.getStudent().getLastName(),
+                a.getSubject().getName(),
+                a.getTerm(),
+                a.getType(),
+                a.getScore());
         return a;
     }
 

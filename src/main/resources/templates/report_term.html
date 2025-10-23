@@ -3,41 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <title>Report Card</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-<h1 th:text="'Report Card - ' + ${report.student.fullName} + ' (Term ' + ${report.term} + ')'"></h1>
-<p>Class: <span th:text="${report.student.classRoom.name}"></span></p>
-<p>Department: <span th:text="${report.student.department != null ? report.student.department.name : 'N/A'}"></span></p>
-<table border="1">
-    <thead>
-    <tr>
-        <th>Subject</th>
-        <th>Coeff</th>
-        <th>Assessment1</th>
-        <th>Assessment2</th>
-        <th>Exam</th>
-        <th>Average</th>
-        <th>Grade</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="s : ${report.subjectReports}">
-        <td th:text="${s.subjectName}"></td>
-        <td th:text="${s.coefficient}"></td>
-        <td th:text="${s.assessment1 != null ? s.assessment1 : '-'}"></td>
-        <td th:text="${s.assessment2 != null ? s.assessment2 : '-'}"></td>
-        <td th:text="${s.exam != null ? s.exam : '-'}"></td>
-        <td th:text="${s.subjectAverage}"></td>
-        <td th:text="${s.letterGrade}"></td>
-    </tr>
-    </tbody>
-</table>
-<p>Term Average: <span th:text="${report.termAverage}"></span></p>
-<p>Rank in Class: <span th:text="${report.rankInClass}"></span></p>
-<p>Remarks: <span th:text="${report.remarks}"></span></p>
-<button onclick="window.print()">Print Report</button>
-<a th:href="@{/}">Home</a>
-<script th:src="@{/js/index.js}"></script>
+<body class="bg-gray-50 p-10">
+<div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
+    <!-- Header -->
+    <div class="text-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">School Report Card</h1>
+        <h2 th:text="${report.student.firstName + ' ' + report.student.lastName + ' - Term ' + report.term + ' Report'}"
+            class="text-xl font-semibold text-gray-700"></h2>
+    </div>
+
+    <!-- Student Information -->
+    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div>
+            <p><span class="font-medium">Student ID:</span> <span th:text="${report.student.studentId}" class="font-semibold"></span></p>
+            <p><span class="font-medium">Roll Number:</span> <span th:text="${report.student.rollNumber}" class="font-semibold"></span></p>
+            <p><span class="font-medium">Class:</span> <span th:text="${report.student.classRoom.name}" class="font-semibold"></span></p>
+        </div>
+        <div>
+            <p><span class="font-medium">Department:</span> <span th:text="${report.student.department != null ? report.student.department.name : 'N/A'}" class="font-semibold"></span></p>
+            <p><span class="font-medium">Gender:</span> <span th:text="${report.student.gender}" class="font-semibold"></span></p>
+            <p><span class="font-medium">Academic Year:</span> <span th:text="${report.student.classRoom.academicYear}" class="font-semibold">2024</span></p>
+        </div>
+    </div>
+
+    <!-- Academic Performance Table -->
+    <div class="overflow-x-auto mb-6">
+        <table class="min-w-full border border-gray-200 rounded-lg">
+            <thead class="bg-blue-100">
+            <tr>
+                <th class="py-3 px-4 text-left">Subject</th>
+                <th class="py-3 px-4 text-center">Coeff</th>
+                <th class="py-3 px-4 text-center">Assessment 1</th>
+                <th class="py-3 px-4 text-center">Assessment 2</th>
+                <th class="py-3 px-4 text-center">Exam</th>
+                <th class="py-3 px-4 text-center">Average</th>
+                <th class="py-3 px-4 text-center">Grade</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr th:each="s : ${report.subjectReports}" class="hover:bg-gray-50">
+                <td th:text="${s.subjectName}" class="py-3 px-4 font-medium"></td>
+                <td th:text="${s.coefficient}" class="py-3 px-4 text-center"></td>
+                <td th:text="${s.assessment1 != null ? s.assessment1 : '-'}" class="py-3 px-4 text-center"></td>
+                <td th:text="${s.assessment2 != null ? s.assessment2 : '-'}" class="py-3 px-4 text-center"></td>
+                <td th:text="${s.exam != null ? s.exam : '-'}" class="py-3 px-4 text-center"></td>
+                <td th:text="${s.subjectAverage}" class="py-3 px-4 text-center font-semibold"></td>
+                <td th:text="${s.letterGrade}"
+                    th:class="${s.letterGrade == 'F' ? 'text-red-600 font-bold' : 'text-gray-800'}"
+                    class="py-3 px-4 text-center"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Information -->
+    <div class="grid grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+        <div class="text-center">
+            <p class="text-sm text-gray-600">Term Average</p>
+            <p class="text-2xl font-bold text-blue-600" th:text="${report.termAverage}">16.5</p>
+        </div>
+        <div class="text-center">
+            <p class="text-sm text-gray-600">Rank in Class</p>
+            <p class="text-2xl font-bold text-green-600" th:text="${report.rankInClass} + '/' + ${reports.size()}">5/25</p>
+        </div>
+        <div class="text-center">
+            <p class="text-sm text-gray-600">Remarks</p>
+            <p class="text-lg font-semibold text-gray-800" th:text="${report.remarks}">Very Good</p>
+        </div>
+    </div>
+
+    <!-- Grading Legend -->
+    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-medium text-gray-700 mb-2">Grading System:</h3>
+        <div class="grid grid-cols-4 gap-2 text-sm">
+            <div class="text-center"><span class="font-bold">A:</span> 18-20</div>
+            <div class="text-center"><span class="font-bold">B:</span> 15-17.9</div>
+            <div class="text-center"><span class="font-bold">C:</span> 12-14.9</div>
+            <div class="text-center"><span class="font-bold">D:</span> 10-11.9</div>
+            <div class="text-center"><span class="font-bold">F:</span> Below 10</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-between items-center pt-4 border-t">
+        <button onclick="window.print()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition flex items-center">
+            <i class="fas fa-print mr-2"></i>Print Report
+        </button>
+        <div class="space-x-4">
+            <a th:href="@{/reports/select}" class="text-blue-600 hover:underline">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+            </a>
+            <a th:href="@{/dashboard}" class="text-gray-600 hover:underline">
+                <i class="fas fa-home mr-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Highlight failing grades
+        const gradeCells = document.querySelectorAll("td");
+        gradeCells.forEach(cell => {
+            const text = cell.textContent.trim();
+            if (text === 'F') {
+                cell.style.color = "red";
+                cell.style.fontWeight = "bold";
+            }
+
+            const value = parseFloat(text);
+            if (!isNaN(value) && value < 10) {
+                cell.style.color = "red";
+                cell.style.fontWeight = "bold";
+            }
+        });
+    });
+</script>
 </body>
 </html>

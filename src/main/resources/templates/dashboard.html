@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Student Management</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            </a>
+            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-calendar-check mr-2"></i>Attendance
+            </a>
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-bullhorn mr-2"></i>Notices
+            </a>
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            </a>
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-pie mr-2"></i>Reports
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <main class="p-6">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Students</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalStudents}">5</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-chalkboard-teacher text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Teachers</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalTeachers}">1</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <i class="fas fa-book text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Subjects</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalSubjects}">1</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-bullhorn text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Active Notices</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalNotices}">1</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- School Overview -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">School Overview</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 border rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" th:text="${statistics.totalStudents}">5</div>
+                        <div class="text-sm text-gray-600">Total Students</div>
+                    </div>
+                    <div class="text-center p-4 border rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" th:text="${statistics.totalTeachers}">1</div>
+                        <div class="text-sm text-gray-600">Total Teachers</div>
+                    </div>
+                    <div class="text-center p-4 border rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" th:text="${statistics.totalSubjects}">1</div>
+                        <div class="text-sm text-gray-600">Total Subjects</div>
+                    </div>
+                    <div class="text-center p-4 border rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600" th:text="${statistics.presentToday}">0</div>
+                        <div class="text-sm text-gray-600">Present Today</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</div>
+</body>
+</html>

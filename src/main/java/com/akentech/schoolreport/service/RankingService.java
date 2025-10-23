@@ -61,7 +61,11 @@ public class RankingService {
             ranks.get(i).setRank(currentRank);
         }
 
-        log.info("Computed ranking for term {}: {} entries", term, ranks.size());
+        log.info("Computed ranking for term {}: {} entries, top student: {} {}",
+                term,
+                ranks.size(),
+                ranks.get(0).getStudent().getFirstName(),
+                ranks.get(0).getStudent().getLastName());
         return ranks;
     }
 }

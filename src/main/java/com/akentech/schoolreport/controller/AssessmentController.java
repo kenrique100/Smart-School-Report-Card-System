@@ -1,8 +1,6 @@
 package com.akentech.schoolreport.controller;
 
 import com.akentech.schoolreport.model.Assessment;
-import com.akentech.schoolreport.model.Student;
-import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.repository.SubjectRepository;
 import com.akentech.schoolreport.service.AssessmentService;
@@ -11,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("/assessments")
@@ -35,6 +31,6 @@ public class AssessmentController {
     @PostMapping("/save")
     public String save(@ModelAttribute Assessment assessment) {
         assessmentService.save(assessment);
-        return "redirect:/assessments/entry";
+        return "redirect:/assessments/entry?success";
     }
 }

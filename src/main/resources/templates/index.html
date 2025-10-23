@@ -1,17 +1,220 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Smart School Report</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Student Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-<h1>Welcome to Smart School Report System</h1>
-<ul>
-    <li><a th:href="@{/students}">Manage Students</a></li>
-    <li><a th:href="@{/subjects}">Manage Subjects</a></li>
-    <li><a th:href="@{/assessments/entry}">Enter Assessments</a></li>
-    <li><a th:href="@{/reports/select}">Generate Reports</a></li>
-</ul>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Smart School System</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            </a>
+            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-calendar-check mr-2"></i>Attendance
+            </a>
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-bullhorn mr-2"></i>Notices
+            </a>
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            </a>
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700 transition">
+                <i class="fas fa-chart-pie mr-2"></i>Reports
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <header class="bg-white shadow">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+                <div class="text-sm text-gray-600">
+                    Welcome, <span class="font-semibold">Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-6">
+            <!-- Quick Action Cards -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a th:href="@{/students}" class="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer border-l-4 border-blue-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-plus text-blue-500 text-lg mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Add Student</h3>
+                                <p class="text-sm text-gray-600">Register new student</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a th:href="@{/assessments/entry}" class="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer border-l-4 border-green-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-edit text-green-500 text-lg mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Enter Marks</h3>
+                                <p class="text-sm text-gray-600">Input assessments</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a th:href="@{/reports/select}" class="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer border-l-4 border-purple-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-pie text-purple-500 text-lg mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Generate Reports</h3>
+                                <p class="text-sm text-gray-600">View results</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a th:href="@{/attendance}" class="bg-white p-4 rounded-lg shadow hover:shadow-md transition cursor-pointer border-l-4 border-yellow-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-check text-yellow-500 text-lg mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Take Attendance</h3>
+                                <p class="text-sm text-gray-600">Mark attendance</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Students</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalStudents}">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-chalkboard-teacher text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Teachers</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalTeachers}">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <i class="fas fa-book text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Total Subjects</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalSubjects}">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-user-friends text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-sm font-medium text-gray-600">Registered Parents</h3>
+                            <p class="text-2xl font-bold text-gray-900" th:text="${statistics.totalParents}">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & School Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                            <i class="fas fa-user-plus text-blue-500 mr-3"></i>
+                            <div>
+                                <p class="font-medium">New student registered</p>
+                                <p class="text-sm text-gray-600">2 minutes ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                            <i class="fas fa-edit text-green-500 mr-3"></i>
+                            <div>
+                                <p class="font-medium">Assessment marks entered</p>
+                                <p class="text-sm text-gray-600">1 hour ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-3 bg-purple-50 rounded-lg">
+                            <i class="fas fa-chart-pie text-purple-500 mr-3"></i>
+                            <div>
+                                <p class="font-medium">Report generated</p>
+                                <p class="text-sm text-gray-600">3 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Overview -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">System Overview</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                            <div class="text-2xl font-bold text-blue-600" th:text="${statistics.totalStudents}">0</div>
+                            <div class="text-sm text-gray-600">Students</div>
+                        </div>
+                        <div class="text-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                            <div class="text-2xl font-bold text-green-600" th:text="${statistics.totalTeachers}">0</div>
+                            <div class="text-sm text-gray-600">Teachers</div>
+                        </div>
+                        <div class="text-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                            <div class="text-2xl font-bold text-purple-600" th:text="${statistics.totalSubjects}">0</div>
+                            <div class="text-sm text-gray-600">Subjects</div>
+                        </div>
+                        <div class="text-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                            <div class="text-2xl font-bold text-yellow-600" th:text="${statistics.totalParents}">0</div>
+                            <div class="text-sm text-gray-600">Parents</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024 Smart School System. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</div>
 </body>
 </html>

@@ -1,19 +1,39 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Subject</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<h1>Add Subject</h1>
-<form th:action="@{/subjects/add}" th:object="${subject}" method="post">
-    <label>Name:</label>
-    <input type="text" th:field="*{name}" required><br>
-    <label>Coefficient:</label>
-    <input type="number" th:field="*{coefficient}" value="1" min="1" required><br>
-    <button type="submit">Save</button>
-</form>
-<a th:href="@{/subjects}">Back to Subjects</a>
+<body class="bg-gray-50 text-gray-800">
+<div class="max-w-xl mx-auto mt-10 bg-white shadow rounded-2xl p-8">
+    <h1 class="text-3xl font-bold text-blue-700 mb-6">Add Subject</h1>
+
+    <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-5">
+        <div>
+            <label for="name" class="block font-medium text-gray-700 mb-1">Name</label>
+            <input type="text" th:field="*{name}" id="name" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Enter subject name" />
+        </div>
+
+        <div>
+            <label for="coefficient" class="block font-medium text-gray-700 mb-1">Coefficient</label>
+            <input type="number" th:field="*{coefficient}" id="coefficient" value="1" min="1" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+
+        <div>
+            <label for="department" class="block font-medium text-gray-700 mb-1">Department</label>
+            <select th:field="*{department}" id="department" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Department</option>
+                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option>
+            </select>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <a th:href="@{/subjects}" class="text-blue-600 hover:underline">← Back to Subjects</a>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save</button>
+        </div>
+    </form>
+</div>
 </body>
 </html>
