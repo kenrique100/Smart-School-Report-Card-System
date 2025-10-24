@@ -52,76 +52,130 @@
         </div>
 
         <main class="p-6">
-            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
                 <form th:action="@{/teachers/add}" th:object="${teacher}" method="post" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Teacher ID</label>
-                        <input type="text" th:field="*{teacherId}"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Enter Teacher ID No">
-                    </div>
+                    <!-- Personal Information -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h2>
 
-                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                <span class="text-blue-700 font-medium">Teacher ID will be auto-generated</span>
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                            <input type="text" th:field="*{firstName}" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter Teacher First Name">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Teacher ID (Auto-generated)</label>
+                            <input type="text" th:field="*{teacherId}" readonly
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+                                   th:attr="title='This ID is auto-generated and cannot be changed'">
+                            <p class="text-xs text-gray-500 mt-1">Teacher ID is automatically generated and cannot be modified</p>
                         </div>
+
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                                <input type="text" th:field="*{firstName}" required
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter Teacher First Name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                                <input type="text" th:field="*{lastName}" required
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter Teacher Last Name">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                                <input type="date" th:field="*{dateOfBirth}"
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                                <div class="flex space-x-6">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" th:field="*{gender}" value="Male" class="form-radio text-blue-600" required>
+                                        <span class="ml-2">Male</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" th:field="*{gender}" value="Female" class="form-radio text-blue-600" required>
+                                        <span class="ml-2">Female</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                            <input type="text" th:field="*{lastName}" required
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" th:field="*{email}"
                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter Teacher Last Name">
+                                   placeholder="Enter Teacher email">
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                            <textarea th:field="*{address}"
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Enter Teacher address" rows="3"></textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
+                            <input type="text" th:field="*{contact}"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter Teacher Contact No">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                        <input type="date" th:field="*{dateOfBirth}"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
+                    <!-- Subjects Assignment -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Subjects Assignment</h2>
+                        <p class="text-sm text-gray-600 mb-3">Select one or more subjects that this teacher can teach:</p>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                        <div class="flex space-x-6">
-                            <label class="inline-flex items-center">
-                                <input type="radio" th:field="*{gender}" value="Male" class="form-radio text-blue-600">
-                                <span class="ml-2">Male</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="radio" th:field="*{gender}" value="Female" class="form-radio text-blue-600">
-                                <span class="ml-2">Female</span>
-                            </label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                            <div th:each="subject : ${allSubjects}" class="flex items-center">
+                                <input type="checkbox"
+                                       name="subjectIds"
+                                       th:value="${subject.id}"
+                                       class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="ml-2 text-sm text-gray-700" th:text="${subject.name}"></label>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" th:field="*{email}"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Enter Teacher email">
+                    <!-- Classroom Assignment -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Classroom Assignment</h2>
+                        <p class="text-sm text-gray-600 mb-3">Select one or more classrooms that this teacher is assigned to:</p>
+
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                            <div th:each="classroom : ${allClassrooms}" class="flex items-center">
+                                <input type="checkbox"
+                                       name="classroomIds"
+                                       th:value="${classroom.id}"
+                                       class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="ml-2 text-sm text-gray-700" th:text="${classroom.name}"></label>
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- Skills -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                        <textarea th:field="*{address}"
-                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter Teacher address" rows="3"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
-                        <input type="text" th:field="*{contact}"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Enter Teacher Contact No">
-                    </div>
-
-                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Skills & Qualifications</h2>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Skills</label>
                         <textarea th:field="*{skills}"
                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter teacher skills (comma separated)" rows="3"></textarea>
+                                  placeholder="Enter teacher skills, qualifications, or additional information (comma separated)"
+                                  rows="3"></textarea>
                     </div>
 
                     <div class="flex justify-between pt-4">
@@ -129,7 +183,7 @@
                             <i class="fas fa-arrow-left mr-2"></i>Back to Teachers
                         </a>
                         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-                            Add Teacher
+                            <i class="fas fa-save mr-2"></i>Add Teacher
                         </button>
                     </div>
                 </form>
@@ -144,5 +198,21 @@
         </footer>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Select all checkboxes in a group when clicking on select all
+        const selectAllCheckboxes = document.querySelectorAll('.select-all');
+        selectAllCheckboxes.forEach(selectAll => {
+            selectAll.addEventListener('change', function() {
+                const groupName = this.getAttribute('data-group');
+                const checkboxes = document.querySelectorAll(`input[name="${groupName}"]`);
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        });
+    });
+</script>
 </body>
 </html>

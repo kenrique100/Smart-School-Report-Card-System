@@ -11,7 +11,8 @@ import lombok.*;
 @Builder
 public class Subject {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -26,4 +27,13 @@ public class Subject {
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department;
+
+    @Column(name = "specialty")
+    private String specialty; // Can be null for general subjects
+
+    @Column(name = "subject_code", unique = true)
+    private String subjectCode; // Auto-generated code
+
+    @Column(name = "description", length = 500)
+    private String description;
 }

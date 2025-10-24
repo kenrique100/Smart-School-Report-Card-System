@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Student</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header with Back Arrow -->
+    <div class="bg-white shadow px-6 py-4">
+        <div class="flex items-center space-x-4">
+            <a th:href="@{/students}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Students</span>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">Student Details</h1>
+        </div>
+    </div>
+
+    <!-- Student Details -->
+    <div class="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
+        <div class="border-b pb-4 mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Personal Information</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+            <div class="space-y-4">
+                <div>
+                    <span class="font-semibold text-gray-600">Student ID:</span>
+                    <p class="mt-1 text-lg" th:text="${student.studentId}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Full Name:</span>
+                    <p class="mt-1 text-lg" th:text="${student.firstName + ' ' + student.lastName}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Gender:</span>
+                    <p class="mt-1" th:text="${student.gender}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Date of Birth:</span>
+                    <p class="mt-1" th:text="${student.dateOfBirth}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Specialty:</span>
+                    <p class="mt-1" th:text="${student.specialty ?: 'N/A'}"></p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <span class="font-semibold text-gray-600">Email:</span>
+                    <p class="mt-1" th:text="${student.email ?: 'N/A'}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Address:</span>
+                    <p class="mt-1" th:text="${student.address ?: 'N/A'}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Classroom:</span>
+                    <p class="mt-1" th:text="${student.classRoom.name}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Department:</span>
+                    <p class="mt-1" th:text="${student.department?.name ?: 'N/A'}"></p>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-600">Academic Year:</span>
+                    <p class="mt-1" th:text="${student.academicYearStart + '-' + student.academicYearEnd}"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t flex justify-end space-x-3">
+            <a th:href="@{/students}" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+                Back to List
+            </a>
+            <a th:href="@{'/students/edit/' + ${student.id}}"
+               class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Edit Student
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -47,6 +47,9 @@ public class Student {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @Column(name = "specialty")
+    private String specialty;
+
     private String gender;
 
     @Column(name = "date_of_birth")
@@ -58,6 +61,12 @@ public class Student {
 
     private String address;
 
+    @Column(name = "academic_year_start")
+    private Integer academicYearStart;
+
+    @Column(name = "academic_year_end")
+    private Integer academicYearEnd;
+
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
@@ -68,8 +77,4 @@ public class Student {
     @ToString.Exclude
     private List<ExamResult> examResults = new ArrayList<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    private List<Attendance> attendances = new ArrayList<>();
 }

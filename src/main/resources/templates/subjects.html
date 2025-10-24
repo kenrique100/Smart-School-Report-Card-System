@@ -30,21 +30,6 @@
             <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-file-alt mr-2"></i>Exams
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
-            </a>
-            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-calendar-check mr-2"></i>Attendance
-            </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
-            </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
-            </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
-            </a>
         </nav>
     </div>
 
@@ -52,55 +37,80 @@
     <div class="flex-1">
         <!-- Header -->
         <div class="bg-white shadow">
-            <div class="px-6 py-4">
+            <div class="px-6 py-4 flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-gray-800">Subject Management</h1>
+                <a th:href="@{/subjects/add}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Add New Subject
+                </a>
             </div>
         </div>
 
         <main class="p-6">
-            <!-- Subject Details Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- New Subject Form -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-bold text-gray-800 mb-4">New Subject</h2>
-                    <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                            <input type="text" th:field="*{name}" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter subject name">
+            <!-- Success Messages -->
+            <div th:if="${param.success}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                Subject added successfully!
+            </div>
+            <div th:if="${param.updated}" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+                Subject updated successfully!
+            </div>
+            <div th:if="${param.deleted}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                Subject deleted successfully!
+            </div>
+            <div th:if="${param.error}" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                <span th:if="${param.error == 'notfound'}">Subject not found!</span>
+            </div>
+
+            <!-- Quick Add Form -->
+            <div class="bg-white rounded-lg shadow mb-8">
+
+            <!-- Grouped Subjects View -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Subjects by Department & Specialty</h2>
+
+                <div th:if="${groupedSubjects != null and !groupedSubjects.empty}">
+                    <div th:each="departmentEntry : ${groupedSubjects}" class="mb-6">
+                        <div class="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
+                            <h3 class="text-lg font-semibold" th:text="${departmentEntry.key}">Department Name</h3>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Coefficient</label>
-                            <input type="number" th:field="*{coefficient}" value="1" min="1" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                        <div th:each="specialtyEntry : ${departmentEntry.value}" class="bg-white border border-gray-200">
+                            <div class="bg-gray-100 px-4 py-2 border-b">
+                                <h4 class="font-medium text-gray-700" th:text="${specialtyEntry.key}">Specialty</h4>
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                            <select th:field="*{department}"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Department</option>
-                                <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
-                            </select>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div th:each="subject : ${specialtyEntry.value}"
+                                         class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h5 class="font-semibold text-gray-800" th:text="${subject.name}">Subject Name</h5>
+                                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                                                  th:text="${subject.coefficient}">Coefficient</span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-2" th:text="${subject.subjectCode}">Subject Code</p>
+                                        <p class="text-xs text-gray-500 mb-3" th:text="${subject.description ?: 'No description'}">Description</p>
+                                        <div class="flex space-x-2">
+                                            <a th:href="@{'/subjects/edit/' + ${subject.id}}"
+                                               class="text-blue-600 hover:text-blue-800 text-sm">
+                                                <i class="fas fa-edit mr-1"></i> Edit
+                                            </a>
+                                            <a th:href="@{'/subjects/delete/' + ${subject.id}}"
+                                               th:attr="data-name=${subject.name}"
+                                               class="text-red-600 hover:text-red-800 text-sm delete-link">
+                                                <i class="fas fa-trash mr-1"></i> Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                            Add Subject
-                        </button>
-                    </form>
+                    </div>
                 </div>
 
-                <!-- Subject Details Info -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-lg font-bold text-gray-800 mb-4">Subject Details</h2>
-                    <div class="space-y-2 text-sm text-gray-600">
-                        <p>• Complete subject information management</p>
-                        <p>• Set subject coefficients for weighted averages</p>
-                        <p>• Assign subjects to departments</p>
-                        <p>• Track subject performance</p>
-                    </div>
+                <div th:if="${groupedSubjects == null or groupedSubjects.empty}" class="bg-white rounded-lg shadow p-8 text-center">
+                    <i class="fas fa-book text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-semibold text-gray-600 mb-2">No Subjects Found</h3>
+                    <p class="text-gray-500">Get started by adding your first subject using the form above.</p>
                 </div>
             </div>
 
@@ -109,41 +119,42 @@
                 <div class="p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">All Subjects</h2>
 
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center space-x-4">
-                            <span>Show</span>
-                            <select class="border border-gray-300 rounded px-2 py-1">
-                                <option>10</option>
-                                <option>25</option>
-                                <option>50</option>
-                            </select>
-                            <span>entries</span>
-                        </div>
-                        <div>
-                            <input type="text" placeholder="Search:" class="border border-gray-300 rounded px-3 py-1">
-                        </div>
-                    </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-4 py-2 font-medium">Subject Code</th>
                                 <th class="px-4 py-2 font-medium">Name</th>
                                 <th class="px-4 py-2 font-medium">Coefficient</th>
                                 <th class="px-4 py-2 font-medium">Department</th>
+                                <th class="px-4 py-2 font-medium">Specialty</th>
                                 <th class="px-4 py-2 font-medium">Actions</th>
                             </tr>
                             </thead>
                             <tbody class="divide-y">
                             <tr th:each="subject : ${subjects}" class="hover:bg-gray-50">
-                                <td class="px-4 py-2" th:text="${subject.name}">Mathematics</td>
+                                <td class="px-4 py-2 font-mono text-blue-600" th:text="${subject.subjectCode}">MATH-GEN</td>
+                                <td class="px-4 py-2 font-medium" th:text="${subject.name}">Mathematics</td>
                                 <td class="px-4 py-2" th:text="${subject.coefficient}">4</td>
-                                <td class="px-4 py-2" th:text="${subject.department != null ? subject.department.name : 'N/A'}">Sciences</td>
+                                <td class="px-4 py-2" th:text="${subject.department?.name ?: 'N/A'}">Sciences</td>
                                 <td class="px-4 py-2">
-                                    <a th:href="@{'/subjects/edit/' + ${subject.id}}" class="text-blue-600 hover:text-blue-800 mr-2">Update</a>
-                                    <a th:href="@{'/subjects/delete/' + ${subject.id}}"
-                                       th:attr="data-name=${subject.name}"
-                                       class="text-red-600 hover:text-red-800 delete-link">Delete</a>
+                                    <span th:if="${subject.specialty}"
+                                          class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded"
+                                          th:text="${subject.specialty}">S1</span>
+                                    <span th:unless="${subject.specialty}" class="text-gray-500 text-xs">General</span>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <div class="flex space-x-2">
+                                        <a th:href="@{'/subjects/edit/' + ${subject.id}}"
+                                           class="text-blue-600 hover:text-blue-800 flex items-center">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                        <a th:href="@{'/subjects/delete/' + ${subject.id}}"
+                                           th:attr="data-name=${subject.name}"
+                                           class="text-red-600 hover:text-red-800 delete-link flex items-center">
+                                            <i class="fas fa-trash mr-1"></i> Delete
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>
@@ -152,11 +163,7 @@
 
                     <div class="flex justify-between items-center mt-4">
                         <div class="text-sm text-gray-600">
-                            Showing 1 to <span th:text="${subjects != null ? subjects.size() : 0}">0</span> of <span th:text="${subjects != null ? subjects.size() : 0}">0</span> entries
-                        </div>
-                        <div class="space-x-2">
-                            <button class="px-3 py-1 border rounded disabled:opacity-50" disabled>Previous</button>
-                            <button class="px-3 py-1 border rounded hover:bg-gray-100">Next</button>
+                            Showing <span th:text="${subjects != null ? subjects.size() : 0}">0</span> subjects
                         </div>
                     </div>
                 </div>
@@ -184,6 +191,29 @@
                 }
             });
         });
+
+        // Quick form validation
+        const quickForm = document.querySelector('form');
+        if (quickForm) {
+            quickForm.addEventListener('submit', function(e) {
+                const nameInput = this.querySelector('input[th\\:field="*{name}"]');
+                const coefficientInput = this.querySelector('input[th\\:field="*{coefficient}"]');
+
+                if (!nameInput.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter a subject name.');
+                    nameInput.focus();
+                    return false;
+                }
+
+                if (!coefficientInput.value || coefficientInput.value < 1) {
+                    e.preventDefault();
+                    alert('Please enter a valid coefficient (minimum 1).');
+                    coefficientInput.focus();
+                    return false;
+                }
+            });
+        }
     });
 </script>
 </body>

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "teacher")
@@ -39,4 +41,26 @@ public class Teacher {
 
     @Column(length = 1000)
     private String skills; // Comma-separated skills: "Science,Mathematics,History,Geography"
+
+    // Many-to-Many relationship with Subject
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "teacher_subjects",
+            joinColumns = @JoinColumn(name = "teacher_id"),
+            inverseJoinColumns = @JoinColumn(name = "subject_id")
+    )
+    @Builder.Default
+    @ToString.Exclude
+    private List<Subject> subjects = new ArrayList<>();
+
+    // Many-to-Many relationship with ClassRoom
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "teacher_classrooms",
+            joinColumns = @JoinColumn(name = "teacher_id"),
+            inverseJoinColumns = @JoinColumn(name = "classroom_id")
+    )
+    @Builder.Default
+    @ToString.Exclude
+    private List<ClassRoom> classrooms = new ArrayList<>();
 }

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Teacher - Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Student Management</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/teachers}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Teachers
+                    </a>
+                    <h1 class="text-2xl font-bold text-gray-800">Teacher Details</h1>
+                </div>
+                <div class="flex space-x-2">
+                    <a th:href="@{'/teachers/edit/' + ${teacher.id}}"
+                       class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-edit mr-2"></i>Edit Teacher
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <main class="p-6">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow">
+                <!-- Teacher ID Banner -->
+                <div class="bg-blue-50 border-b border-blue-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-id-card text-blue-500 text-xl mr-3"></i>
+                            <div>
+                                <h3 class="text-lg font-semibold text-blue-800" th:text="${teacher.teacherId}"></h3>
+                                <p class="text-sm text-blue-600">Auto-generated Teacher ID</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-blue-700 font-medium" th:text="${teacher.firstName + ' ' + teacher.lastName}"></p>
+                            <p class="text-xs text-blue-600">Full Name</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="border-b p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-user-circle text-gray-500 mr-2"></i>
+                        Personal Information
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">First Name</label>
+                            <p class="mt-1 text-gray-900 font-medium" th:text="${teacher.firstName}"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Last Name</label>
+                            <p class="mt-1 text-gray-900 font-medium" th:text="${teacher.lastName}"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Date of Birth</label>
+                            <p class="mt-1 text-gray-900" th:text="${teacher.dateOfBirth ?: 'Not provided'}"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Gender</label>
+                            <p class="mt-1 text-gray-900" th:text="${teacher.gender}"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="border-b p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-address-book text-gray-500 mr-2"></i>
+                        Contact Information
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Email</label>
+                            <p class="mt-1 text-gray-900">
+                                <span th:if="${teacher.email}" class="text-blue-600" th:text="${teacher.email}"></span>
+                                <span th:if="${teacher.email == null or teacher.email.isEmpty()}" class="text-gray-500">Not provided</span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Contact</label>
+                            <p class="mt-1 text-gray-900">
+                                <span th:if="${teacher.contact}" class="text-green-600" th:text="${teacher.contact}"></span>
+                                <span th:if="${teacher.contact == null or teacher.contact.isEmpty()}" class="text-gray-500">Not provided</span>
+                            </p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-600">Address</label>
+                            <p class="mt-1 text-gray-900">
+                                <span th:if="${teacher.address}" th:text="${teacher.address}"></span>
+                                <span th:if="${teacher.address == null or teacher.address.isEmpty()}" class="text-gray-500">Not provided</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects -->
+                <div class="border-b p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-book text-gray-500 mr-2"></i>
+                        Assigned Subjects
+                    </h2>
+                    <div th:if="${teacher.subjects != null and !teacher.subjects.empty}">
+                        <div class="flex flex-wrap gap-2">
+                            <span th:each="subject : ${teacher.subjects}"
+                                  class="bg-blue-100 text-blue-800 text-sm px-3 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-book mr-2"></i>
+                                <span th:text="${subject.name}"></span>
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">
+                            Total subjects: <span class="font-semibold" th:text="${teacher.subjects.size()}"></span>
+                        </p>
+                    </div>
+                    <div th:if="${teacher.subjects == null or teacher.subjects.empty}">
+                        <p class="text-gray-500 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            No subjects assigned to this teacher
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Classrooms -->
+                <div class="border-b p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-chalkboard text-gray-500 mr-2"></i>
+                        Assigned Classrooms
+                    </h2>
+                    <div th:if="${teacher.classrooms != null and !teacher.classrooms.empty}">
+                        <div class="flex flex-wrap gap-2">
+                            <span th:each="classroom : ${teacher.classrooms}"
+                                  class="bg-green-100 text-green-800 text-sm px-3 py-2 rounded-lg flex items-center">
+                                <i class="fas fa-chalkboard mr-2"></i>
+                                <span th:text="${classroom.name}"></span>
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">
+                            Total classrooms: <span class="font-semibold" th:text="${teacher.classrooms.size()}"></span>
+                        </p>
+                    </div>
+                    <div th:if="${teacher.classrooms == null or teacher.classrooms.empty}">
+                        <p class="text-gray-500 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            No classrooms assigned to this teacher
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div class="p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap text-gray-500 mr-2"></i>
+                        Skills & Qualifications
+                    </h2>
+                    <div th:if="${teacher.skills != null and !teacher.skills.isEmpty()}">
+                        <p class="text-gray-900 bg-gray-50 rounded-lg p-4" th:text="${teacher.skills}"></p>
+                    </div>
+                    <div th:if="${teacher.skills == null or teacher.skills.isEmpty()}">
+                        <p class="text-gray-500 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            No skills or qualifications provided
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</div>
+</body>
+</html>

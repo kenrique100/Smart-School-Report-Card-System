@@ -27,94 +27,75 @@ public class StudentController {
         model.addAttribute("students", studentService.getAllStudents());
         model.addAttribute("classes", classRoomRepository.findAll());
         model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("specialties", studentService.getAllSpecialties());
         model.addAttribute("student", new Student());
         return "students";
     }
 
-    @PostMapping("/add")
-    public String addStudent(@Valid @ModelAttribute("student") Student student,
-                             BindingResult result,
-                             Model model) {
-        log.info("Adding student: {}", student);
-
+    @PostMapping("/save")
+    public String saveStudent(@Valid @ModelAttribute("student") Student student,
+                              BindingResult result,
+                              Model model) {
         if (result.hasErrors()) {
-            log.warn("Validation errors: {}", result.getAllErrors());
             model.addAttribute("students", studentService.getAllStudents());
             model.addAttribute("classes", classRoomRepository.findAll());
             model.addAttribute("departments", departmentRepository.findAll());
+            model.addAttribute("specialties", studentService.getAllSpecialties());
             return "students";
         }
 
-        try {
-            studentService.saveStudent(student);
-            log.info("Student added successfully: {}", student.getStudentId());
-        } catch (Exception e) {
-            log.error("Error adding student: {}", e.getMessage());
-            model.addAttribute("error", "Failed to add student: " + e.getMessage());
-            model.addAttribute("students", studentService.getAllStudents());
-            model.addAttribute("classes", classRoomRepository.findAll());
-            model.addAttribute("departments", departmentRepository.findAll());
-            return "students";
-        }
-
+        studentService.saveStudent(student);
         return "redirect:/students?success";
     }
 
     @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable("id") Long id, Model model) {
-        log.info("Editing student with ID: {}", id);
-
-        try {
-            Student student = studentService.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid student id: " + id));
-            model.addAttribute("student", student);
-            model.addAttribute("classes", classRoomRepository.findAll());
-            model.addAttribute("departments", departmentRepository.findAll());
-            return "edit-student";
-        } catch (Exception e) {
-            log.error("Error loading student for edit: {}", e.getMessage());
-            return "redirect:/students?error=Student not found";
-        }
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Student student = studentService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid student ID: " + id));
+        model.addAttribute("student", student);
+        model.addAttribute("classRooms", classRoomRepository.findAll());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("specialties", studentService.getAllSpecialties());
+        return "edit-student";
     }
 
-    @PostMapping("/update")
-    public String updateStudent(@Valid @ModelAttribute("student") Student student,
+    @PostMapping("/update/{id}")
+    public String updateStudent(@PathVariable Long id,
+                                @Valid @ModelAttribute("student") Student student,
                                 BindingResult result,
                                 Model model) {
-        log.info("Updating student: {}", student.getId());
-
         if (result.hasErrors()) {
-            log.warn("Validation errors in update: {}", result.getAllErrors());
             model.addAttribute("classes", classRoomRepository.findAll());
             model.addAttribute("departments", departmentRepository.findAll());
+            model.addAttribute("specialties", studentService.getAllSpecialties());
             return "edit-student";
         }
 
-        try {
-            studentService.saveStudent(student);
-            log.info("Student updated successfully: {}", student.getStudentId());
-        } catch (Exception e) {
-            log.error("Error updating student: {}", e.getMessage());
-            model.addAttribute("error", "Failed to update student: " + e.getMessage());
-            model.addAttribute("classes", classRoomRepository.findAll());
-            model.addAttribute("departments", departmentRepository.findAll());
-            return "edit-student";
-        }
-
-        return "redirect:/students?success";
+        student.setId(id);
+        studentService.saveStudent(student);
+        return "redirect:/students?updated";
     }
 
     @GetMapping("/delete/{id}")
-    public String deleteStudent(@PathVariable("id") Long id) {
-        log.info("Deleting student with ID: {}", id);
+    public String deleteStudent(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+        return "redirect:/students?deleted";
+    }
 
-        try {
-            studentService.deleteStudent(id);
-            log.info("Student deleted successfully: {}", id);
-            return "redirect:/students?success";
-        } catch (Exception e) {
-            log.error("Error deleting student: {}", e.getMessage());
-            return "redirect:/students?error=Failed to delete student";
-        }
+    @GetMapping("/view/{id}")
+    public String viewStudent(@PathVariable Long id, Model model) {
+        Student student = studentService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid student ID: " + id));
+        model.addAttribute("student", student);
+        return "view-student";
+    }
+
+    // AJAX endpoint to check specialty requirements
+    @GetMapping("/check-specialty-requirements")
+    @ResponseBody
+    public StudentService.SpecialtyRequirement checkSpecialtyRequirements(
+            @RequestParam String classCode,
+            @RequestParam String departmentCode) {
+        return studentService.checkSpecialtyRequirement(classCode, departmentCode);
     }
 }

@@ -3,37 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Subject</title>
+    <title>Add Subject - Student Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-50 text-gray-800">
-<div class="max-w-xl mx-auto mt-10 bg-white shadow rounded-2xl p-8">
-    <h1 class="text-3xl font-bold text-blue-700 mb-6">Add Subject</h1>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Student Management</h1>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+        </nav>
+    </div>
 
-    <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-5">
-        <div>
-            <label for="name" class="block font-medium text-gray-700 mb-1">Name</label>
-            <input type="text" th:field="*{name}" id="name" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Enter subject name" />
+    <!-- Main Content -->
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Add New Subject</h1>
+            </div>
         </div>
 
-        <div>
-            <label for="coefficient" class="block font-medium text-gray-700 mb-1">Coefficient</label>
-            <input type="number" th:field="*{coefficient}" id="coefficient" value="1" min="1" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-        </div>
+        <main class="p-6">
+            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
+                <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-6">
+                    <!-- Basic Information -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
 
-        <div>
-            <label for="department" class="block font-medium text-gray-700 mb-1">Department</label>
-            <select th:field="*{department}" id="department" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Department</option>
-                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option>
-            </select>
-        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+                            <input type="text" th:field="*{name}" required
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter subject name">
+                            <div th:if="${#fields.hasErrors('name')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{name}">Name error</span>
+                            </div>
+                        </div>
 
-        <div class="flex justify-between mt-6">
-            <a th:href="@{/subjects}" class="text-blue-600 hover:underline">← Back to Subjects</a>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save</button>
-        </div>
-    </form>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Coefficient *</label>
+                            <input type="number" th:field="*{coefficient}" value="1" min="1" max="10" required
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Weight of the subject for weighted average calculations (1-10)</p>
+                            <div th:if="${#fields.hasErrors('coefficient')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{coefficient}">Coefficient error</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea th:field="*{description}"
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Enter subject description (optional)"
+                                      rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Department & Specialty Assignment -->
+                    <div class="border-b pb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Department & Specialty</h2>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+                            <select th:field="*{department}" id="department" required
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                    onchange="updateSpecialties()">
+                                <option value="">Select Department</option>
+                                <option th:each="dept : ${departments}"
+                                        th:value="${dept.id}"
+                                        th:text="${dept.name}"
+                                        th:attr="data-code=${dept.code}"></option>
+                            </select>
+                            <div th:if="${#fields.hasErrors('department')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{department}">Department error</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Specialty</label>
+                            <select th:field="*{specialty}" id="specialty"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">General (No Specialty)</option>
+                                <!-- Specialty options will be populated dynamically -->
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Select a specialty if this subject is specific to a particular program</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Code (Auto-generated)</label>
+                            <input type="text" th:field="*{subjectCode}" readonly
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+                                   placeholder="Subject code will be auto-generated">
+                            <p class="text-xs text-gray-500 mt-1">Subject code is automatically generated based on name, department, and specialty</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <a th:href="@{/subjects}" class="text-blue-600 hover:underline flex items-center">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Subjects
+                        </a>
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-save mr-2"></i>Add Subject
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>Copyright © 2024. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
 </div>
+
+<script>
+    async function updateSpecialties() {
+        const departmentSelect = document.getElementById('department');
+        const specialtySelect = document.getElementById('specialty');
+        const departmentId = departmentSelect.value;
+
+        // Clear existing specialty options except the first one
+        while (specialtySelect.options.length > 1) {
+            specialtySelect.remove(1);
+        }
+
+        if (!departmentId) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/subjects/specialties/${departmentId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch specialties');
+            }
+            const specialties = await response.json();
+
+            // Add new specialty options
+            specialties.forEach(specialty => {
+                const option = document.createElement('option');
+                option.value = specialty;
+                option.textContent = specialty;
+                specialtySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error fetching specialties:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const nameInput = this.querySelector('input[th\\:field="*{name}"]');
+            const coefficientInput = this.querySelector('input[th\\:field="*{coefficient}"]');
+            const departmentSelect = this.querySelector('select[th\\:field="*{department}"]');
+
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a subject name.');
+                nameInput.focus();
+                return false;
+            }
+
+            if (!coefficientInput.value || coefficientInput.value < 1 || coefficientInput.value > 10) {
+                e.preventDefault();
+                alert('Please enter a valid coefficient between 1 and 10.');
+                coefficientInput.focus();
+                return false;
+            }
+
+            if (!departmentSelect.value) {
+                e.preventDefault();
+                alert('Please select a department.');
+                departmentSelect.focus();
+                return false;
+            }
+        });
+
+        // Initialize specialties if department is already selected
+        const departmentSelect = document.getElementById('department');
+        if (departmentSelect.value) {
+            updateSpecialties();
+        }
+    });
+</script>
 </body>
 </html>

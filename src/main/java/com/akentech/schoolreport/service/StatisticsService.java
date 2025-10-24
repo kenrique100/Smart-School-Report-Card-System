@@ -4,6 +4,7 @@ import com.akentech.schoolreport.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +17,8 @@ public class StatisticsService {
     private final TeacherRepository teacherRepository;
     private final SubjectRepository subjectRepository;
     private final NoticeRepository noticeRepository;
-    private final AttendanceRepository attendanceRepository;
+    private final ClassRoomRepository classRoomRepository;
+    private final DepartmentRepository departmentRepository;
 
     public Map<String, Long> getDashboardStatistics() {
         Map<String, Long> stats = new HashMap<>();
@@ -25,26 +27,23 @@ public class StatisticsService {
             stats.put("totalStudents", studentRepository.count());
             stats.put("totalTeachers", teacherRepository.count());
             stats.put("totalSubjects", subjectRepository.count());
-            stats.put("totalNotices", noticeRepository.countByIsActiveTrue());
+            stats.put("totalNotices", noticeRepository.countByIsActive(true));
+            stats.put("totalClasses", classRoomRepository.count());
+            stats.put("totalDepartments", departmentRepository.count());
+            stats.put("totalSpecialties", studentRepository.count());
 
-            // Get today's present count with proper error handling
-            try {
-                long presentToday = attendanceRepository.countPresentToday();
-                stats.put("presentToday", presentToday);
-            } catch (Exception e) {
-                log.warn("Error counting today's attendance, setting to 0", e);
-                stats.put("presentToday", 0L);
-            }
+            log.info("Dashboard statistics loaded successfully: {}", stats);
 
-            log.info("Dashboard statistics loaded: {}", stats);
         } catch (Exception e) {
             log.error("Error loading dashboard statistics", e);
-            // Set default values
+            // Fallback defaults
             stats.put("totalStudents", 0L);
             stats.put("totalTeachers", 0L);
             stats.put("totalSubjects", 0L);
             stats.put("totalNotices", 0L);
-            stats.put("presentToday", 0L);
+            stats.put("totalClasses", 0L);
+            stats.put("totalDepartments", 0L);
+            stats.put("totalSpecialties", 0L);
         }
 
         return stats;
