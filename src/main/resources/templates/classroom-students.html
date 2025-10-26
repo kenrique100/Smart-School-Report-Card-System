@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Students - Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white min-h-screen">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">School Management</h1>
+            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
+        </div>
+        <nav class="mt-6">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-users mr-2"></i>Students
+            </a>
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-book mr-2"></i>Subjects
+            </a>
+            <a th:href="@{/classroom}" class="block py-2 px-4 bg-blue-700">
+                <i class="fas fa-school mr-2"></i>Classrooms
+            </a>
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-file-alt mr-2"></i>Exams
+            </a>
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            </a>
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-bullhorn mr-2"></i>Notices
+            </a>
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            </a>
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-chart-pie mr-2"></i>Reports
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <div class="bg-white shadow px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <a th:href="@{/classroom}" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-arrow-left"></i> Back to Classrooms
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800" th:text="${classroom.name + ' Students'}">Classroom Students</h1>
+            </div>
+            <div class="text-sm text-gray-600">
+                Total Students: <span class="font-bold" th:text="${totalItems}">0</span>
+            </div>
+        </div>
+
+        <main class="p-6 fade-in">
+            <!-- Class Information Card -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600">Class Name</h3>
+                        <p class="text-lg font-bold text-gray-900" th:text="${classroom.name}">Form 1</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600">Class Code</h3>
+                        <p class="text-lg font-bold text-gray-900" th:text="${classroom.code}">F1</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600">Academic Year</h3>
+                        <p class="text-lg font-bold text-gray-900" th:text="${classroom.academicYear}">2024/2025</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600">Level</h3>
+                        <p class="text-lg font-bold text-gray-900">
+                            <span th:if="${classroom.code.isFormLevel()}" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Ordinary Level</span>
+                            <span th:if="${classroom.code.isSixthForm()}" class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">Advanced Level</span>
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600">Department</h3>
+                        <p class="text-lg font-bold text-gray-900" th:text="${classroom.department?.name ?: 'General'}">General</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Section -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="p-4 border-b">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <!-- Sort Controls -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium text-gray-700">Sort by:</span>
+
+                            <!-- Name Sort Button -->
+                            <a th:href="@{|/classroom/students/${classroom.id}?sortBy=firstName&sortDir=${sortBy == 'firstName' ? (sortDir == 'asc' ? 'desc' : 'asc') : 'asc'}&departmentId=${departmentIdFilter}&specialty=${specialtyFilter}|}"
+                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700">
+                                <span>Name</span>
+                                <i th:if="${sortBy == 'firstName'}"
+                                   th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                <i th:unless="${sortBy == 'firstName'}" class="fas fa-sort"></i>
+                            </a>
+
+                            <!-- Gender Sort Button -->
+                            <a th:href="@{|/classroom/students/${classroom.id}?sortBy=gender&sortDir=${sortBy == 'gender' ? (sortDir == 'asc' ? 'desc' : 'asc') : 'asc'}&departmentId=${departmentIdFilter}&specialty=${specialtyFilter}|}"
+                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700">
+                                <span>Gender</span>
+                                <i th:if="${sortBy == 'gender'}"
+                                   th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                <i th:unless="${sortBy == 'gender'}" class="fas fa-sort"></i>
+                            </a>
+                        </div>
+
+                        <!-- Student Count -->
+                        <div class="text-sm text-gray-600">
+                            Showing: <span class="font-semibold" th:text="${totalItems}">0</span> students
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="p-4 bg-gray-50">
+                    <form th:action="@{'/classroom/students/' + ${classroom.id}}" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input type="hidden" name="sortBy" th:value="${sortBy}">
+                        <input type="hidden" name="sortDir" th:value="${sortDir}">
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Department</label>
+                            <select name="departmentId" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                <option value="">All Departments</option>
+                                <option th:each="d : ${departments}"
+                                        th:value="${d.id}"
+                                        th:text="${d.name}"
+                                        th:selected="${departmentIdFilter == d.id}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Specialty</label>
+                            <select name="specialty" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                <option value="">All Specialties</option>
+                                <option th:each="s : ${specialties}"
+                                        th:value="${s}"
+                                        th:text="${s}"
+                                        th:selected="${specialtyFilter == s}"></option>
+                            </select>
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                Filter
+                            </button>
+                            <a th:href="@{'/classroom/students/' + ${classroom.id}}" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
+                                Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Student Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div class="text-2xl font-bold text-blue-600" th:text="${totalCount}">0</div>
+                    <div class="text-sm text-blue-600">Total Students</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div class="text-2xl font-bold text-green-600" th:text="${maleCount}">0</div>
+                    <div class="text-sm text-green-600">Male Students</div>
+                </div>
+                <div class="bg-pink-50 p-4 rounded-lg border border-pink-200">
+                    <div class="text-2xl font-bold text-pink-600" th:text="${femaleCount}">0</div>
+                    <div class="text-sm text-pink-600">Female Students</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <div class="text-2xl font-bold text-purple-600" th:text="${withDepartmentCount}">0</div>
+                    <div class="text-sm text-purple-600">With Department</div>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">Students List</h2>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 font-medium">Student ID</th>
+                                <th class="px-4 py-3 font-medium">Full Name</th>
+                                <th class="px-4 py-3 font-medium">Roll Number</th>
+                                <th class="px-4 py-3 font-medium">Gender</th>
+                                <th class="px-4 py-3 font-medium">Department</th>
+                                <th class="px-4 py-3 font-medium">Specialty</th>
+                                <th class="px-4 py-3 font-medium">Academic Year</th>
+                                <th class="px-4 py-3 font-medium">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                            <tr th:each="student : ${students}" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 font-mono text-blue-600" th:text="${student.studentId}">ST1000010001</td>
+                                <td class="px-4 py-3 font-medium" th:text="${student.firstName + ' ' + student.lastName}">Kasun Chamara</td>
+                                <td class="px-4 py-3 font-mono text-gray-600" th:text="${student.rollNumber}">F1-GEN-GEN-001</td>
+                                <td class="px-4 py-3">
+                                    <!-- FIXED: Correct gender display logic -->
+                                    <span th:if="${student.gender?.name() == 'MALE'}"
+                                          class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Male</span>
+                                    <span th:if="${student.gender?.name() == 'FEMALE'}"
+                                          class="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full">Female</span>
+                                    <span th:if="${student.gender == null}"
+                                          class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Not Set</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span th:if="${student.department}"
+                                          th:text="${student.department.name}"
+                                          class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full"></span>
+                                    <span th:unless="${student.department}" class="text-gray-500">N/A</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span th:if="${student.specialty}"
+                                          th:text="${student.specialty}"
+                                          class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full"></span>
+                                    <span th:unless="${student.specialty}" class="text-gray-500">N/A</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span th:if="${student.academicYearStart != null and student.academicYearEnd != null}"
+                                          th:text="${student.academicYearStart + '-' + student.academicYearEnd}">2024-2025</span>
+                                    <span th:unless="${student.academicYearStart != null and student.academicYearEnd != null}">N/A</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex space-x-3">
+                                        <a th:href="@{'/students/view/' + ${student.id}}"
+                                           class="text-green-600 hover:text-green-800 transition-colors"
+                                           title="View Student">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a th:href="@{'/students/edit/' + ${student.id}}"
+                                           class="text-blue-600 hover:text-blue-800 transition-colors"
+                                           title="Edit Student">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${students.empty}">
+                                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-300"></i>
+                                    No students found in this classroom
+                                    <div class="text-sm mt-2" th:if="${departmentIdFilter != null or specialtyFilter != null}">
+                                        Try adjusting your filters
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div th:if="${totalPages > 1}" class="mt-6 flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            Page <span th:text="${currentPage + 1}"></span> of <span th:text="${totalPages}"></span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=0&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
+                               th:class="${currentPage == 0} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                               class="px-3 py-1 text-white rounded text-sm">
+                                First
+                            </a>
+                            <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (currentPage - 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
+                               th:class="${currentPage == 0} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                               class="px-3 py-1 text-white rounded text-sm">
+                                Previous
+                            </a>
+
+                            <!-- Page numbers -->
+                            <div class="flex space-x-1">
+                                <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                   th:if="${i >= currentPage - 2 and i <= currentPage + 2}"
+                                   th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + ${i} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
+                                   th:class="${i == currentPage} ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'"
+                                   class="px-3 py-1 rounded text-sm"
+                                   th:text="${i + 1}">
+                                </a>
+                            </div>
+
+                            <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (currentPage + 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
+                               th:class="${currentPage >= totalPages - 1} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                               class="px-3 py-1 text-white rounded text-sm">
+                                Next
+                            </a>
+                            <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (totalPages - 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
+                               th:class="${currentPage >= totalPages - 1} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                               class="px-3 py-1 text-white rounded text-sm">
+                                Last
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t mt-8">
+            <div class="px-6 py-4 text-center text-gray-600">
+                <p>© 2024 School Management System. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Simple sorting functionality
+        const sortTable = (column) => {
+            const currentUrl = new URL(window.location.href);
+            const currentSort = currentUrl.searchParams.get('sortBy');
+            const currentDir = currentUrl.searchParams.get('sortDir');
+
+            let newDir = 'asc';
+            if (currentSort === column) {
+                newDir = currentDir === 'asc' ? 'desc' : 'asc';
+            }
+
+            currentUrl.searchParams.set('sortBy', column);
+            currentUrl.searchParams.set('sortDir', newDir);
+            window.location.href = currentUrl.toString();
+        };
+
+        // Add click handlers to sortable headers
+        document.querySelectorAll('th[onclick]').forEach(header => {
+            header.style.cursor = 'pointer';
+        });
+    });
+</script>
+</body>
+</html>

@@ -24,7 +24,7 @@ public class Subject {
     @Column(nullable = false)
     private Integer coefficient = 1;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 

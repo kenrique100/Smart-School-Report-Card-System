@@ -8,16 +8,16 @@ public final class GradeCalculator {
         // Score is between 0 and 20
         if (scoreOutOf20 >= 18.0) return "A";
         if (scoreOutOf20 >= 15.0) return "B";
-        if (scoreOutOf20 >= 12.0) return "C";
-        if (scoreOutOf20 >= 10.0) return "D";
-        return "F";
+        if (scoreOutOf20 >= 10.0) return "C";
+        if (scoreOutOf20 <= 9.0) return "D";
+        return "U";
     }
 
     public static String remarkForAverage(double avg) {
         if (avg >= 18.0) return "Excellent";
         if (avg >= 15.0) return "Very Good";
-        if (avg >= 12.0) return "Good";
-        if (avg >= 10.0) return "Fair";
+        if (avg >= 10.0) return "Average";
+        if (avg <= 9.0) return "Failed";
         return "Poor";
     }
 }

@@ -1,5 +1,6 @@
 package com.akentech.schoolreport.model;
 
+import com.akentech.schoolreport.model.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +21,7 @@ public class Teacher {
     private Long id;
 
     @Column(name = "teacher_id", unique = true, nullable = false)
-    private String teacherId; // Format: TC1000020000
+    private String teacherId;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -31,7 +32,10 @@ public class Teacher {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    private String gender;
+    // UPDATED: Use enum instead of String
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
 
     private String email;
 
@@ -40,9 +44,8 @@ public class Teacher {
     private String contact;
 
     @Column(length = 1000)
-    private String skills; // Comma-separated skills: "Science,Mathematics,History,Geography"
+    private String skills;
 
-    // Many-to-Many relationship with Subject
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "teacher_subjects",
@@ -53,7 +56,6 @@ public class Teacher {
     @ToString.Exclude
     private List<Subject> subjects = new ArrayList<>();
 
-    // Many-to-Many relationship with ClassRoom
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "teacher_classrooms",

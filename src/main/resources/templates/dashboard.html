@@ -7,6 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dropdown-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .dropdown-content.show {
+            max-height: 500px;
+        }
+
+        .dropdown-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-icon.rotate {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
 <div class="flex">
@@ -20,28 +39,73 @@
             <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
                 <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
             </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+
+            <!--&lt;!&ndash; Classrooms Dropdown &ndash;&gt;
+            <div class="dropdown-container">
+                <div class="dropdown-header flex justify-between items-center py-2 px-4 hover:bg-blue-700 cursor-pointer">
+                    <div class="flex items-center">
+                        <i class="fas fa-school mr-2"></i>
+                        <span>Classrooms</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon text-xs"></i>
+                </div>
+                <div class="dropdown-content bg-blue-900">
+                    &lt;!&ndash; Form 1 to Form 5 &ndash;&gt;
+                    <div class="px-4 py-2 text-xs text-blue-300 uppercase font-semibold">
+                        Ordinary Level
+                    </div>
+                    &lt;!&ndash; FIXED: Use enum helper methods instead of string methods &ndash;&gt;
+                    <a th:each="class : ${classes}"
+                       th:if="${@dashboardController.isFormLevel(class)}"
+                       th:href="@{/classroom/students/{id}(id=${class.id})}"
+                       class="block py-2 px-6 hover:bg-blue-700 text-sm flex justify-between items-center transition-colors duration-200">
+                        <span th:text="${class.name}">Form 1</span>
+                        <span class="bg-blue-600 text-xs px-2 py-1 rounded-full min-w-8 text-center"
+                              th:text="${@studentService.getStudentsByClass(class).size()}">0</span>
+                    </a>
+
+                    &lt;!&ndash; Sixth Form Separator &ndash;&gt;
+                    <div class="px-4 py-2 text-xs text-blue-300 uppercase font-semibold border-t border-blue-700 mt-2">
+                        Advanced Level
+                    </div>
+
+                    &lt;!&ndash; Lower and Upper Sixth &ndash;&gt;
+                    <a th:each="class : ${classes}"
+                       th:if="${@dashboardController.isSixthForm(class)}"
+                       th:href="@{/classroom/students/{id}(id=${class.id})}"
+                       class="block py-2 px-6 hover:bg-blue-700 text-sm flex justify-between items-center transition-colors duration-200">
+                        <span th:text="${class.name}">Lower Sixth</span>
+                        <span class="bg-blue-600 text-xs px-2 py-1 rounded-full min-w-8 text-center"
+                              th:text="${@studentService.getStudentsByClass(class).size()}">0</span>
+                    </a>
+                </div>
+            </div>-->
+
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-users mr-2"></i>Students
             </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
             </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
+                <i class="fas fa-school mr-2"></i>Classrooms
+            </a>
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-book mr-2"></i>Subjects
             </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-file-alt mr-2"></i>Exams
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-chart-bar mr-2"></i>Exam Results
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-bullhorn mr-2"></i>Notices
             </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-edit mr-2"></i>Enter Assessments
             </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700 transition-colors duration-200">
                 <i class="fas fa-chart-pie mr-2"></i>Reports
             </a>
         </nav>
@@ -64,9 +128,14 @@
             </div>
         </div>
 
-
         <!-- Dashboard Content -->
         <main class="p-6">
+            <!-- Error Message -->
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span th:text="${error}">Error message</span>
+            </div>
+
             <!-- Success Messages -->
             <div th:if="${param.success}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
                 Operation completed successfully!
@@ -161,7 +230,7 @@
                 <!-- Class Distribution -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Class Distribution</h2>
-                    <div class="space-y-3">
+                    <div class="space-y-3" th:if="${statistics.studentsByClass} and ${statistics.totalStudents > 0}">
                         <div th:each="entry : ${statistics.studentsByClass}">
                             <div class="flex justify-between items-center">
                                 <span class="text-sm font-medium text-gray-700" th:text="${entry.key}">Class Name</span>
@@ -172,6 +241,9 @@
                                      th:style="'width: ' + ${(entry.value / statistics.totalStudents) * 100} + '%;'"></div>
                             </div>
                         </div>
+                    </div>
+                    <div th:unless="${statistics.studentsByClass} and ${statistics.totalStudents > 0}" class="text-center text-gray-500 py-4">
+                        No class distribution data available
                     </div>
                 </div>
 
@@ -203,7 +275,6 @@
                 </div>
             </div>
 
-            <!-- System Overview -->
             <!-- System Overview -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 mt-4">
                 <div class="text-center p-4 border rounded-lg bg-blue-50">
@@ -254,106 +325,138 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     document.addEventListener('DOMContentLoaded', function() {
-        // Department Chart
-        const deptCtx = document.getElementById('departmentChart').getContext('2d');
-        const deptData = {
-            labels: [
-                'Sciences', 'Arts', 'Commercial', 'Technical', 'Home Economics'
-            ],
-            datasets: [{
-                data: [
-                    [[${statistics.studentsByDepartment.get('Sciences') ?: 0}]],
-                    [[${statistics.studentsByDepartment.get('Arts') ?: 0}]],
-                    [[${statistics.studentsByDepartment.get('Commercial') ?: 0}]],
-                    [[${statistics.studentsByDepartment.get('Technical') ?: 0}]],
-                    [[${statistics.studentsByDepartment.get('Home Economics') ?: 0}]]
-                ],
-                backgroundColor: [
-                    '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'
-                ]
-            }]
-        };
+        // Dropdown functionality
+        const dropdownHeader = document.querySelector('.dropdown-header');
+        const dropdownContent = document.querySelector('.dropdown-content');
+        const dropdownIcon = document.querySelector('.dropdown-icon');
 
-        new Chart(deptCtx, {
-            type: 'pie',
-            data: deptData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+        if (dropdownHeader && dropdownContent) {
+            dropdownHeader.addEventListener('click', function() {
+                dropdownContent.classList.toggle('show');
+                dropdownIcon.classList.toggle('rotate');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.dropdown-container')) {
+                    dropdownContent.classList.remove('show');
+                    dropdownIcon.classList.remove('rotate');
                 }
-            }
-        });
-
-        // Specialty Chart
-        const specialtyCtx = document.getElementById('specialtyChart').getContext('2d');
-        const specialtyLabels = [];
-        const specialtyData = [];
-
-        // Add specialty data dynamically
-        const specialtyMap = [[${statistics.studentsBySpecialty}]];
-        if (specialtyMap) {
-            Object.keys(specialtyMap).forEach(key => {
-                specialtyLabels.push(key);
-                specialtyData.push(specialtyMap[key]);
             });
         }
 
-        new Chart(specialtyCtx, {
-            type: 'bar',
-            data: {
-                labels: specialtyLabels,
+        // Department Chart - FIXED: Handle null values
+        const deptCtx = document.getElementById('departmentChart');
+        if (deptCtx) {
+            const deptData = {
+                labels: [
+                    'Sciences', 'Arts', 'Commercial', 'Technical', 'Home Economics'
+                ],
                 datasets: [{
-                    label: 'Students',
-                    data: specialtyData,
-                    backgroundColor: '#3B82F6',
-                    borderColor: '#1D4ED8',
-                    borderWidth: 1
+                    data: [
+                        [[${statistics.studentsByDepartment?.get('Sciences') ?: 0}]],
+                        [[${statistics.studentsByDepartment?.get('Arts') ?: 0}]],
+                        [[${statistics.studentsByDepartment?.get('Commercial') ?: 0}]],
+                        [[${statistics.studentsByDepartment?.get('Technical') ?: 0}]],
+                        [[${statistics.studentsByDepartment?.get('Home Economics') ?: 0}]]
+                    ],
+                    backgroundColor: [
+                        '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'
+                    ]
                 }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+            };
+
+            new Chart(deptCtx, {
+                type: 'pie',
+                data: deptData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
                         }
                     }
                 }
+            });
+        }
+
+        // Specialty Chart - FIXED: Handle empty data
+        const specialtyCtx = document.getElementById('specialtyChart');
+        if (specialtyCtx) {
+            const specialtyLabels = [];
+            const specialtyData = [];
+
+            // Add specialty data dynamically with null safety
+            const specialtyMap = [[${statistics.studentsBySpecialty}]];
+            if (specialtyMap) {
+                Object.keys(specialtyMap).forEach(key => {
+                    specialtyLabels.push(key);
+                    specialtyData.push(specialtyMap[key]);
+                });
             }
-        });
 
-        // Gender Chart
-        const genderCtx = document.getElementById('genderChart').getContext('2d');
-        const genderData = {
-            labels: ['Male', 'Female'],
-            datasets: [{
-                data: [
-                    [[${statistics.genderDistribution.get('Male') ?: 0}]],
-                    [[${statistics.genderDistribution.get('Female') ?: 0}]]
-                ],
-                backgroundColor: ['#3B82F6', '#EC4899']
-            }]
-        };
+            // If no data, show empty chart
+            if (specialtyLabels.length === 0) {
+                specialtyLabels.push('No Data');
+                specialtyData.push(1);
+            }
 
-        new Chart(genderCtx, {
-            type: 'doughnut',
-            data: genderData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            new Chart(specialtyCtx, {
+                type: 'bar',
+                data: {
+                    labels: specialtyLabels,
+                    datasets: [{
+                        label: 'Students',
+                        data: specialtyData,
+                        backgroundColor: '#3B82F6',
+                        borderColor: '#1D4ED8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // Gender Chart - FIXED: Handle null values
+        const genderCtx = document.getElementById('genderChart');
+        if (genderCtx) {
+            const genderData = {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    data: [
+                        [[${statistics.genderDistribution?.get('MALE') ?: 0}]],
+                        [[${statistics.genderDistribution?.get('FEMALE') ?: 0}]]
+                    ],
+                    backgroundColor: ['#3B82F6', '#EC4899']
+                }]
+            };
+
+            new Chart(genderCtx, {
+                type: 'doughnut',
+                data: genderData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
     });
     /*]]>*/
 </script>

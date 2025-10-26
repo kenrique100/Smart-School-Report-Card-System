@@ -12,10 +12,11 @@
     <!-- Sidebar -->
     <div class="w-64 bg-blue-800 text-white min-h-screen">
         <div class="p-4">
-            <h1 class="text-xl font-bold">Student Management</h1>
+            <h1 class="text-xl font-bold">School Management</h1>
+            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
         </div>
         <nav class="mt-6">
-            <a th:href="@{/}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
                 <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
             </a>
             <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
@@ -27,14 +28,14 @@
             <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-book mr-2"></i>Subjects
             </a>
+            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
+                <i class="fas fa-school mr-2"></i>Classrooms
+            </a>
             <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-file-alt mr-2"></i>Exams
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 bg-blue-700">
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-chart-bar mr-2"></i>Exam Results
-            </a>
-            <a th:href="@{/attendance}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-calendar-check mr-2"></i>Attendance
             </a>
             <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-bullhorn mr-2"></i>Notices
