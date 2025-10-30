@@ -104,10 +104,6 @@
                             <p class="mt-1 text-gray-900 font-medium" th:text="${teacher.lastName}"></p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-600">Date of Birth</label>
-                            <p class="mt-1 text-gray-900" th:text="${teacher.dateOfBirth ?: 'Not provided'}"></p>
-                        </div>
-                        <div>
                             <label class="block text-sm font-medium text-gray-600">Gender</label>
                             <p class="mt-1 text-gray-900" th:text="${teacher.gender}"></p>
                         </div>
@@ -122,24 +118,10 @@
                     </h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-600">Email</label>
-                            <p class="mt-1 text-gray-900">
-                                <span th:if="${teacher.email}" class="text-blue-600" th:text="${teacher.email}"></span>
-                                <span th:if="${teacher.email == null or teacher.email.isEmpty()}" class="text-gray-500">Not provided</span>
-                            </p>
-                        </div>
-                        <div>
                             <label class="block text-sm font-medium text-gray-600">Contact</label>
                             <p class="mt-1 text-gray-900">
                                 <span th:if="${teacher.contact}" class="text-green-600" th:text="${teacher.contact}"></span>
                                 <span th:if="${teacher.contact == null or teacher.contact.isEmpty()}" class="text-gray-500">Not provided</span>
-                            </p>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-600">Address</label>
-                            <p class="mt-1 text-gray-900">
-                                <span th:if="${teacher.address}" th:text="${teacher.address}"></span>
-                                <span th:if="${teacher.address == null or teacher.address.isEmpty()}" class="text-gray-500">Not provided</span>
                             </p>
                         </div>
                     </div>

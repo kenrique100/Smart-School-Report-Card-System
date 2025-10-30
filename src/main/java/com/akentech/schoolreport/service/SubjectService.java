@@ -41,11 +41,16 @@ public class SubjectService {
         return subjectRepository.findByFilters(name, departmentId, specialty, pageable);
     }
 
-    // REMOVED: getSubjectById - using direct repository call in controller
-    // This method is used in SubjectController, so we need to keep it
     @Transactional(readOnly = true)
     public Optional<Subject> getSubjectById(Long id) {
         return subjectRepository.findById(id);
+    }
+
+    // NEW: Get subject by ID or throw exception
+    @Transactional(readOnly = true)
+    public Subject getSubjectByIdOrThrow(Long id) {
+        return subjectRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Subject", id));
     }
 
     public Subject createSubject(Subject subject) {
@@ -64,8 +69,7 @@ public class SubjectService {
     public Subject updateSubject(Long id, Subject subjectDetails) {
         log.info("Updating subject with id: {}", id);
 
-        Subject existingSubject = subjectRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Subject", id));
+        Subject existingSubject = getSubjectByIdOrThrow(id);
 
         existingSubject.setName(subjectDetails.getName());
         existingSubject.setCoefficient(subjectDetails.getCoefficient());
@@ -98,16 +102,47 @@ public class SubjectService {
 
     @Transactional(readOnly = true)
     public List<Subject> getSubjectsByDepartmentAndSpecialty(Long departmentId, String specialty) {
+        if (specialty == null || specialty.trim().isEmpty()) {
+            return getSubjectsByDepartment(departmentId);
+        }
         return subjectRepository.findByDepartmentIdAndSpecialty(departmentId, specialty);
     }
 
     @Transactional(readOnly = true)
     public List<Subject> getCompulsorySubjectsForClass(String classCode) {
+        List<Subject> compulsorySubjects = new ArrayList<>();
+
         if (classCode != null && classCode.matches("F[1-5]")) {
             List<String> compulsoryNames = Arrays.asList("Mathematics", "English Language", "French Language");
-            return subjectRepository.findByNameIn(compulsoryNames);
+            compulsorySubjects = subjectRepository.findByNameIn(compulsoryNames);
         }
-        return new ArrayList<>();
+
+        return compulsorySubjects;
+    }
+
+    // NEW: Enhanced method to get subjects by class, department, and specialty
+    @Transactional(readOnly = true)
+    public List<Subject> getSubjectsByClassDepartmentAndSpecialty(String classCode, Long departmentId, String specialty) {
+        List<Subject> subjects = new ArrayList<>();
+
+        // Add compulsory subjects for Forms 1-5
+        if (classCode != null && classCode.matches("F[1-5]")) {
+            subjects.addAll(getCompulsorySubjectsForClass(classCode));
+        }
+
+        // Add department subjects
+        if (departmentId != null) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                subjects.addAll(getSubjectsByDepartmentAndSpecialty(departmentId, specialty));
+            } else {
+                subjects.addAll(getSubjectsByDepartment(departmentId));
+            }
+        }
+
+        // Remove duplicates
+        return subjects.stream()
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -131,9 +166,24 @@ public class SubjectService {
                 .collect(Collectors.toList());
     }
 
+    // NEW: Method to find subjects by names
+    @Transactional(readOnly = true)
+    public List<Subject> findSubjectsByName(List<String> names) {
+        return subjectRepository.findByNameIn(names);
+    }
+
     // ADDED: Method for dashboard statistics
     @Transactional(readOnly = true)
     public long getSubjectCount() {
         return subjectRepository.count();
+    }
+
+    // NEW: Method to get subjects by multiple IDs
+    @Transactional(readOnly = true)
+    public List<Subject> getSubjectsByIds(List<Long> subjectIds) {
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return subjectRepository.findAllById(subjectIds);
     }
 }

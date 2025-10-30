@@ -90,10 +90,7 @@ public class TeacherService {
         // Update basic information
         existingTeacher.setFirstName(teacherDetails.getFirstName());
         existingTeacher.setLastName(teacherDetails.getLastName());
-        existingTeacher.setDateOfBirth(teacherDetails.getDateOfBirth());
         existingTeacher.setGender(teacherDetails.getGender());
-        existingTeacher.setEmail(teacherDetails.getEmail());
-        existingTeacher.setAddress(teacherDetails.getAddress());
         existingTeacher.setContact(teacherDetails.getContact());
         existingTeacher.setSkills(teacherDetails.getSkills());
 

@@ -9,6 +9,7 @@ import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.service.SpecialtyService;
+import com.akentech.schoolreport.service.StudentEnrollmentService;
 import com.akentech.schoolreport.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class StudentController {
     private final ClassRoomRepository classRoomRepository;
     private final DepartmentRepository departmentRepository;
     private final SpecialtyService specialtyService;
+    private final StudentEnrollmentService studentEnrollmentService;
 
     @GetMapping
     public String listStudents(
@@ -116,7 +118,7 @@ public class StudentController {
 
         String sortDir = "asc";
         if (sortBy.equals(currentSortDir)) {
-            sortDir = currentSortDir != null && currentSortDir.equals("asc") ? "desc" : "asc";
+            sortDir = currentSortDir.equals("asc") ? "desc" : "asc";
         }
 
         redirectAttributes.addAttribute("sortBy", sortBy);
@@ -256,13 +258,24 @@ public class StudentController {
     public String viewStudent(@PathVariable Long id, Model model) {
         try {
             Student student = studentService.getStudentByIdOrThrow(id);
-            Map<String, Object> subjectsSummary = studentService.getStudentSubjectsSummary(id);
             List<StudentSubject> studentSubjects = studentService.getStudentSubjects(id);
+
+            // Use the enhanced enrollment summary
+            Map<String, Object> subjectsSummary = studentEnrollmentService.getStudentEnrollmentSummary(id);
+
+            // Get available subjects for this student (for reference)
+            List<Subject> availableSubjects = studentService.getAvailableSubjectsForStudentView(id);
+
+            // Get grouped subjects for display context
+            Map<String, List<Subject>> groupedSubjects = studentService.getGroupedSubjectsForStudent(id);
 
             model.addAttribute("student", student);
             model.addAttribute("subjectsSummary", subjectsSummary);
             model.addAttribute("studentSubjects", studentSubjects);
+            model.addAttribute("availableSubjects", availableSubjects);
+            model.addAttribute("groupedSubjects", groupedSubjects);
 
+            log.debug("Loaded student {} with {} subjects", student.getFullName(), studentSubjects.size());
             return "view-student";
         } catch (EntityNotFoundException e) {
             log.warn("Student not found for viewing with id: {}", id);

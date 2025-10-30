@@ -29,17 +29,10 @@ public class Teacher {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
-
     // UPDATED: Use enum instead of String
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
     private Gender gender;
-
-    private String email;
-
-    private String address;
 
     private String contact;
 

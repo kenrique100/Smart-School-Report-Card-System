@@ -254,21 +254,6 @@ public class StudentService {
         return new ArrayList<>(availableSubjects);
     }
 
-    @Transactional(readOnly = true)
-    public List<Subject> getAvailableSubjects(String classCode, Long departmentId, String specialty) {
-        ClassRoom mockClassRoom = ClassRoom.builder()
-                .code(ClassLevel.fromCode(classCode))
-                .build();
-
-        Student mockStudent = Student.builder()
-                .classRoom(mockClassRoom)
-                .department(Department.builder().id(departmentId).build())
-                .specialty(specialty)
-                .build();
-
-        return getAvailableSubjectsForStudent(mockStudent);
-    }
-
     // Delegate methods to enrollment service
     @Transactional(readOnly = true)
     public List<StudentSubject> getStudentSubjects(Long studentId) {
@@ -277,13 +262,23 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getStudentSubjectsSummary(Long studentId) {
-        return enrollmentService.getStudentEnrollmentSummary(studentId);
-    }
+        List<StudentSubject> enrollments = getStudentSubjects(studentId);
+        Map<String, Object> summary = new HashMap<>();
 
-    // FIXED: This method should exist and work properly
-    @Transactional(readOnly = true)
-    public long getStudentCount() {
-        return studentRepository.count();
+        int totalSubjects = enrollments.size();
+        int subjectsWithScores = (int) enrollments.stream()
+                .filter(ss -> ss.getScore() != null)
+                .count();
+        int compulsorySubjects = (int) enrollments.stream()
+                .filter(StudentSubject::getIsCompulsory)
+                .count();
+
+        summary.put("totalSubjects", totalSubjects);
+        summary.put("subjectsWithScores", subjectsWithScores);
+        summary.put("compulsorySubjects", compulsorySubjects);
+        summary.put("studentSubjects", enrollments); // CRITICAL: Add the actual list
+
+        return summary;
     }
 
     // New methods for grouped subjects
@@ -387,5 +382,31 @@ public class StudentService {
                         student -> student.getGender().name(),
                         Collectors.counting()
                 ));
+    }
+    @Transactional(readOnly = true)
+    public long getStudentCount() {
+        return studentRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, List<Subject>> getGroupedSubjectsForStudent(Long studentId) {
+        Student student = getStudentByIdOrThrow(studentId);
+        return getGroupedAvailableSubjects(student);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Subject> getAvailableSubjectsForStudentView(Long studentId) {
+        Student student = getStudentByIdOrThrow(studentId);
+        return getAvailableSubjectsForStudent(student);
+    }
+
+    // Enhanced method to ensure proper subject filtering
+    @Transactional(readOnly = true)
+    public List<Subject> getAvailableSubjects(String classCode, Long departmentId, String specialty) {
+        if (classCode == null || departmentId == null) {
+            return new ArrayList<>();
+        }
+
+        return subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
     }
 }
