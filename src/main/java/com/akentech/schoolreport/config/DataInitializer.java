@@ -3,19 +3,14 @@ package com.akentech.schoolreport.config;
 import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
-import com.akentech.schoolreport.model.enums.Gender;
 import com.akentech.schoolreport.repository.*;
-import com.akentech.schoolreport.service.StudentService;
 import com.akentech.schoolreport.service.SubjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Component
@@ -28,8 +23,6 @@ public class DataInitializer implements CommandLineRunner {
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
-    private final NoticeRepository noticeRepository;
-    private final StudentService studentService;
     private final SubjectService subjectService;
 
     // Enhanced Specialty definitions with subject mappings
@@ -143,10 +136,7 @@ public class DataInitializer implements CommandLineRunner {
         try {
             initDepartments();
             initClassRooms();
-            initTeachers();
             initSubjects();
-            initStudents();
-            initNotices();
             log.info("Data initialization completed successfully");
         } catch (Exception e) {
             log.error("Data initialization failed", e);
@@ -182,40 +172,6 @@ public class DataInitializer implements CommandLineRunner {
             );
             classRoomRepository.saveAll(classRooms);
             log.info("Default classrooms created (Form 1–5 + Sixth Form)");
-        }
-    }
-
-    // ... (rest of the initTeachers method remains the same)
-
-    private void initTeachers() {
-        if (teacherRepository.count() == 0) {
-            List<Teacher> teachers = new ArrayList<>();
-
-            // Science Department Teachers
-            Teacher physicsTeacher = Teacher.builder()
-                    .teacherId("TC100001")
-                    .firstName("Dr. Samuel")
-                    .lastName("Ngassa")
-                    .gender(Gender.MALE)
-                    .contact("677112233")
-                    .skills("A-Physics,Mathematics With Mechanics,Additional Mathematics,Further Mathematics")
-                    .build();
-            teachers.add(physicsTeacher);
-
-            Teacher biologyTeacher = Teacher.builder()
-                    .teacherId("TC100002")
-                    .firstName("Dr. Amina")
-                    .lastName("Mohammed")
-                    .gender(Gender.FEMALE)
-                    .contact("677445566")
-                    .skills("A-Biology,A-Chemistry,Geology,Environmental Science")
-                    .build();
-            teachers.add(biologyTeacher);
-
-            // ... (rest of teacher initialization remains the same)
-
-            teacherRepository.saveAll(teachers);
-            log.info("{} teachers created with specialized subject assignments", teachers.size());
         }
     }
 
@@ -357,7 +313,281 @@ public class DataInitializer implements CommandLineRunner {
                             .optional(true).build()
             ));
 
-            // ... (rest of subject initialization for other departments with specialty assignments)
+            // ============================================================
+            // 3️⃣ ARTS DEPARTMENT (GCE Ordinary & Advanced Level)
+            // ============================================================
+            subjects.addAll(Arrays.asList(
+                    // Ordinary Level Arts
+                    Subject.builder().name("O-History").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-HIST-ART").description("Ordinary Level History").build(),
+
+                    Subject.builder().name("O-Geography").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-GEO-ART").description("Ordinary Level Geography").build(),
+
+                    Subject.builder().name("O-Economics").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-ECO-ART").description("Ordinary Level Economics").build(),
+
+                    Subject.builder().name("O-Literature").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-LIT-ART").description("Ordinary Level Literature").build(),
+
+                    Subject.builder().name("O-Religious Studies").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-REL-ART").description("Ordinary Level Religious Studies").build(),
+
+                    Subject.builder().name("O-Philosophy").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("O-PHIL-ART").description("Ordinary Level Philosophy").build(),
+
+                    // Advanced Level Arts - WITH SPECIALTY ASSIGNMENTS
+                    Subject.builder().name("A-History").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-HIST-ART").description("Advanced Level History")
+                            .specialty("A1,A2,A4,A7").build(),
+
+                    Subject.builder().name("A-Geography").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-GEO-ART").description("Advanced Level Geography")
+                            .specialty("A1,A3,A5,A7").build(),
+
+                    Subject.builder().name("A-Economics").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-ECO-ART").description("Advanced Level Economics")
+                            .specialty("A1,A3,A5,A7").build(),
+
+                    Subject.builder().name("A-Literature").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-LIT-ART").description("Advanced Level Literature")
+                            .specialty("A2,A4,A6,A8").build(),
+
+                    Subject.builder().name("A-French Language").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-FREN-ART").description("Advanced Level French")
+                            .specialty("A2,A6").build(),
+
+                    Subject.builder().name("A-Religious Studies").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-REL-ART").description("Advanced Level Religious Studies")
+                            .specialty("A4,A8").build(),
+
+                    Subject.builder().name("A-Philosophy").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-PHIL-ART").description("Advanced Level Philosophy")
+                            .specialty("A6,A8").build(),
+
+                    Subject.builder().name("A-ICT").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-ICT-ART").description("Advanced Level ICT")
+                            .specialty("A5")
+                            .optional(true).build(),
+
+                    Subject.builder().name("A-Pure Mathematics With Stats").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.ART))
+                            .subjectCode("A-PMATH-ART").description("Advanced Level Mathematics with Statistics")
+                            .specialty("A3")
+                            .optional(true).build()
+            ));
+
+            // ============================================================
+            // 4️⃣ COMMERCIAL DEPARTMENT (GCE Ordinary & Advanced Level)
+            // ============================================================
+            subjects.addAll(Arrays.asList(
+                    // Ordinary Level Commercial
+                    Subject.builder().name("O-Accounting").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-ACC-COM").description("Ordinary Level Accounting").build(),
+
+                    Subject.builder().name("O-Commerce").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-COM-COM").description("Ordinary Level Commerce").build(),
+
+                    Subject.builder().name("O-Business Management").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-BUS-COM").description("Ordinary Level Business Management").build(),
+
+                    Subject.builder().name("O-Economics").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-ECO-COM").description("Ordinary Level Economics").build(),
+
+                    Subject.builder().name("O-Marketing").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-MKT-COM").description("Ordinary Level Marketing").build(),
+
+                    Subject.builder().name("O-Office Practice").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-OFF-COM").description("Ordinary Level Office Practice").build(),
+
+                    Subject.builder().name("O-Typewriting").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("O-TYPE-COM").description("Ordinary Level Typewriting").build(),
+
+                    // Advanced Level Commercial - WITH SPECIALTY ASSIGNMENTS
+                    Subject.builder().name("A-Accounting").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-ACC-COM").description("Advanced Level Accounting")
+                            .specialty("C1,C2").build(),
+
+                    Subject.builder().name("A-Business Management").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-BUS-COM").description("Advanced Level Business Management")
+                            .specialty("C1,C2,C3").build(),
+
+                    Subject.builder().name("A-Economics").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-ECO-COM").description("Advanced Level Economics")
+                            .specialty("C1").build(),
+
+                    Subject.builder().name("A-Commerce").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-COM-COM").description("Advanced Level Commerce")
+                            .specialty("C2,C3").build(),
+
+                    Subject.builder().name("A-Marketing").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-MKT-COM").description("Advanced Level Marketing")
+                            .specialty("C3").build(),
+
+                    Subject.builder().name("A-Office Practice").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-OFF-COM").description("Advanced Level Office Practice")
+                            .specialty("C4").build(),
+
+                    Subject.builder().name("A-Typewriting").coefficient(2)
+                            .department(deptMap.get(DepartmentCode.COM))
+                            .subjectCode("A-TYPE-COM").description("Advanced Level Typewriting")
+                            .specialty("C4")
+                            .optional(true).build()
+            ));
+
+            // ============================================================
+            // 5️⃣ TECHNICAL DEPARTMENT (GCE Ordinary & Advanced Level)
+            // ============================================================
+            subjects.addAll(Arrays.asList(
+                    // Ordinary Level Technical
+                    Subject.builder().name("O-Technical Drawing").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-TD-TEC").description("Ordinary Level Technical Drawing").build(),
+
+                    Subject.builder().name("O-Woodwork").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-WOOD-TEC").description("Ordinary Level Woodwork").build(),
+
+                    Subject.builder().name("O-Metalwork").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-METAL-TEC").description("Ordinary Level Metalwork").build(),
+
+                    Subject.builder().name("O-Electrical Technology").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-ELEC-TEC").description("Ordinary Level Electrical Technology").build(),
+
+                    Subject.builder().name("O-Building Construction").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-BUILD-TEC").description("Ordinary Level Building Construction").build(),
+
+                    Subject.builder().name("O-Automobile Mechanics").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-AUTO-TEC").description("Ordinary Level Automobile Mechanics").build(),
+
+                    Subject.builder().name("Workshop Practice").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("O-WORK-TEC").description("Workshop Practice").build(),
+
+                    // Advanced Level Technical - WITH SPECIALTY ASSIGNMENTS
+                    Subject.builder().name("A-Electrical Technology").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-ELEC-TEC").description("Advanced Level Electrical Technology")
+                            .specialty("T1").build(),
+
+                    Subject.builder().name("A-Building Construction").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-BUILD-TEC").description("Advanced Level Building Construction")
+                            .specialty("T2,T5").build(),
+
+                    Subject.builder().name("A-Mechanical Engineering").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-MECH-TEC").description("Advanced Level Mechanical Engineering")
+                            .specialty("T3").build(),
+
+                    Subject.builder().name("A-Automobile Mechanics").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-AUTO-TEC").description("Advanced Level Automobile Mechanics")
+                            .specialty("T4").build(),
+
+                    Subject.builder().name("Technical Drawing").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-TD-TEC").description("Advanced Technical Drawing")
+                            .specialty("T1,T2,T3,T4,T5").build(),
+
+                    Subject.builder().name("Workshop Practice").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-WORK-TEC").description("Advanced Workshop Practice")
+                            .specialty("T3,T4,T5")
+                            .optional(true).build(),
+
+                    Subject.builder().name("A-Physics").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.TEC))
+                            .subjectCode("A-PHY-TEC").description("Advanced Level Physics for Technical")
+                            .specialty("T1")
+                            .optional(true).build()
+            ));
+
+            // ============================================================
+            // 6️⃣ HOME ECONOMICS DEPARTMENT (GCE Ordinary & Advanced Level)
+            // ============================================================
+            subjects.addAll(Arrays.asList(
+                    // Ordinary Level Home Economics
+                    Subject.builder().name("O-Home Economics").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("O-HE-HE").description("Ordinary Level Home Economics").build(),
+
+                    Subject.builder().name("O-Nutrition and Food Science").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("O-NUT-HE").description("Ordinary Level Nutrition and Food Science").build(),
+
+                    Subject.builder().name("O-Clothing Technology").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("O-CLOTH-HE").description("Ordinary Level Clothing Technology").build(),
+
+                    Subject.builder().name("O-Fashion Design").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("O-FASH-HE").description("Ordinary Level Fashion Design").build(),
+
+                    // Advanced Level Home Economics - WITH SPECIALTY ASSIGNMENTS
+                    Subject.builder().name("A-Home Economics").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-HE-HE").description("Advanced Level Home Economics")
+                            .specialty("H1,H2,H3").build(),
+
+                    Subject.builder().name("A-Nutrition and Food Science").coefficient(5)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-NUT-HE").description("Advanced Level Nutrition and Food Science")
+                            .specialty("H1,H2").build(),
+
+                    Subject.builder().name("A-Clothing Technology").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-CLOTH-HE").description("Advanced Level Clothing Technology")
+                            .specialty("H1,H3").build(),
+
+                    Subject.builder().name("A-Fashion Design").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-FASH-HE").description("Advanced Level Fashion Design")
+                            .specialty("H3").build(),
+
+                    Subject.builder().name("A-Food Science").coefficient(4)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-FOOD-HE").description("Advanced Level Food Science")
+                            .specialty("H2")
+                            .optional(true).build(),
+
+                    Subject.builder().name("Textile Science").coefficient(3)
+                            .department(deptMap.get(DepartmentCode.HE))
+                            .subjectCode("A-TEXT-HE").description("Advanced Level Textile Science")
+                            .specialty("H3")
+                            .optional(true).build()
+            ));
 
             // ============================================================
             // ✅ SAVE ALL SUBJECTS
@@ -392,267 +622,4 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    // ENHANCED: Student initialization with proper specialty handling
-    private void initStudents() {
-        if (studentRepository.count() == 0) {
-            Map<DepartmentCode, Department> deptMap = new HashMap<>();
-            for (DepartmentCode code : DepartmentCode.values()) {
-                departmentRepository.findByCode(code).ifPresent(dept -> deptMap.put(code, dept));
-            }
-
-            Map<ClassLevel, ClassRoom> classMap = new HashMap<>();
-            for (ClassLevel level : ClassLevel.values()) {
-                classRoomRepository.findByCode(level).ifPresent(cls -> classMap.put(level, cls));
-            }
-
-            List<Student> students = new ArrayList<>();
-
-            // =========================
-            // SIXTH FORM STUDENTS (Advanced Level with strict specialties)
-            // =========================
-            ClassRoom lowerSixth = classMap.get(ClassLevel.LOWER_SIXTH);
-            ClassRoom upperSixth = classMap.get(ClassLevel.UPPER_SIXTH);
-
-            // Create students for each specialty in Science department (including S7)
-            Department scienceDept = deptMap.get(DepartmentCode.SCI);
-            List<String> scienceSpecialties = departmentSpecialties.get("SCI");
-
-            for (String specialty : scienceSpecialties) {
-                // Lower Sixth Students
-                students.add(createStudentWithGender(
-                        "L6SCI" + specialty + "M",
-                        getAdvancedLastName(specialty),
-                        lowerSixth,
-                        scienceDept,
-                        specialty,
-                        2005,
-                        2006,
-                        Gender.MALE
-                ));
-
-                students.add(createStudentWithGender(
-                        "L6SCI" + specialty + "F",
-                        getAdvancedLastName(specialty),
-                        lowerSixth,
-                        scienceDept,
-                        specialty,
-                        2005,
-                        2006,
-                        Gender.FEMALE
-                ));
-
-                // Upper Sixth Students
-                students.add(createStudentWithGender(
-                        "U6SCI" + specialty + "M",
-                        getAdvancedLastName(specialty),
-                        upperSixth,
-                        scienceDept,
-                        specialty,
-                        2004,
-                        2005,
-                        Gender.MALE
-                ));
-
-                students.add(createStudentWithGender(
-                        "U6SCI" + specialty + "F",
-                        getAdvancedLastName(specialty),
-                        upperSixth,
-                        scienceDept,
-                        specialty,
-                        2004,
-                        2005,
-                        Gender.FEMALE
-                ));
-            }
-
-            // Save all students
-            students.forEach(s -> {
-                try {
-                    // Get appropriate subjects based on class, department, and specialty
-                    List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(s);
-                    List<Long> subjectIds = appropriateSubjects.stream()
-                            .map(Subject::getId)
-                            .collect(Collectors.toList());
-
-                    studentService.createStudent(s, subjectIds);
-                    log.info("Created student {} with specialty {} and {} subjects",
-                            s.getFirstName(), s.getSpecialty(), subjectIds.size());
-                } catch (Exception e) {
-                    log.warn("Failed to create student {}: {}", s.getFirstName(), e.getMessage());
-                }
-            });
-            log.info("Complete student data initialized with proper department and specialty assignments - {} students", students.size());
-
-            // Log student distribution
-            logStudentDistribution(students);
-        }
-    }
-
-    // ENHANCED: Get appropriate subjects for student based on class, department, and specialty
-    private List<Subject> getAppropriateSubjectsForStudent(Student student) {
-        List<Subject> appropriateSubjects = new ArrayList<>();
-
-        if (student.getClassRoom() == null || student.getDepartment() == null) {
-            return appropriateSubjects;
-        }
-
-        ClassLevel classLevel = student.getClassRoom().getCode();
-        DepartmentCode deptCode = student.getDepartment().getCode();
-        String specialty = student.getSpecialty();
-
-        // Get all subjects
-        List<Subject> allSubjects = subjectRepository.findAll();
-
-        for (Subject subject : allSubjects) {
-            if (isSubjectAppropriateForStudent(subject, student, classLevel, deptCode, specialty)) {
-                appropriateSubjects.add(subject);
-            }
-        }
-
-        log.debug("Found {} appropriate subjects for student {} with specialty {}",
-                appropriateSubjects.size(), student.getFirstName(), specialty);
-
-        return appropriateSubjects;
-    }
-
-    // ENHANCED: Improved subject appropriateness check
-    private boolean isSubjectAppropriateForStudent(Subject subject, Student student,
-                                                   ClassLevel classLevel, DepartmentCode deptCode,
-                                                   String specialty) {
-        if (subject == null || subject.getDepartment() == null) {
-            return false;
-        }
-
-        String subjectName = subject.getName();
-        DepartmentCode subjectDeptCode = subject.getDepartment().getCode();
-
-        // Check class level compatibility
-        if (classLevel.isFormLevel()) {
-            // Forms 1-5: Only O-Level subjects or subjects without level prefix
-            if (subjectName.startsWith("A-")) {
-                return false; // Advanced subjects not allowed in Forms 1-5
-            }
-        } else {
-            // Sixth Form: Only A-Level subjects and general languages
-            if (subjectName.startsWith("O-") &&
-                    !subjectName.equals("O-English Language") &&
-                    !subjectName.equals("O-French Language")) {
-                return false; // Ordinary subjects not allowed in Sixth Form (except languages)
-            }
-        }
-
-        // Check department compatibility
-        if (subjectDeptCode != DepartmentCode.GEN) {
-            // Department-specific subject must match student's department
-            if (subjectDeptCode != deptCode) {
-                return false;
-            }
-        }
-
-        // Check specialty compatibility for Sixth Form
-        if (classLevel.isSixthForm() && specialty != null && !specialty.isBlank()) {
-            String subjectSpecialty = subject.getSpecialty();
-            if (subjectSpecialty != null && !subjectSpecialty.isEmpty()) {
-                // Subject has specific specialty requirements
-                List<String> allowedSpecialties = Arrays.asList(subjectSpecialty.split(","));
-                if (!allowedSpecialties.contains(specialty)) {
-                    return Boolean.TRUE.equals(subject.getOptional());
-                }
-            }
-        }
-
-        return true;
-    }
-
-    // Helper method to create student with specific gender
-    private Student createStudentWithGender(String firstName, String lastName, ClassRoom cls, Department dept,
-                                            String specialty, int birthYearStart, int birthYearEnd, Gender gender) {
-        return Student.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .classRoom(cls)
-                .department(dept)
-                .specialty(specialty)
-                .gender(gender)
-                .dateOfBirth(generateRandomBirthDate(birthYearStart, birthYearEnd))
-                .email(firstName.toLowerCase() + "." + lastName.toLowerCase() + "@student.com")
-                .address(getRandomCameroonianAddress())
-                .academicYearStart(2025)
-                .academicYearEnd(2026)
-                .build();
-    }
-
-    private LocalDate generateRandomBirthDate(int startYear, int endYear) {
-        int year = ThreadLocalRandom.current().nextInt(startYear, endYear + 1);
-        int month = ThreadLocalRandom.current().nextInt(1, 13);
-        int day = ThreadLocalRandom.current().nextInt(1, 29);
-        return LocalDate.of(year, month, day);
-    }
-
-    // Helper method to get advanced level last names
-    private String getAdvancedLastName(String specialty) {
-        return switch (specialty) {
-            case "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8" -> "Scientist";
-            case "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8" -> "Academic";
-            case "C1", "C2", "C3", "C4" -> "Executive";
-            case "T1", "T2", "T3", "T4", "T5" -> "Technologist";
-            case "H1", "H2", "H3" -> "Expert";
-            default -> "Graduate";
-        };
-    }
-
-    // Helper method to generate random Cameroonian addresses
-    private String getRandomCameroonianAddress() {
-        String[] areas = {"Bastos, Yaoundé", "Bonapriso, Douala", "Melen, Yaoundé", "Bonanjo, Douala",
-                "Akwa, Douala", "Nsimeyong, Yaoundé", "Makepe, Douala", "Bamend, Bamenda",
-                "Molyko, Buea", "Commercial Ave, Limbe"};
-        return areas[ThreadLocalRandom.current().nextInt(areas.length)];
-    }
-
-    // Helper method to log student distribution
-    private void logStudentDistribution(List<Student> students) {
-        Map<String, Long> classCount = students.stream()
-                .collect(Collectors.groupingBy(s -> s.getClassRoom().getName(), Collectors.counting()));
-
-        Map<String, Long> genderCount = students.stream()
-                .collect(Collectors.groupingBy(s -> s.getGender().toString(), Collectors.counting()));
-
-        Map<String, Long> deptCount = students.stream()
-                .collect(Collectors.groupingBy(s -> s.getDepartment().getName(), Collectors.counting()));
-
-        Map<String, Long> specialtyCount = students.stream()
-                .filter(s -> s.getSpecialty() != null)
-                .collect(Collectors.groupingBy(Student::getSpecialty, Collectors.counting()));
-
-        log.info("Student Distribution by Class: {}", classCount);
-        log.info("Student Distribution by Gender: {}", genderCount);
-        log.info("Student Distribution by Department: {}", deptCount);
-        log.info("Student Distribution by Specialty: {}", specialtyCount);
-
-        // Log specialty details with full names
-        log.info("Available Specialties by Department:");
-        departmentSpecialties.forEach((dept, specs) -> {
-            if (!specs.isEmpty()) {
-                List<String> specialtyDetails = specs.stream()
-                        .map(spec -> spec + " (" + specialtyFullNames.getOrDefault(spec, "General") + ")")
-                        .collect(Collectors.toList());
-                log.info("  {}: {}", dept, String.join("; ", specialtyDetails));
-            }
-        });
-    }
-
-    private void initNotices() {
-        if (noticeRepository.count() == 0) {
-            Teacher teacher = teacherRepository.findAll().getFirst();
-            Notice notice = Notice.builder()
-                    .title("School Reopening - 2025/2026 Academic Year")
-                    .content("School will reopen on September 2nd, 2025 for the new academic year. All students are expected to be present in full uniform. GCE registration forms for both Ordinary and Advanced Levels are available at the administration office.")
-                    .createdDate(LocalDateTime.now())
-                    .teacher(teacher)
-                    .isActive(true)
-                    .build();
-            noticeRepository.save(notice);
-            log.info("Default notice created");
-        }
-    }
 }
