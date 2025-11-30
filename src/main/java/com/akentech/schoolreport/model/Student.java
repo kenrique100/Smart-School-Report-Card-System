@@ -163,6 +163,25 @@ public class Student {
         return false;
     }
 
+    @Transient
+    public ClassLevel getClassLevel() {
+        return this.classRoom != null ? this.classRoom.getCode() : null;
+    }
+
+    @Transient
+    public boolean isSubjectForLevel(Subject subject) {
+        if (subject == null || classRoom == null) return false;
+
+        boolean isAdvancedSubject = subject.getName().startsWith("A-");
+        boolean isOrdinarySubject = subject.getName().startsWith("O-") || !isAdvancedSubject;
+
+        ClassLevel level = getClassLevel();
+        if (level == null) return false;
+
+        return (level.isFormLevel() && isOrdinarySubject) ||
+                (level.isSixthForm() && isAdvancedSubject);
+    }
+
     // Helper method to check if student is in form level
     @Transient
     public boolean isFormLevel() {

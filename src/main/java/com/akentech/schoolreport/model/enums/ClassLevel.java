@@ -1,5 +1,8 @@
 package com.akentech.schoolreport.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum ClassLevel {
     FORM_1("F1", "Form 1"),
     FORM_2("F2", "Form 2"),
@@ -17,31 +20,19 @@ public enum ClassLevel {
         this.displayName = displayName;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
     // Helper method to check if it's a form level (F1-F5)
     public boolean isFormLevel() {
-        return this.code.startsWith("F");
+        return this.code != null && this.code.startsWith("F");
     }
 
     // Helper method to check if it's sixth form
     public boolean isSixthForm() {
-        return this.code.startsWith("L") || this.code.startsWith("U");
-    }
-
-    // Helper method to check if code starts with specific prefix
-    public boolean codeStartsWith(String prefix) {
-        return this.code.startsWith(prefix);
+        return this.code != null && (this.code.startsWith("L") || this.code.startsWith("U"));
     }
 
     // Static method to get enum from code
     public static ClassLevel fromCode(String code) {
+        if (code == null) throw new IllegalArgumentException("Code cannot be null");
         for (ClassLevel level : values()) {
             if (level.getCode().equals(code)) {
                 return level;

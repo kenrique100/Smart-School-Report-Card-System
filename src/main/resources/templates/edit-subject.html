@@ -59,6 +59,14 @@
         </div>
 
         <main class="p-6">
+            <!-- Success/Error Messages -->
+            <div th:if="${success}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                <i class="fas fa-check-circle mr-2"></i><span th:text="${success}"></span>
+            </div>
+            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <i class="fas fa-exclamation-circle mr-2"></i><span th:text="${error}"></span>
+            </div>
+
             <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
                 <form th:action="@{/subjects/update}" th:object="${subject}" method="post" class="space-y-6">
                     <input type="hidden" th:field="*{id}"/>
@@ -70,7 +78,7 @@
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             <div class="flex items-center">
                                 <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                                <span class="text-blue-700 font-medium">Subject Code: <span th:text="${subject.subjectCode}"></span></span>
+                                <span class="text-blue-700 font-medium">Subject Code: <span th:text="${subject.subjectCode}" class="font-mono"></span></span>
                             </div>
                         </div>
 
@@ -78,6 +86,9 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
                             <input type="text" th:field="*{name}" required
                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <div th:if="${#fields.hasErrors('name')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{name}">Name error</span>
+                            </div>
                         </div>
 
                         <div class="mt-4">
@@ -85,6 +96,9 @@
                             <input type="number" th:field="*{coefficient}" min="1" max="10" required
                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
                             <p class="text-xs text-gray-500 mt-1">Weight of the subject for weighted average calculations (1-10)</p>
+                            <div th:if="${#fields.hasErrors('coefficient')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{coefficient}">Coefficient error</span>
+                            </div>
                         </div>
 
                         <div class="mt-4">
@@ -102,14 +116,16 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
                             <select th:field="*{department}" id="department" required
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                    onchange="updateSpecialties()">
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Department</option>
                                 <option th:each="dept : ${departments}"
                                         th:value="${dept.id}"
                                         th:text="${dept.name}"
                                         th:selected="${subject.department != null and subject.department.id == dept.id}"></option>
                             </select>
+                            <div th:if="${#fields.hasErrors('department')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{department}">Department error</span>
+                            </div>
                         </div>
 
                         <div class="mt-4">
@@ -117,27 +133,36 @@
                             <select th:field="*{specialty}" id="specialty"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">General (No Specialty)</option>
-                                <option th:each="spec : ${specialties}"
-                                        th:value="${spec}"
-                                        th:text="${spec}"
-                                        th:selected="${subject.specialty == spec}"></option>
+                                <!-- Dynamic specialties will be populated -->
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Select a specialty if this subject is specific to a particular program</p>
                         </div>
 
                         <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Code</label>
-                            <input type="text" th:field="*{subjectCode}" readonly
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed">
-                            <p class="text-xs text-gray-500 mt-1">Subject code is automatically generated and cannot be modified</p>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Code *</label>
+                            <input type="text" th:field="*{subjectCode}" required
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Unique subject code - follow naming conventions</p>
+                            <div th:if="${#fields.hasErrors('subjectCode')}" class="text-red-500 text-sm mt-1">
+                                <span th:errors="*{subjectCode}">Subject code error</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" th:field="*{optional}"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Optional Subject</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-1">Check if this subject is optional (students can choose to take it)</p>
                         </div>
                     </div>
 
                     <div class="flex justify-between pt-4">
-                        <a th:href="@{/subjects}" class="text-blue-600 hover:underline flex items-center">
+                        <a th:href="@{/subjects}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition flex items-center">
                             <i class="fas fa-arrow-left mr-2"></i>Back to Subjects
                         </a>
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
                             <i class="fas fa-save mr-2"></i>Update Subject
                         </button>
                     </div>
@@ -159,6 +184,7 @@
         const departmentSelect = document.getElementById('department');
         const specialtySelect = document.getElementById('specialty');
         const departmentId = departmentSelect.value;
+        const currentSpecialty = '[[${subject.specialty}]]'; // Thymeleaf inline expression
 
         // Clear existing specialty options except the first one
         while (specialtySelect.options.length > 1) {
@@ -178,23 +204,74 @@
                 const option = document.createElement('option');
                 option.value = specialty;
                 option.textContent = specialty;
+
+                // Set selected if this was the current specialty
+                if (specialty === currentSpecialty) {
+                    option.selected = true;
+                }
+
                 specialtySelect.appendChild(option);
             });
 
-            // Set the current specialty if it exists in the new list
-            const currentSpecialty = specialtySelect.getAttribute('th:field') ?
-                specialtySelect.getAttribute('th:field').replace('*{specialty}', '') : '';
-            if (currentSpecialty && specialties.includes(currentSpecialty)) {
-                specialtySelect.value = currentSpecialty;
+            // If current specialty is not in the list, add it and select it
+            if (currentSpecialty && currentSpecialty !== '' && !specialties.includes(currentSpecialty)) {
+                const option = document.createElement('option');
+                option.value = currentSpecialty;
+                option.textContent = currentSpecialty;
+                option.selected = true;
+                specialtySelect.appendChild(option);
             }
+
         } catch (error) {
             console.error('Error fetching specialties:', error);
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize specialties based on current department
-        updateSpecialties();
+        const departmentSelect = document.getElementById('department');
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', updateSpecialties);
+
+            // Initialize specialties based on current department
+            updateSpecialties();
+        }
+
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const nameInput = this.querySelector('input[th\\:field="*{name}"]');
+            const coefficientInput = this.querySelector('input[th\\:field="*{coefficient}"]');
+            const departmentSelect = this.querySelector('select[th\\:field="*{department}"]');
+            const subjectCodeInput = this.querySelector('input[th\\:field="*{subjectCode}"]');
+
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a subject name.');
+                nameInput.focus();
+                return false;
+            }
+
+            if (!coefficientInput.value || coefficientInput.value < 1 || coefficientInput.value > 10) {
+                e.preventDefault();
+                alert('Please enter a valid coefficient between 1 and 10.');
+                coefficientInput.focus();
+                return false;
+            }
+
+            if (!departmentSelect.value) {
+                e.preventDefault();
+                alert('Please select a department.');
+                departmentSelect.focus();
+                return false;
+            }
+
+            if (!subjectCodeInput.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a subject code.');
+                subjectCodeInput.focus();
+                return false;
+            }
+        });
     });
 </script>
 </body>

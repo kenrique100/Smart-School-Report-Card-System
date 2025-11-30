@@ -1,10 +1,13 @@
 package com.akentech.schoolreport.service;
 
+import com.akentech.schoolreport.exception.EntityNotFoundException;
 import com.akentech.schoolreport.model.ClassRoom;
+import com.akentech.schoolreport.model.Department;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.StudentSubject;
 import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.model.enums.ClassLevel;
+import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.repository.StudentSubjectRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,150 +24,101 @@ public class StudentEnrollmentService {
     private final StudentSubjectRepository studentSubjectRepository;
     private final SubjectService subjectService;
 
+    private static final Map<ClassLevel, List<String>> COMPULSORY_SUBJECT_NAMES = createEnhancedCompulsoryMap();
+    private static final Map<DepartmentCode, List<String>> DEPARTMENT_CORE_SUBJECTS = createDepartmentCoreMap();
+
     public StudentEnrollmentService(StudentSubjectRepository studentSubjectRepository,
                                     SubjectService subjectService) {
         this.studentSubjectRepository = studentSubjectRepository;
         this.subjectService = subjectService;
     }
 
+    private static Map<ClassLevel, List<String>> createEnhancedCompulsoryMap() {
+        Map<ClassLevel, List<String>> compulsoryMap = new HashMap<>();
+
+        compulsoryMap.put(ClassLevel.FORM_1, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language", "O-Religious Studies"));
+        compulsoryMap.put(ClassLevel.FORM_2, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language", "O-Religious Studies"));
+        compulsoryMap.put(ClassLevel.FORM_3, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language", "O-Religious Studies"));
+
+        compulsoryMap.put(ClassLevel.FORM_4, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
+        compulsoryMap.put(ClassLevel.FORM_5, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
+
+        compulsoryMap.put(ClassLevel.LOWER_SIXTH, new ArrayList<>());
+        compulsoryMap.put(ClassLevel.UPPER_SIXTH, new ArrayList<>());
+
+        return compulsoryMap;
+    }
+
+    private static Map<DepartmentCode, List<String>> createDepartmentCoreMap() {
+        Map<DepartmentCode, List<String>> deptCoreMap = new HashMap<>();
+
+        deptCoreMap.put(DepartmentCode.SCI, Arrays.asList("O-Biology", "O-Chemistry", "O-Physics"));
+        deptCoreMap.put(DepartmentCode.ART, Arrays.asList("O-History", "O-Geography", "O-Literature in English"));
+        deptCoreMap.put(DepartmentCode.COM, Arrays.asList("O-Accounting", "O-Commerce", "O-Economics"));
+        deptCoreMap.put(DepartmentCode.TEC, Arrays.asList("Technical Drawing", "Workshop Practice", "Engineering Science"));
+        deptCoreMap.put(DepartmentCode.HE, Arrays.asList("Food and Nutrition", "Home Management", "Clothing and Textiles"));
+        deptCoreMap.put(DepartmentCode.GEN, new ArrayList<>());
+
+        return deptCoreMap;
+    }
+
+    /* ============================ CORE ENROLLMENT METHODS ============================ */
+
     public void enrollStudentInSubjects(Student student, List<Long> subjectIds) {
+        if (student == null) {
+            throw new IllegalArgumentException("Student cannot be null");
+        }
+
         log.info("Enrolling student {} in {} subjects", student.getStudentId(),
                 subjectIds != null ? subjectIds.size() : 0);
 
-        // Get current enrollments to preserve scores
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            log.warn("No subject IDs provided for student {}", student.getStudentId());
+            enrollAppropriateSubjects(student);
+            return;
+        }
+
+        validateSubjectIds(subjectIds);
         Map<Long, StudentSubject> existingEnrollments = getExistingEnrollmentsWithScores(student.getId());
 
-        // Clear existing enrollments
         studentSubjectRepository.deleteByStudentId(student.getId());
+        log.info("Cleared existing enrollments for student {}", student.getStudentId());
 
-        if (subjectIds != null && !subjectIds.isEmpty()) {
-            List<Subject> selectedSubjects = getSelectedSubjectsWithCompulsory(student, subjectIds);
+        List<Subject> selectedSubjects = getSelectedSubjectsWithAutoEnrollment(student, subjectIds);
 
-            for (Subject subject : selectedSubjects) {
-                boolean isCompulsory = isCompulsorySubject(subject, student.getClassRoom());
+        log.info("Found {} subjects to enroll student in (including auto-enrolled)", selectedSubjects.size());
 
-                // Preserve existing score if available
-                Double existingScore = null;
-                StudentSubject existingEnrollment = existingEnrollments.get(subject.getId());
-                if (existingEnrollment != null) {
-                    existingScore = existingEnrollment.getScore();
-                }
+        for (Subject subject : selectedSubjects) {
+            boolean isCompulsory = isCompulsorySubject(subject, student.getClassRoom()) ||
+                    isDepartmentCoreSubject(subject, student.getDepartment(), student.getClassRoom());
 
-                StudentSubject enrollment = StudentSubject.builder()
-                        .student(student)
-                        .subject(subject)
-                        .score(existingScore)
-                        .isCompulsory(isCompulsory)
-                        .build();
-
-                studentSubjectRepository.save(enrollment);
-                log.debug("Enrolled student {} in subject: {} (Compulsory: {})",
-                        student.getStudentId(), subject.getName(), isCompulsory);
+            Double existingScore = null;
+            StudentSubject existingEnrollment = existingEnrollments.get(subject.getId());
+            if (existingEnrollment != null) {
+                existingScore = existingEnrollment.getScore();
             }
 
-            log.info("Enrolled student {} in {} subjects", student.getStudentId(), selectedSubjects.size());
-        } else {
-            log.info("No subjects selected for student {}", student.getStudentId());
-        }
-    }
+            StudentSubject enrollment = StudentSubject.builder()
+                    .student(student)
+                    .subject(subject)
+                    .score(existingScore)
+                    .isCompulsory(isCompulsory)
+                    .build();
 
-    private Map<Long, StudentSubject> getExistingEnrollmentsWithScores(Long studentId) {
-        List<StudentSubject> existing = studentSubjectRepository.findByStudentIdWithSubject(studentId);
-        return existing.stream()
-                .collect(Collectors.toMap(
-                        ss -> ss.getSubject().getId(),
-                        ss -> ss
-                ));
-    }
-
-    private List<Subject> getSelectedSubjectsWithCompulsory(Student student, List<Long> subjectIds) {
-        Set<Subject> selectedSubjects = new HashSet<>();
-
-        // Add explicitly selected subjects
-        if (subjectIds != null && !subjectIds.isEmpty()) {
-            List<Subject> explicitlySelected = subjectService.getAllSubjects().stream()
-                    .filter(subject -> subjectIds.contains(subject.getId()))
-                    .collect(Collectors.toList());
-            selectedSubjects.addAll(explicitlySelected);
+            studentSubjectRepository.save(enrollment);
         }
 
-        // Add compulsory subjects for Forms 1-5
-        if (student.getClassRoom() != null && student.getClassRoom().getCode() != null) {
-            ClassLevel classLevel = student.getClassRoom().getCode();
-            if (classLevel.isFormLevel()) {
-                List<Subject> compulsorySubjects = getCompulsorySubjects(student, classLevel);
-                selectedSubjects.addAll(compulsorySubjects);
-            }
-        }
-
-        return new ArrayList<>(selectedSubjects);
-    }
-
-    private List<Subject> getCompulsorySubjects(Student student, ClassLevel classLevel) {
-        List<Subject> compulsorySubjects = new ArrayList<>();
-
-        // Core compulsory subjects for all forms
-        List<String> compulsoryNames = Arrays.asList("Mathematics", "English Language", "French Language");
-        List<Subject> allCompulsory = subjectService.getAllSubjects().stream()
-                .filter(subject -> compulsoryNames.contains(subject.getName()))
-                .collect(Collectors.toList());
-        compulsorySubjects.addAll(allCompulsory);
-
-        // Add department-specific compulsory subjects for Forms 4-5
-        if (classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5) {
-            if (student.getDepartment() != null) {
-                List<Subject> deptCompulsory = getDepartmentCompulsorySubjects(student);
-                compulsorySubjects.addAll(deptCompulsory);
-            }
-        }
-
-        return compulsorySubjects;
-    }
-
-    private List<Subject> getDepartmentCompulsorySubjects(Student student) {
-        List<Subject> deptSubjects = new ArrayList<>();
-        String deptCode = student.getDepartment().getCode().name();
-
-        switch (deptCode) {
-            case "SCI":
-                deptSubjects.addAll(subjectService.getAllSubjects().stream()
-                        .filter(s -> Arrays.asList("Biology", "Chemistry", "Physics").contains(s.getName()))
-                        .collect(Collectors.toList()));
-                break;
-            case "ART":
-                deptSubjects.addAll(subjectService.getAllSubjects().stream()
-                        .filter(s -> Arrays.asList("History", "Geography").contains(s.getName()))
-                        .collect(Collectors.toList()));
-                break;
-            case "COM":
-                deptSubjects.addAll(subjectService.getAllSubjects().stream()
-                        .filter(s -> Arrays.asList("Commerce", "Accounting", "Economics").contains(s.getName()))
-                        .collect(Collectors.toList()));
-                break;
-        }
-
-        return deptSubjects;
-    }
-
-    private boolean isCompulsorySubject(Subject subject, ClassRoom classRoom) {
-        if (classRoom != null && classRoom.getCode() != null) {
-            ClassLevel classLevel = classRoom.getCode();
-            if (classLevel.isFormLevel()) {
-                List<String> compulsoryNames = Arrays.asList("Mathematics", "English Language", "French Language");
-                return compulsoryNames.contains(subject.getName());
-            }
-        }
-        return false;
+        log.info("Successfully enrolled student {} in {} subjects", student.getStudentId(), selectedSubjects.size());
     }
 
     @Transactional(readOnly = true)
     public List<StudentSubject> getStudentEnrollments(Long studentId) {
+        if (studentId == null) {
+            return new ArrayList<>();
+        }
+
         List<StudentSubject> enrollments = studentSubjectRepository.findByStudentIdWithSubject(studentId);
-        log.debug("Found {} enrollments for student ID: {}", enrollments.size(), studentId);
-
-        // Sort by subject name for consistent display
         enrollments.sort(Comparator.comparing(ss -> ss.getSubject().getName()));
-
         return enrollments;
     }
 
@@ -174,46 +128,237 @@ public class StudentEnrollmentService {
         Map<String, Object> summary = new HashMap<>();
 
         int totalSubjects = enrollments.size();
-        int subjectsWithScores = (int) enrollments.stream()
-                .filter(ss -> ss.getScore() != null)
-                .count();
+        int subjectsWithScores = (int) enrollments.stream().filter(ss -> ss.getScore() != null).count();
         int compulsorySubjects = (int) enrollments.stream()
-                .filter(StudentSubject::getIsCompulsory)
-                .count();
+                .filter(ss -> ss.getIsCompulsory() != null && ss.getIsCompulsory()).count();
 
-        // Calculate average score
         OptionalDouble averageScore = enrollments.stream()
                 .filter(ss -> ss.getScore() != null)
                 .mapToDouble(StudentSubject::getScore)
                 .average();
 
+        double totalCoefficient = enrollments.stream()
+                .mapToDouble(ss -> {
+                    Subject subject = ss.getSubject();
+                    return subject != null && subject.getCoefficient() != null ? subject.getCoefficient() : 1.0;
+                })
+                .sum();
+
+        double weightedSum = enrollments.stream()
+                .filter(ss -> ss.getScore() != null)
+                .mapToDouble(ss -> {
+                    Subject subject = ss.getSubject();
+                    double coefficient = subject != null && subject.getCoefficient() != null ? subject.getCoefficient() : 1.0;
+                    return ss.getScore() * coefficient;
+                })
+                .sum();
+
+        double weightedAverage = totalCoefficient > 0 ? weightedSum / totalCoefficient : 0.0;
+
         summary.put("totalSubjects", totalSubjects);
         summary.put("subjectsWithScores", subjectsWithScores);
         summary.put("compulsorySubjects", compulsorySubjects);
-        summary.put("averageScore", averageScore.isPresent() ?
-                Math.round(averageScore.getAsDouble() * 100.0) / 100.0 : 0.0);
-        summary.put("studentSubjects", enrollments); // CRITICAL: Include the actual list
+        summary.put("averageScore", averageScore.isPresent() ? Math.round(averageScore.getAsDouble() * 100.0) / 100.0 : 0.0);
+        summary.put("weightedAverage", Math.round(weightedAverage * 100.0) / 100.0);
+        summary.put("totalCoefficient", Math.round(totalCoefficient * 100.0) / 100.0);
+        summary.put("studentSubjects", enrollments);
 
-        log.debug("Student enrollment summary for ID {}: {}", studentId, summary);
         return summary;
     }
 
-    // NEW: Method to add individual subject enrollment
-    public StudentSubject enrollStudentInSubject(Student student, Subject subject) {
-        boolean isCompulsory = isCompulsorySubject(subject, student.getClassRoom());
+    public void updateStudentScore(Long studentId, Long subjectId, Double score) {
+        if (studentId == null || subjectId == null) {
+            throw new IllegalArgumentException("Student ID and subject ID cannot be null");
+        }
 
-        StudentSubject enrollment = StudentSubject.builder()
-                .student(student)
-                .subject(subject)
-                .isCompulsory(isCompulsory)
-                .build();
+        if (score != null && (score < 0 || score > 100)) {
+            throw new IllegalArgumentException("Score must be between 0 and 100");
+        }
 
-        return studentSubjectRepository.save(enrollment);
+        StudentSubject enrollment = studentSubjectRepository
+                .findByStudentIdAndSubjectId(studentId, subjectId)
+                .orElseThrow(() -> new EntityNotFoundException("Student enrollment",
+                        "studentId: " + studentId + ", subjectId: " + subjectId));
+
+        enrollment.setScore(score);
+        studentSubjectRepository.save(enrollment);
     }
 
-    // NEW: Method to remove individual subject enrollment
-    public void removeStudentFromSubject(Long studentId, Long subjectId) {
-        studentSubjectRepository.findByStudentIdAndSubjectId(studentId, subjectId)
-                .ifPresent(studentSubjectRepository::delete);
+    @Transactional(readOnly = true)
+    public List<Subject> getAvailableSubjectsForStudent(Student student) {
+        if (student == null) {
+            return new ArrayList<>();
+        }
+
+        String classCode = student.getClassRoom() != null ? student.getClassRoom().getCode().name() : null;
+        Long departmentId = student.getDepartment() != null ? student.getDepartment().getId() : null;
+        String specialty = student.getSpecialty();
+
+        return subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
+    }
+
+    /* ============================ PRIVATE HELPER METHODS ============================ */
+
+    private void enrollAppropriateSubjects(Student student) {
+        List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(student);
+
+        if (appropriateSubjects.isEmpty()) {
+            log.warn("No appropriate subjects found for student {}", student.getStudentId());
+            return;
+        }
+
+        log.info("Auto-enrolling student {} in {} appropriate subjects",
+                student.getStudentId(), appropriateSubjects.size());
+
+        for (Subject subject : appropriateSubjects) {
+            boolean isCompulsory = isCompulsorySubject(subject, student.getClassRoom()) ||
+                    isDepartmentCoreSubject(subject, student.getDepartment(), student.getClassRoom());
+
+            StudentSubject enrollment = StudentSubject.builder()
+                    .student(student)
+                    .subject(subject)
+                    .isCompulsory(isCompulsory)
+                    .build();
+
+            studentSubjectRepository.save(enrollment);
+        }
+    }
+
+    private List<Subject> getAppropriateSubjectsForStudent(Student student) {
+        if (student.getClassRoom() == null || student.getDepartment() == null) {
+            return new ArrayList<>();
+        }
+
+        String classCode = student.getClassRoom().getCode().name();
+        Long departmentId = student.getDepartment().getId();
+        String specialty = student.getSpecialty();
+
+        Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
+                classCode, departmentId, specialty);
+
+        List<Subject> appropriateSubjects = new ArrayList<>();
+        appropriateSubjects.addAll(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
+
+        ClassLevel classLevel = student.getClassRoom().getCode();
+        if ((classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5 || classLevel.isSixthForm())) {
+            appropriateSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
+        }
+
+        if (classLevel.isSixthForm() && specialty != null && !specialty.trim().isEmpty()) {
+            appropriateSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
+        }
+
+        return appropriateSubjects;
+    }
+
+    private List<Subject> getSelectedSubjectsWithAutoEnrollment(Student student, List<Long> subjectIds) {
+        Set<Subject> selectedSubjects = new HashSet<>();
+
+        if (subjectIds != null && !subjectIds.isEmpty()) {
+            List<Subject> explicitlySelected = subjectService.getSubjectsByIds(subjectIds).stream()
+                    .filter(subject -> isSubjectAppropriateForStudent(subject, student))
+                    .toList();
+            selectedSubjects.addAll(explicitlySelected);
+        }
+
+        List<Subject> autoEnrolledSubjects = getAppropriateSubjectsForStudent(student);
+        selectedSubjects.addAll(autoEnrolledSubjects);
+
+        return new ArrayList<>(selectedSubjects);
+    }
+
+    private boolean isCompulsorySubject(Subject subject, ClassRoom classRoom) {
+        if (classRoom == null || classRoom.getCode() == null || subject == null) {
+            return false;
+        }
+
+        ClassLevel classLevel = classRoom.getCode();
+        List<String> compulsoryNames = COMPULSORY_SUBJECT_NAMES.get(classLevel);
+        return compulsoryNames != null && compulsoryNames.contains(subject.getName());
+    }
+
+    private boolean isDepartmentCoreSubject(Subject subject, Department department, ClassRoom classRoom) {
+        if (department == null || subject.getDepartment() == null || classRoom == null) {
+            return false;
+        }
+
+        ClassLevel classLevel = classRoom.getCode();
+        DepartmentCode deptCode = department.getCode();
+
+        if (classLevel != ClassLevel.FORM_4 && classLevel != ClassLevel.FORM_5) {
+            return false;
+        }
+
+        List<String> coreSubjects = DEPARTMENT_CORE_SUBJECTS.get(deptCode);
+        return coreSubjects != null && coreSubjects.contains(subject.getName()) &&
+                subject.getDepartment().getId().equals(department.getId());
+    }
+
+    private boolean isSubjectAppropriateForStudent(Subject subject, Student student) {
+        if (student == null || student.getClassRoom() == null || subject == null) {
+            return false;
+        }
+
+        ClassLevel classLevel = student.getClassRoom().getCode();
+        if (classLevel == null) {
+            return false;
+        }
+
+        String subjectName = subject.getName();
+        if (subjectName == null) {
+            return false;
+        }
+
+        if (classLevel.isSixthForm()) {
+            boolean isAdvanced = subjectName.startsWith("A-") ||
+                    (!subjectName.startsWith("O-") &&
+                            subject.getDepartment() != null &&
+                            !subject.getDepartment().getCode().name().equals("GEN"));
+
+            if (!isAdvanced && subject.getDepartment() != null &&
+                    subject.getDepartment().getCode() == DepartmentCode.GEN &&
+                    (subjectName.equals("O-English Language") || subjectName.equals("O-French Language"))) {
+                isAdvanced = true;
+            }
+
+            return isAdvanced;
+        } else {
+            return subjectName.startsWith("O-") ||
+                    (!subjectName.startsWith("A-") &&
+                            (subject.getDepartment() == null ||
+                                    subject.getDepartment().getCode() == DepartmentCode.GEN));
+        }
+    }
+
+    private void validateSubjectIds(List<Long> subjectIds) {
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            return;
+        }
+
+        List<Subject> existingSubjects = subjectService.getSubjectsByIds(subjectIds);
+        Set<Long> existingSubjectIds = existingSubjects.stream()
+                .map(Subject::getId)
+                .collect(Collectors.toSet());
+
+        List<Long> invalidSubjectIds = subjectIds.stream()
+                .filter(id -> !existingSubjectIds.contains(id))
+                .toList();
+
+        if (!invalidSubjectIds.isEmpty()) {
+            throw new EntityNotFoundException("Subjects", "IDs: " + invalidSubjectIds);
+        }
+    }
+
+    private Map<Long, StudentSubject> getExistingEnrollmentsWithScores(Long studentId) {
+        if (studentId == null) {
+            return new HashMap<>();
+        }
+
+        List<StudentSubject> existing = studentSubjectRepository.findByStudentIdWithSubject(studentId);
+        return existing.stream()
+                .collect(Collectors.toMap(
+                        ss -> ss.getSubject().getId(),
+                        ss -> ss
+                ));
     }
 }

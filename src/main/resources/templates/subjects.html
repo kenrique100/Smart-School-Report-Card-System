@@ -55,7 +55,7 @@
         <div class="bg-white shadow">
             <div class="px-6 py-4 flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-gray-800">Subject Management</h1>
-                <a th:href="@{/subjects/add}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <a th:href="@{/subjects/add}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
                     <i class="fas fa-plus mr-2"></i>Add New Subject
                 </a>
             </div>
@@ -64,58 +64,122 @@
         <main class="p-6">
             <!-- Success Messages -->
             <div th:if="${param.success}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                Subject added successfully!
+                <i class="fas fa-check-circle mr-2"></i>Subject added successfully!
             </div>
             <div th:if="${param.updated}" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
-                Subject updated successfully!
+                <i class="fas fa-check-circle mr-2"></i>Subject updated successfully!
             </div>
             <div th:if="${param.deleted}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                Subject deleted successfully!
+                <i class="fas fa-check-circle mr-2"></i>Subject deleted successfully!
             </div>
             <div th:if="${param.error}" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
                 <span th:if="${param.error == 'notfound'}">Subject not found!</span>
+                <span th:if="${param.error == 'deletefailed'}">Failed to delete subject. It may be in use by students.</span>
             </div>
 
-            <!-- Quick Add Form -->
-            <div class="bg-white rounded-lg shadow mb-8">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Total Subjects</p>
+                            <p class="text-2xl font-bold text-gray-800" th:text="${totalSubjects}">0</p>
+                        </div>
+                        <i class="fas fa-book text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Ordinary Level</p>
+                            <p class="text-2xl font-bold text-gray-800" th:text="${ordinarySubjects}">0</p>
+                        </div>
+                        <i class="fas fa-graduation-cap text-green-500 text-xl"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Advanced Level</p>
+                            <p class="text-2xl font-bold text-gray-800" th:text="${advancedSubjects}">0</p>
+                        </div>
+                        <i class="fas fa-user-graduate text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Optional Subjects</p>
+                            <p class="text-2xl font-bold text-gray-800" th:text="${optionalSubjects}">0</p>
+                        </div>
+                        <i class="fas fa-check-circle text-yellow-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-lg shadow mb-6 p-4">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <input type="text" id="searchInput" placeholder="Search subjects by name or code..."
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="departmentFilter" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Departments</option>
+                            <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                        </select>
+                        <select id="specialtyFilter" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Specialties</option>
+                            <option th:each="spec : ${allSpecialties}" th:value="${spec}" th:text="${spec}"></option>
+                        </select>
+                        <button onclick="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-filter mr-2"></i>Filter
+                        </button>
+                        <button onclick="clearFilters()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
+                            <i class="fas fa-times mr-2"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Grouped Subjects View -->
             <div class="mb-8">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Subjects by Department & Specialty</h2>
 
-                <div th:if="${groupedSubjects != null and !groupedSubjects.empty}">
-                    <div th:each="departmentEntry : ${groupedSubjects}" class="mb-6">
-                        <div class="bg-blue-600 text-white px-4 py-3 rounded-t-lg">
-                            <h3 class="text-lg font-semibold" th:text="${departmentEntry.key}">Department Name</h3>
+                <div th:if="${groupedSubjects != null and !groupedSubjects.empty}" class="space-y-6">
+                    <div th:each="group : ${groupedSubjects}" class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="bg-blue-600 text-white px-4 py-3">
+                            <h3 class="text-lg font-semibold" th:text="${group.key}">Department :: Specialty</h3>
                         </div>
 
-                        <div th:each="specialtyEntry : ${departmentEntry.value}" class="bg-white border border-gray-200">
-                            <div class="bg-gray-100 px-4 py-2 border-b">
-                                <h4 class="font-medium text-gray-700" th:text="${specialtyEntry.key}">Specialty</h4>
-                            </div>
-
-                            <div class="p-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div th:each="subject : ${specialtyEntry.value}"
-                                         class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <h5 class="font-semibold text-gray-800" th:text="${subject.name}">Subject Name</h5>
+                        <div class="p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div th:each="subject : ${group.value}"
+                                     class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow subject-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h5 class="font-semibold text-gray-800" th:text="${subject.name}">Subject Name</h5>
+                                        <div class="flex flex-col items-end space-y-1">
                                             <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                                                  th:text="${subject.coefficient}">Coefficient</span>
+                                                  th:text="'Coef: ' + ${subject.coefficient}">Coefficient</span>
+                                            <span th:if="${subject.optional}"
+                                                  class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Optional</span>
                                         </div>
-                                        <p class="text-sm text-gray-600 mb-2" th:text="${subject.subjectCode}">Subject Code</p>
-                                        <p class="text-xs text-gray-500 mb-3" th:text="${subject.description ?: 'No description'}">Description</p>
-                                        <div class="flex space-x-2">
-                                            <a th:href="@{'/subjects/edit/' + ${subject.id}}"
-                                               class="text-blue-600 hover:text-blue-800 text-sm">
-                                                <i class="fas fa-edit mr-1"></i> Edit
-                                            </a>
-                                            <a th:href="@{'/subjects/delete/' + ${subject.id}}"
-                                               th:attr="data-name=${subject.name}"
-                                               class="text-red-600 hover:text-red-800 text-sm delete-link">
-                                                <i class="fas fa-trash mr-1"></i> Delete
-                                            </a>
-                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2 font-mono" th:text="${subject.subjectCode}">Subject Code</p>
+                                    <p class="text-xs text-gray-500 mb-3 line-clamp-2"
+                                       th:text="${subject.description ?: 'No description available'}">Description</p>
+                                    <div class="flex space-x-2 pt-2 border-t border-gray-100">
+                                        <a th:href="@{'/subjects/edit/' + ${subject.id}}"
+                                           class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                        <a th:href="@{'/subjects/delete/' + ${subject.id}}"
+                                           th:attr="data-name=${subject.name}"
+                                           class="text-red-600 hover:text-red-800 text-sm delete-link flex items-center">
+                                            <i class="fas fa-trash mr-1"></i> Delete
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -123,51 +187,70 @@
                     </div>
                 </div>
 
-                <div th:if="${groupedSubjects == null or groupedSubjects.empty}" class="bg-white rounded-lg shadow p-8 text-center">
+                <div th:if="${groupedSubjects == null or groupedSubjects.empty}"
+                     class="bg-white rounded-lg shadow p-8 text-center">
                     <i class="fas fa-book text-gray-400 text-4xl mb-4"></i>
                     <h3 class="text-lg font-semibold text-gray-600 mb-2">No Subjects Found</h3>
-                    <p class="text-gray-500">Get started by adding your first subject using the form above.</p>
+                    <p class="text-gray-500 mb-4">Get started by adding your first subject.</p>
+                    <a th:href="@{/subjects/add}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add New Subject
+                    </a>
                 </div>
             </div>
 
             <!-- All Subjects Table -->
             <div class="bg-white rounded-lg shadow">
                 <div class="p-6">
-                    <h2 class="text-lg font-bold text-gray-800 mb-4">All Subjects</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">All Subjects</h2>
+                        <div class="text-sm text-gray-600">
+                            Total: <span th:text="${subjects != null ? subjects.size() : 0}">0</span> subjects
+                        </div>
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 font-medium">Subject Code</th>
-                                <th class="px-4 py-2 font-medium">Name</th>
-                                <th class="px-4 py-2 font-medium">Coefficient</th>
-                                <th class="px-4 py-2 font-medium">Department</th>
-                                <th class="px-4 py-2 font-medium">Specialty</th>
-                                <th class="px-4 py-2 font-medium">Actions</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Code</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Name</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Coefficient</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Department</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Specialty</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Type</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Actions</th>
                             </tr>
                             </thead>
-                            <tbody class="divide-y">
-                            <tr th:each="subject : ${subjects}" class="hover:bg-gray-50">
-                                <td class="px-4 py-2 font-mono text-blue-600" th:text="${subject.subjectCode}">MATH-GEN</td>
-                                <td class="px-4 py-2 font-medium" th:text="${subject.name}">Mathematics</td>
-                                <td class="px-4 py-2" th:text="${subject.coefficient}">4</td>
-                                <td class="px-4 py-2" th:text="${subject.department?.name ?: 'N/A'}">Sciences</td>
-                                <td class="px-4 py-2">
+                            <tbody class="divide-y divide-gray-200">
+                            <tr th:each="subject : ${subjects}" class="hover:bg-gray-50 subject-row">
+                                <td class="px-4 py-3 font-mono text-blue-600" th:text="${subject.subjectCode}">MATH-GEN</td>
+                                <td class="px-4 py-3 font-medium" th:text="${subject.name}">Mathematics</td>
+                                <td class="px-4 py-3 text-center" th:text="${subject.coefficient}">4</td>
+                                <td class="px-4 py-3">
+                                    <span th:if="${subject.department}" th:text="${subject.department.name}">Sciences</span>
+                                    <span th:unless="${subject.department}" class="text-gray-500">N/A</span>
+                                </td>
+                                <td class="px-4 py-3">
                                     <span th:if="${subject.specialty}"
                                           class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded"
                                           th:text="${subject.specialty}">S1</span>
                                     <span th:unless="${subject.specialty}" class="text-gray-500 text-xs">General</span>
                                 </td>
-                                <td class="px-4 py-2">
+                                <td class="px-4 py-3">
+                                    <span th:if="${subject.optional}"
+                                          class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Optional</span>
+                                    <span th:unless="${subject.optional}"
+                                          class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Compulsory</span>
+                                </td>
+                                <td class="px-4 py-3">
                                     <div class="flex space-x-2">
                                         <a th:href="@{'/subjects/edit/' + ${subject.id}}"
-                                           class="text-blue-600 hover:text-blue-800 flex items-center">
+                                           class="text-blue-600 hover:text-blue-800 flex items-center text-sm">
                                             <i class="fas fa-edit mr-1"></i> Edit
                                         </a>
                                         <a th:href="@{'/subjects/delete/' + ${subject.id}}"
                                            th:attr="data-name=${subject.name}"
-                                           class="text-red-600 hover:text-red-800 delete-link flex items-center">
+                                           class="text-red-600 hover:text-red-800 delete-link flex items-center text-sm">
                                             <i class="fas fa-trash mr-1"></i> Delete
                                         </a>
                                     </div>
@@ -177,10 +260,9 @@
                         </table>
                     </div>
 
-                    <div class="flex justify-between items-center mt-4">
-                        <div class="text-sm text-gray-600">
-                            Showing <span th:text="${subjects != null ? subjects.size() : 0}">0</span> subjects
-                        </div>
+                    <div th:if="${subjects == null or subjects.empty}" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-3xl mb-2"></i>
+                        <p>No subjects found</p>
                     </div>
                 </div>
             </div>
@@ -202,35 +284,87 @@
         deleteLinks.forEach(link => {
             link.addEventListener("click", function (e) {
                 const name = this.getAttribute("data-name");
-                if (!confirm("Are you sure you want to delete " + name + "?")) {
+                if (!confirm("Are you sure you want to delete '" + name + "'? This action cannot be undone.")) {
                     e.preventDefault();
                 }
             });
         });
 
-        // Quick form validation
-        const quickForm = document.querySelector('form');
-        if (quickForm) {
-            quickForm.addEventListener('submit', function(e) {
-                const nameInput = this.querySelector('input[th\\:field="*{name}"]');
-                const coefficientInput = this.querySelector('input[th\\:field="*{coefficient}"]');
-
-                if (!nameInput.value.trim()) {
-                    e.preventDefault();
-                    alert('Please enter a subject name.');
-                    nameInput.focus();
-                    return false;
-                }
-
-                if (!coefficientInput.value || coefficientInput.value < 1) {
-                    e.preventDefault();
-                    alert('Please enter a valid coefficient (minimum 1).');
-                    coefficientInput.focus();
-                    return false;
-                }
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                filterSubjects();
             });
         }
+
+        // Initialize filters from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const departmentFilter = document.getElementById('departmentFilter');
+        const specialtyFilter = document.getElementById('specialtyFilter');
+
+        if (urlParams.has('department')) {
+            departmentFilter.value = urlParams.get('department');
+        }
+        if (urlParams.has('specialty')) {
+            specialtyFilter.value = urlParams.get('specialty');
+        }
     });
+
+    function filterSubjects() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const subjectCards = document.querySelectorAll('.subject-card');
+        const subjectRows = document.querySelectorAll('.subject-row');
+
+        // Filter cards in grouped view
+        subjectCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Filter rows in table view
+        subjectRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function applyFilters() {
+        const department = document.getElementById('departmentFilter').value;
+        const specialty = document.getElementById('specialtyFilter').value;
+
+        let url = '/subjects?';
+        if (department) url += 'department=' + department + '&';
+        if (specialty) url += 'specialty=' + specialty + '&';
+
+        // Remove trailing & or ? if no params
+        if (url.endsWith('&') || url.endsWith('?')) {
+            url = url.slice(0, -1);
+        }
+
+        window.location.href = url;
+    }
+
+    function clearFilters() {
+        window.location.href = '/subjects';
+    }
 </script>
+
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
 </body>
 </html>

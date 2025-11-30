@@ -18,22 +18,22 @@ public class Subject {
     @Column(nullable = false)
     private String name;
 
-    /**
-     * Coefficient / weight for subject when computing weighted average
-     */
     @Column(nullable = false)
-    private Integer coefficient = 1;
+    private Integer coefficient;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 
-    @Column(name = "specialty")
-    private String specialty; // Can be null for general subjects
+    private String specialty;
 
-    @Column(name = "subject_code", unique = true)
-    private String subjectCode; // Auto-generated code
+    @Column(name = "subject_code", unique = true, nullable = false)
+    private String subjectCode;
 
-    @Column(name = "description", length = 500)
+    @Column(length = 500)
     private String description;
+
+    @Builder.Default
+    @Column(name = "is_optional")
+    private Boolean optional = false;
 }

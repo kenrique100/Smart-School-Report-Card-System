@@ -95,7 +95,7 @@
                             <tr th:each="teacher : ${teachers}" class="hover:bg-gray-50">
                                 <td class="px-4 py-2 font-mono text-blue-600" th:text="${teacher.teacherId}">TC1000020000</td>
                                 <td class="px-4 py-2 font-medium" th:text="${teacher.firstName + ' ' + teacher.lastName}">Nimal Soyza</td>
-                                <td class="px-4 py-2" th:text="${teacher.gender}">Male</td>
+                                <td class="px-4 py-2" th:text="${teacher.gender?.displayName}">Male</td>
                                 <td class="px-4 py-2" th:text="${teacher.contact ?: '-'}">0339988554</td>
                                 <td class="px-4 py-2">
                                     <span th:if="${teacher.subjects != null && !teacher.subjects.empty}"

@@ -1,7 +1,5 @@
 package com.akentech.schoolreport.exception;
 
-// package com.akentech.schoolreport.exception;
-
 public class EntityNotFoundException extends SchoolManagementException {
     public EntityNotFoundException(String entityName, Long id) {
         super(String.format("%s not found with id: %d", entityName, id));

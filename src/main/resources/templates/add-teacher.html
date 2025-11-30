@@ -100,11 +100,13 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
                                 <div class="flex space-x-6">
                                     <label class="inline-flex items-center">
-                                        <input type="radio" th:field="*{gender}" value="Male" class="form-radio text-blue-600" required>
+                                        <input type="radio" name="gender" value="MALE" class="form-radio text-blue-600" required
+                                               th:checked="${teacher?.gender?.name() == 'MALE'}">
                                         <span class="ml-2">Male</span>
                                     </label>
                                     <label class="inline-flex items-center">
-                                        <input type="radio" th:field="*{gender}" value="Female" class="form-radio text-blue-600" required>
+                                        <input type="radio" name="gender" value="FEMALE" class="form-radio text-blue-600" required
+                                               th:checked="${teacher?.gender?.name() == 'FEMALE'}">
                                         <span class="ml-2">Female</span>
                                     </label>
                                 </div>
@@ -115,7 +117,6 @@
                     <!-- Contact Information -->
                     <div class="border-b pb-4">
                         <h2 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
-
 
                         <div class="mt-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>

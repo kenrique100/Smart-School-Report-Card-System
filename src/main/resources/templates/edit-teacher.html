@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
 </head>
 <body class="bg-gray-50">
 <div class="flex">
-    <!-- Sidebar -->
+    <!-- Sidebar (same as add-teacher.html) -->
     <div class="w-64 bg-blue-800 text-white min-h-screen">
         <div class="p-4">
             <h1 class="text-xl font-bold">School Management</h1>
@@ -61,49 +61,43 @@
         <main class="p-6">
             <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
                 <form th:action="@{/teachers/update}" th:object="${teacher}" method="post" class="space-y-6">
-                    <input type="hidden" th:field="*{id}"/>
-                    <input type="hidden" th:field="*{teacherId}"/>
+                    <input type="hidden" th:field="*{id}" />
+                    <input type="hidden" th:field="*{teacherId}" />
 
                     <!-- Personal Information -->
                     <div class="border-b pb-4">
                         <h2 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h2>
 
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                                <span class="text-blue-700 font-medium">Teacher ID: <span th:text="${teacher.teacherId}"></span></span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Teacher ID</label>
-                            <input type="text" th:field="*{teacherId}" readonly
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed">
-                            <p class="text-xs text-gray-500 mt-1">Teacher ID cannot be modified</p>
-                        </div>
-
                         <div class="grid grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
                                 <input type="text" th:field="*{firstName}" required
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter Teacher First Name">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
                                 <input type="text" th:field="*{lastName}" required
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter Teacher Last Name">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
-                                <select th:field="*{gender}" required
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                </select>
+                                <div class="flex space-x-6">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="gender" value="MALE" class="form-radio text-blue-600" required
+                                               th:checked="${teacher?.gender?.name() == 'MALE'}">
+                                        <span class="ml-2">Male</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="gender" value="FEMALE" class="form-radio text-blue-600" required
+                                               th:checked="${teacher?.gender?.name() == 'FEMALE'}">
+                                        <span class="ml-2">Female</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -111,10 +105,12 @@
                     <!-- Contact Information -->
                     <div class="border-b pb-4">
                         <h2 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
+
                         <div class="mt-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
                             <input type="text" th:field="*{contact}"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter Teacher Contact No">
                         </div>
                     </div>
 
@@ -128,7 +124,7 @@
                                 <input type="checkbox"
                                        name="subjectIds"
                                        th:value="${subject.id}"
-                                       th:checked="${teacher.subjects != null and teacher.subjects.contains(subject)}"
+                                       th:checked="${teacher.subjects.?[id == subject.id].size() > 0}"
                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <label class="ml-2 text-sm text-gray-700" th:text="${subject.name}"></label>
                             </div>
@@ -145,7 +141,7 @@
                                 <input type="checkbox"
                                        name="classroomIds"
                                        th:value="${classroom.id}"
-                                       th:checked="${teacher.classrooms != null and teacher.classrooms.contains(classroom)}"
+                                       th:checked="${teacher.classrooms.?[id == classroom.id].size() > 0}"
                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <label class="ml-2 text-sm text-gray-700" th:text="${classroom.name}"></label>
                             </div>
@@ -182,37 +178,5 @@
         </footer>
     </div>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Select all checkboxes functionality
-        const selectAllButtons = document.querySelectorAll('.select-all');
-        selectAllButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const group = this.getAttribute('data-group');
-                const checkboxes = document.querySelectorAll(`input[name="${group}"]`);
-                const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = !allChecked;
-                });
-            });
-        });
-
-        // Form validation
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(event) {
-            const firstName = document.getElementById('firstName').value.trim();
-            const lastName = document.getElementById('lastName').value.trim();
-            const gender = document.getElementById('gender').value;
-
-            if (!firstName || !lastName || !gender) {
-                event.preventDefault();
-                alert('Please fill in all required fields (First Name, Last Name, and Gender).');
-                return false;
-            }
-        });
-    });
-</script>
 </body>
 </html>
