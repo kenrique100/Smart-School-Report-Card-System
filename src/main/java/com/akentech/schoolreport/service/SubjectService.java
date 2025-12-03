@@ -6,6 +6,7 @@ import com.akentech.schoolreport.model.Department;
 import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
+import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.repository.SubjectRepository;
 import com.akentech.schoolreport.util.IdGenerationService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,14 +25,16 @@ public class SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final IdGenerationService idGenerationService;
+    private final DepartmentRepository departmentRepository;
 
     // Enhanced compulsory subject definitions
     private final Map<ClassLevel, List<String>> COMPULSORY_SUBJECT_NAMES = createCompulsorySubjectMap();
     private final Map<DepartmentCode, List<String>> DEPARTMENT_CORE_SUBJECTS = createDepartmentCoreSubjects();
 
-    public SubjectService(SubjectRepository subjectRepository, IdGenerationService idGenerationService) {
+    public SubjectService(SubjectRepository subjectRepository, IdGenerationService idGenerationService, DepartmentRepository departmentRepository) {
         this.subjectRepository = subjectRepository;
         this.idGenerationService = idGenerationService;
+        this.departmentRepository = departmentRepository;
     }
 
     private Map<ClassLevel, List<String>> createCompulsorySubjectMap() {
@@ -105,6 +108,13 @@ public class SubjectService {
         log.info("📊 Total subjects in system: {}", allSubjects.size());
         log.info("🎓 Class level: {}, Is Sixth Form: {}", classLevel, isSixthForm);
 
+        // Get department info for debugging
+        Department department = null;
+        if (departmentId != null) {
+            department = departmentRepository.findById(departmentId).orElse(null);
+            log.info("Requested department: {} (ID: {})", department != null ? department.getName() : "Not Found", departmentId);
+        }
+
         for (Subject subject : allSubjects) {
             boolean isForClassLevel = isSubjectForClassLevel(subject, classLevel, isSixthForm);
             boolean isForDepartment = isSubjectForDepartment(subject, departmentId);
@@ -112,27 +122,21 @@ public class SubjectService {
 
             if (isForClassLevel && isForDepartment && isForSpecialty) {
                 filteredSubjects.add(subject);
-                log.debug("✅ INCLUDED: {} (Dept: {}, Specialty: {})",
+                log.debug("✅ INCLUDED: {} (Dept: {}, Specialty: {}, A-Level: {}, O-Level: {})",
                         subject.getName(),
                         subject.getDepartment() != null ? subject.getDepartment().getName() : "None",
-                        subject.getSpecialty());
+                        subject.getSpecialty(),
+                        subject.getName().startsWith("A-"),
+                        subject.getName().startsWith("O-"));
             } else {
-                log.debug("❌ EXCLUDED: {} - ClassLevel: {}, Department: {}, Specialty: {}",
-                        subject.getName(), isForClassLevel, isForDepartment, isForSpecialty);
+                log.debug("❌ EXCLUDED: {} - ClassLevel: {}, Department: {}, Specialty: {}, DeptName: {}",
+                        subject.getName(), isForClassLevel, isForDepartment, isForSpecialty,
+                        subject.getDepartment() != null ? subject.getDepartment().getName() : "None");
             }
         }
 
         log.info("📦 Filtered {} subjects for class: {}, department: {}, specialty: {}",
                 filteredSubjects.size(), classCode, departmentId, specialty);
-
-        // Debug log the actual subjects being returned
-        filteredSubjects.forEach(subject ->
-                log.debug("📚 Returning subject: {} (Dept: {}, Specialty: {}, Optional: {})",
-                        subject.getName(),
-                        subject.getDepartment() != null ? subject.getDepartment().getName() : "None",
-                        subject.getSpecialty(),
-                        subject.getOptional())
-        );
 
         return filteredSubjects;
     }
@@ -262,34 +266,6 @@ public class SubjectService {
         return allSubjects;
     }
 
-    public List<Subject> createSubjectsIfNotExist(List<Subject> subjects) {
-        log.info("Creating {} subjects if they don't exist", subjects.size());
-
-        List<Subject> subjectsToCreate = new ArrayList<>();
-
-        for (Subject subject : subjects) {
-            // Check if subject with same code already exists
-            if (subject.getSubjectCode() != null &&
-                    subjectRepository.existsBySubjectCode(subject.getSubjectCode())) {
-                log.debug("Subject with code {} already exists, skipping", subject.getSubjectCode());
-                continue;
-            }
-
-            validateSubject(subject);
-            if (subject.getSubjectCode() == null || subject.getSubjectCode().trim().isEmpty()) {
-                subject.setSubjectCode(idGenerationService.generateSubjectCode(subject));
-            }
-            if (subject.getOptional() == null) {
-                subject.setOptional(false);
-            }
-            subjectsToCreate.add(subject);
-        }
-
-        List<Subject> savedSubjects = subjectRepository.saveAll(subjectsToCreate);
-        log.info("Created {} new subjects", savedSubjects.size());
-        return savedSubjects;
-    }
-
     public Subject updateSubject(Long id, Subject subjectDetails) {
         log.info("Updating subject with id: {}", id);
         Subject existing = getSubjectByIdOrThrow(id);
@@ -317,11 +293,6 @@ public class SubjectService {
     /* ============================ UTILITY METHODS ============================ */
 
     @Transactional(readOnly = true)
-    public List<Subject> getSubjectsByDepartment(Long departmentId) {
-        return subjectRepository.findByDepartmentId(departmentId);
-    }
-
-    @Transactional(readOnly = true)
     public List<String> getSpecialtiesByDepartment(Long departmentId) {
         List<Subject> subjects = subjectRepository.findByDepartmentId(departmentId);
         return subjects.stream()
@@ -342,21 +313,17 @@ public class SubjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<Subject> findSubjectsByName(List<String> subjectNames) {
-        if (subjectNames == null || subjectNames.isEmpty()) {
-            return List.of();
-        }
-        return subjectRepository.findByNameIn(subjectNames);
-    }
-
-    @Transactional(readOnly = true)
     public long getSubjectCount() {
-        return subjectRepository.count();
+        long count = subjectRepository.count();
+        log.info("Total subjects in system: {}", count);
+        return count;
     }
 
     @Transactional(readOnly = true)
     public List<String> getAllSpecialties() {
-        return subjectRepository.findDistinctSpecialties();
+        List<String> specialties = subjectRepository.findDistinctSpecialties();
+        log.info("Found {} distinct specialties in system", specialties.size());
+        return specialties;
     }
 
     /* ============================ PRIVATE HELPER METHODS ============================ */
@@ -388,12 +355,15 @@ public class SubjectService {
             return false;
         }
 
-        // For Sixth Form, include A-Level subjects that match the specialty
-        // or subjects that have the specialty explicitly set
-        boolean isAdvancedLevel = subject.getName().startsWith("A-");
-        boolean matchesSpecialty = specialty.equals(subject.getSpecialty());
+        // For Sixth Form, include subjects that match the specialty
+        // Handle comma-separated specialties
+        if (subject.getSpecialty() == null || subject.getSpecialty().trim().isEmpty()) {
+            return false;
+        }
 
-        return isAdvancedLevel && matchesSpecialty;
+        List<String> subjectSpecialties = Arrays.asList(subject.getSpecialty().split(","));
+        return subjectSpecialties.stream()
+                .anyMatch(spec -> spec.trim().equalsIgnoreCase(specialty.trim()));
     }
 
     private boolean isSubjectForClassLevel(Subject subject, ClassLevel classLevel, boolean isSixthForm) {
@@ -405,53 +375,48 @@ public class SubjectService {
 
         // FORMS 1-5: Allow O-Level subjects and general subjects
         if (!isSixthForm) {
-            return isSubjectForForms1to5(subjectName, subject);
+            // Forms 1-5 should see O-Level subjects and general subjects
+            return subjectName.startsWith("O-") ||
+                    (!subjectName.startsWith("A-") &&
+                            subject.getDepartment() != null &&
+                            subject.getDepartment().getCode() == DepartmentCode.GEN);
         }
         // SIXTH FORM: Allow A-Level subjects and general languages
         else {
-            return isSubjectForSixthForm(subjectName, subject);
+            // Sixth Form should see A-Level subjects and English/French
+            boolean isALevel = subjectName.startsWith("A-");
+            boolean isGeneralLanguage = subjectName.equals("O-English Language") ||
+                    subjectName.equals("O-French Language");
+
+            return isALevel || isGeneralLanguage;
         }
     }
 
     private boolean isSubjectForForms1to5(String subjectName, Subject subject) {
         // For Forms 1-5, include:
         // 1. All O-Level subjects (starting with "O-")
-        // 2. General department subjects (without level prefix)
-        // 3. Department-specific subjects without level prefix
+        // 2. All subjects without A-Level prefix (general subjects)
         boolean isOLevel = subjectName.startsWith("O-");
-        boolean isGeneralDept = subject.getDepartment() != null &&
-                subject.getDepartment().getCode() == DepartmentCode.GEN &&
-                !subjectName.startsWith("A-");
-        boolean isDeptSpecific = subject.getDepartment() != null &&
-                subject.getDepartment().getCode() != DepartmentCode.GEN &&
-                !subjectName.startsWith("A-");
+        boolean isGeneralSubject = !subjectName.startsWith("A-");
 
-        return isOLevel || isGeneralDept || isDeptSpecific;
+        return isOLevel || isGeneralSubject;
     }
 
     private boolean isSubjectForSixthForm(String subjectName, Subject subject) {
         // For Sixth Form, include:
         // 1. All A-Level subjects (starting with "A-")
         // 2. General department languages (O-English, O-French)
-        // 3. Department-specific advanced subjects without level prefix
         boolean isALevel = subjectName.startsWith("A-");
-        boolean isGeneralLanguage = subject.getDepartment() != null &&
-                subject.getDepartment().getCode() == DepartmentCode.GEN &&
-                (subjectName.equals("O-English Language") ||
-                        subjectName.equals("O-French Language"));
-        boolean isAdvancedDeptSubject = !subjectName.startsWith("O-") &&
-                subject.getDepartment() != null &&
-                subject.getDepartment().getCode() != DepartmentCode.GEN &&
-                subjectName.startsWith("A-");
+        boolean isGeneralLanguage = subjectName.equals("O-English Language") ||
+                subjectName.equals("O-French Language");
 
-        return isALevel || isGeneralLanguage || isAdvancedDeptSubject;
+        return isALevel || isGeneralLanguage;
     }
 
-    // Enhanced department filtering
     private boolean isSubjectForDepartment(Subject subject, Long departmentId) {
         if (subject.getDepartment() == null) {
             log.debug("Subject {} has no department, excluding", subject.getName());
-            return false; // Subjects should have a department
+            return false;
         }
 
         if (departmentId == null) {
@@ -464,15 +429,16 @@ public class SubjectService {
         boolean isGeneral = subject.getDepartment().getCode() == DepartmentCode.GEN;
         boolean matchesDepartment = subject.getDepartment().getId().equals(departmentId);
 
-        boolean result = isGeneral || matchesDepartment;
-
-        log.debug("Department filter - Subject: {}, Dept: {}, Requested: {}, Result: {}",
+        log.debug("Department filter - Subject: {}, Dept: {} (ID: {}, Code: {}, IsGEN: {}), Requested: {}, Result: {}",
                 subject.getName(),
                 subject.getDepartment().getName(),
+                subject.getDepartment().getId(),
+                subject.getDepartment().getCode(),
+                isGeneral,
                 departmentId,
-                result);
+                isGeneral || matchesDepartment);
 
-        return result;
+        return isGeneral || matchesDepartment;
     }
 
     // Enhanced specialty filtering
@@ -480,10 +446,7 @@ public class SubjectService {
         // If no specialty specified, include all subjects that don't require specialty
         if (specialty == null || specialty.trim().isEmpty()) {
             // For Sixth Form, exclude subjects that require specific specialties
-            if (isSixthForm && subject.getSpecialty() != null && !subject.getSpecialty().trim().isEmpty()) {
-                return false;
-            }
-            return true;
+            return !isSixthForm || subject.getSpecialty() == null || subject.getSpecialty().trim().isEmpty();
         }
 
         // If specialty is specified, include subjects that match the specialty or have no specialty
@@ -505,11 +468,7 @@ public class SubjectService {
 
     private boolean isSixthFormClass(String classCode) {
         if (classCode == null) return false;
-        return classCode.startsWith("LOWER_SIXTH") ||
-                classCode.startsWith("UPPER_SIXTH") ||
-                classCode.equals("LOWER_SIXTH") ||
-                classCode.equals("UPPER_SIXTH") ||
-                classCode.contains("SIXTH");
+        return classCode.startsWith("LOWER_SIXTH") || classCode.startsWith("UPPER_SIXTH") || classCode.contains("SIXTH");
     }
 
     // FIXED: Improved class level parsing
@@ -518,9 +477,9 @@ public class SubjectService {
 
         try {
             // Handle different class code formats
-            if (classCode.startsWith("LOWER_SIXTH") || classCode.equals("LOWER_SIXTH")) {
+            if (classCode.startsWith("LOWER_SIXTH")) {
                 return ClassLevel.LOWER_SIXTH;
-            } else if (classCode.startsWith("UPPER_SIXTH") || classCode.equals("UPPER_SIXTH")) {
+            } else if (classCode.startsWith("UPPER_SIXTH")) {
                 return ClassLevel.UPPER_SIXTH;
             } else {
                 return ClassLevel.valueOf(classCode);
@@ -538,5 +497,50 @@ public class SubjectService {
         if (subject.getCoefficient() == null || subject.getCoefficient() <= 0) {
             throw new IllegalArgumentException("Subject coefficient must be positive");
         }
+    }
+
+    // NEW: Method to force reinitialize subjects
+    public List<Subject> reinitializeSubjects() {
+        log.info("Reinitializing all subjects");
+        subjectRepository.deleteAll();
+        log.info("All subjects deleted, ready for reinitialization");
+        return List.of();
+    }
+
+    // NEW: Method to get subject statistics
+    @Transactional(readOnly = true)
+    public Map<String, Object> getSubjectStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        long totalSubjects = getSubjectCount();
+        stats.put("totalSubjects", totalSubjects);
+
+        List<Subject> allSubjects = getAllSubjects();
+
+        // Group by department
+        Map<String, Long> deptCounts = allSubjects.stream()
+                .collect(Collectors.groupingBy(
+                        s -> s.getDepartment() != null ? s.getDepartment().getName() : "Unknown",
+                        Collectors.counting()
+                ));
+        stats.put("departmentCounts", deptCounts);
+
+        // Count by specialty
+        Map<String, Long> specialtyCounts = allSubjects.stream()
+                .filter(s -> s.getSpecialty() != null && !s.getSpecialty().isEmpty())
+                .collect(Collectors.groupingBy(
+                        Subject::getSpecialty,
+                        Collectors.counting()
+                ));
+        stats.put("specialtyCounts", specialtyCounts);
+
+        // Count optional vs compulsory
+        long optionalCount = allSubjects.stream()
+                .filter(s -> Boolean.TRUE.equals(s.getOptional()))
+                .count();
+        stats.put("optionalCount", optionalCount);
+        stats.put("compulsoryCount", totalSubjects - optionalCount);
+
+        return stats;
     }
 }

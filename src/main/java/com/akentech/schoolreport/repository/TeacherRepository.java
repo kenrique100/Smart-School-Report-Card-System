@@ -14,6 +14,8 @@ import java.util.Optional;
 @Repository
 public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     Optional<Teacher> findByTeacherId(String teacherId);
+
+    // FIXED: Added count method with proper signature
     long count();
 
     @Query("SELECT t FROM Teacher t JOIN t.subjects s WHERE s.id = :subjectId")
@@ -37,4 +39,11 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
                                 @Param("lastName") String lastName,
                                 @Param("subjectId") Long subjectId,
                                 Pageable pageable);
+
+    // NEW: Additional useful methods
+    List<Teacher> findByFirstNameContainingIgnoreCase(String firstName);
+    List<Teacher> findByLastNameContainingIgnoreCase(String lastName);
+
+    @Query("SELECT t FROM Teacher t WHERE t.skills LIKE %:skill%")
+    List<Teacher> findBySkill(@Param("skill") String skill);
 }

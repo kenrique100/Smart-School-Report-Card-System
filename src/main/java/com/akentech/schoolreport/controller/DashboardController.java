@@ -7,6 +7,7 @@ import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.Gender;
 import com.akentech.schoolreport.repository.*;
+import com.akentech.schoolreport.service.StatisticsService;
 import com.akentech.schoolreport.service.StudentService;
 import com.akentech.schoolreport.service.SubjectService;
 import com.akentech.schoolreport.service.TeacherService;
@@ -27,17 +28,22 @@ import java.util.stream.Collectors;
 public class DashboardController {
 
     private final StudentRepository studentRepository;
-    private final NoticeRepository noticeRepository;
+
     private final ClassRoomRepository classRoomRepository;
     private final DepartmentRepository departmentRepository;
     private final SubjectService subjectService;
     private final TeacherService teacherService;
     private final StudentService studentService;
+    private final StatisticsService statisticsService;
 
     @GetMapping({"/", "/dashboard"})
     public String dashboard(Model model) {
         try {
-            DashboardStatistics stats = getDashboardStatistics();
+            // Use the StatisticsService instead of private method
+            Map<String, Long> basicStats = statisticsService.getDashboardStatistics();
+
+            // Convert to DashboardStatistics object with additional data
+            DashboardStatistics stats = buildDashboardStatistics(basicStats);
             List<ClassRoom> classes = classRoomRepository.findAll();
 
             model.addAttribute("statistics", stats);
@@ -54,35 +60,21 @@ public class DashboardController {
         }
     }
 
-    private DashboardStatistics getDashboardStatistics() {
-        log.info("Loading dashboard statistics...");
-
-        long totalStudents = studentService.getStudentCount();
-        long totalTeachers = teacherService.getTeacherCount();
-        long totalSubjects = subjectService.getSubjectCount();
-        long totalNotices = noticeRepository.countByIsActive(true);
-        long totalClasses = classRoomRepository.count();
-        long totalDepartments = departmentRepository.count();
-
-        Map<String, Long> studentsByDepartment = getStudentsByDepartment();
-        Map<String, Long> studentsBySpecialty = getStudentsBySpecialty();
-        Map<String, Long> studentsByClass = getStudentsByClass();
-        Map<String, Long> genderDistribution = getGenderDistribution();
-
+    private DashboardStatistics buildDashboardStatistics(Map<String, Long> basicStats) {
         return DashboardStatistics.builder()
-                .totalStudents(totalStudents)
-                .totalTeachers(totalTeachers)
-                .totalSubjects(totalSubjects)
-                .totalNotices(totalNotices)
-                .totalClasses(totalClasses)
-                .totalDepartments(totalDepartments)
-                .totalSpecialties(studentsBySpecialty.size())
-                .studentsByDepartment(studentsByDepartment)
-                .studentsBySpecialty(studentsBySpecialty)
-                .studentsByClass(studentsByClass)
-                .genderDistribution(genderDistribution)
+                .totalStudents(basicStats.get("totalStudents"))
+                .totalTeachers(basicStats.get("totalTeachers"))
+                .totalSubjects(basicStats.get("totalSubjects"))
+                .totalClasses(basicStats.get("totalClasses"))
+                .totalDepartments(basicStats.get("totalDepartments"))
+                .totalSpecialties(basicStats.get("totalSpecialties"))
+                .studentsByDepartment(getStudentsByDepartment())
+                .studentsBySpecialty(getStudentsBySpecialty())
+                .studentsByClass(getStudentsByClass())
+                .genderDistribution(getGenderDistribution())
                 .build();
     }
+
 
     private Map<String, Long> getStudentsByDepartment() {
         Map<String, Long> departmentStats = studentRepository.findAll().stream()

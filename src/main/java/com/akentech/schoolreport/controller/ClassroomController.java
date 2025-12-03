@@ -39,7 +39,7 @@ public class ClassroomController {
                                        @RequestParam(defaultValue = "50") int size,
                                        @RequestParam(defaultValue = "firstName") String sortBy,
                                        @RequestParam(defaultValue = "asc") String sortDir,
-                                       @RequestParam(required = false) String departmentId, // Changed to String
+                                       @RequestParam(required = false) String departmentId,
                                        @RequestParam(required = false) String specialty,
                                        Model model) {
         try {
@@ -49,24 +49,14 @@ public class ClassroomController {
             Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            // FIXED: Handle "null" string conversion properly
-            Long departmentIdLong = null;
-            if (departmentId != null && !departmentId.equals("null") && !departmentId.trim().isEmpty()) {
-                try {
-                    departmentIdLong = Long.parseLong(departmentId);
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid departmentId provided: {}", departmentId);
-                    // Continue with null value
-                }
-            }
+            // FIXED: Use safe parsing method
+            Long departmentIdLong = safeParseLong(departmentId);
 
-            // Get students with pagination and filtering
             Page<Student> studentPage = studentService.getStudentsByFilters(
                     null, null, id, departmentIdLong, specialty, pageable);
 
             List<Student> students = studentPage.getContent();
 
-            // Calculate gender statistics
             Map<String, Long> genderStats = calculateGenderStatistics(students);
             long maleCount = genderStats.getOrDefault("MALE", 0L);
             long femaleCount = genderStats.getOrDefault("FEMALE", 0L);
@@ -78,7 +68,6 @@ public class ClassroomController {
             model.addAttribute("departments", departmentRepository.findAll());
             model.addAttribute("specialties", studentService.getAllSpecialties());
 
-            // Pagination attributes
             model.addAttribute("currentPage", studentPage.getNumber());
             model.addAttribute("totalPages", studentPage.getTotalPages());
             model.addAttribute("totalItems", studentPage.getTotalElements());
@@ -86,11 +75,9 @@ public class ClassroomController {
             model.addAttribute("sortBy", sortBy);
             model.addAttribute("sortDir", sortDir);
 
-            // Filter values for form persistence
             model.addAttribute("departmentIdFilter", departmentIdLong);
             model.addAttribute("specialtyFilter", specialty);
 
-            // Statistics
             model.addAttribute("maleCount", maleCount);
             model.addAttribute("femaleCount", femaleCount);
             model.addAttribute("totalCount", totalStudents);
@@ -111,13 +98,25 @@ public class ClassroomController {
         }
     }
 
+    // FIXED: Helper method to safely parse Long
+    private Long safeParseLong(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse Long from value: {}", value);
+            return null;
+        }
+    }
+
     @GetMapping
     public String listClassrooms(Model model) {
         try {
             List<ClassRoom> classrooms = classRoomRepository.findAll();
             long totalStudents = studentService.getStudentCount();
 
-            // Calculate statistics for each classroom
             Map<Long, Map<String, Long>> classroomStats = classrooms.stream()
                     .collect(Collectors.toMap(
                             ClassRoom::getId,

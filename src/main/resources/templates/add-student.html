@@ -53,6 +53,10 @@
         .optional-subject {
             border-left-color: #8B5CF6;
         }
+        .required-field::after {
+            content: " *";
+            color: #ef4444;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -85,7 +89,7 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">First Name</label>
                     <input type="text" th:field="*{firstName}" required
                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                            placeholder="Enter student's first name">
@@ -94,7 +98,7 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Last Name</label>
                     <input type="text" th:field="*{lastName}" required
                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                            placeholder="Enter student's last name">
@@ -103,12 +107,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Date of Birth</label>
                     <input type="date" th:field="*{dateOfBirth}" required
                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Gender</label>
                     <select th:field="*{gender}" required
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                         <option value="">Select Gender</option>
@@ -141,7 +145,7 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Classroom *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Classroom</label>
                     <select th:field="*{classRoom}" required
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             onchange="handleClassChange(this)">
@@ -156,7 +160,7 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Department</label>
                     <select th:field="*{department}" required
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             onchange="handleDepartmentChange(this)">
@@ -184,7 +188,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year Start *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Academic Year Start</label>
                         <select th:field="*{academicYearStart}" required
                                 class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                             <option value="">Select Start Year</option>
@@ -196,7 +200,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year End *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Academic Year End</label>
                         <select th:field="*{academicYearEnd}" required
                                 class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                             <option value="">Select End Year</option>
@@ -297,7 +301,7 @@
 
     // Set initial values if provided
     document.addEventListener('DOMContentLoaded', function() {
-        if (initialClass) {
+        if (initialClass && initialClass !== 'null') {
             const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
             if (classSelect) {
                 // Find option with matching data-code
@@ -311,7 +315,7 @@
             }
         }
 
-        if (initialDept) {
+        if (initialDept && initialDept !== 'null') {
             const deptSelect = document.querySelector('select[th\\:field="*{department}"]');
             if (deptSelect) {
                 // Find option with matching data-code
@@ -325,7 +329,7 @@
             }
         }
 
-        if (initialSpecialty) {
+        if (initialSpecialty && initialSpecialty !== 'null') {
             const specialtySelect = document.getElementById('specialtySelect');
             if (specialtySelect) {
                 specialtySelect.value = initialSpecialty;
@@ -383,7 +387,7 @@
         }
 
         try {
-            const response = await fetch(`/students/check-specialty-requirements?classCode=${classCode}&departmentCode=${departmentCode}`);
+            const response = await fetch(`/students/check-specialty-requirements?classCode=${encodeURIComponent(classCode)}&departmentCode=${encodeURIComponent(departmentCode)}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch specialty requirements');
             }
@@ -472,7 +476,7 @@
 
         try {
             showLoading();
-            const url = `/students/grouped-subjects?classCode=${currentClassCode}&departmentId=${currentDepartmentId}&specialty=${currentSpecialty || ''}`;
+            const url = `/students/grouped-subjects?classCode=${encodeURIComponent(currentClassCode)}&departmentId=${currentDepartmentId}&specialty=${encodeURIComponent(currentSpecialty || '')}`;
             console.log('Loading subjects from:', url);
 
             const response = await fetch(url);
@@ -564,10 +568,10 @@
                                             <span class="font-medium">Coefficient:</span>
                                             <span class="font-semibold">${subject.coefficient || 'N/A'}</span>
                                         </div>
-                                        ${subject.department ? `
+                                        ${subject.departmentName ? `
                                         <div class="flex items-center space-x-2">
                                             <span class="font-medium">Department:</span>
-                                            <span>${subject.department.name}</span>
+                                            <span>${subject.departmentName}</span>
                                         </div>` : ''}
                                         ${subject.specialty ? `
                                         <div class="flex items-center space-x-2">
@@ -757,6 +761,25 @@
                 return false;
             }
         }
+
+        // Create a hidden field for subject IDs if they're not already included
+        const subjectIds = Array.from(selectedSubjects)
+            .map(checkbox => checkbox.value)
+            .join(',');
+
+        // Check if there's already a subjectIds input
+        let subjectIdsInput = this.querySelector('input[name="subjectIds"]');
+        if (subjectIdsInput) {
+            subjectIdsInput.value = subjectIds;
+        } else {
+            subjectIdsInput = document.createElement('input');
+            subjectIdsInput.type = 'hidden';
+            subjectIdsInput.name = 'subjectIds';
+            subjectIdsInput.value = subjectIds;
+            this.appendChild(subjectIdsInput);
+        }
+
+        return true;
     });
 </script>
 </body>

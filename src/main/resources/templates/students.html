@@ -21,6 +21,22 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
+        .subject-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .compulsory-badge {
+            background-color: #10B981;
+            color: white;
+        }
+        .optional-badge {
+            background-color: #3B82F6;
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -32,34 +48,34 @@
             <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
         </div>
         <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
+            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
             </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/students}" class="block py-2 px-4 bg-blue-700">
                 <i class="fas fa-users mr-2"></i>Students
             </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
             </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-book mr-2"></i>Subjects
             </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-school mr-2"></i>Classrooms
             </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-file-alt mr-2"></i>Exams
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-chart-bar mr-2"></i>Exam Results
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-bullhorn mr-2"></i>Notices
             </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-edit mr-2"></i>Enter Assessments
             </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700 transition-colors">
                 <i class="fas fa-chart-pie mr-2"></i>Reports
             </a>
         </nav>
@@ -187,7 +203,7 @@
                                 <option th:each="c : ${classes}"
                                         th:value="${c.id}"
                                         th:text="${c.name}"
-                                        th:selected="${classRoomIdFilter == c.id}"></option>
+                                        th:selected="${classRoomIdFilter != null && classRoomIdFilter == c.id}"></option>
                             </select>
                         </div>
                         <div>
@@ -197,7 +213,7 @@
                                 <option th:each="d : ${departments}"
                                         th:value="${d.id}"
                                         th:text="${d.name}"
-                                        th:selected="${departmentIdFilter == d.id}"></option>
+                                        th:selected="${departmentIdFilter != null && departmentIdFilter == d.id}"></option>
                             </select>
                         </div>
                         <div>
@@ -207,7 +223,7 @@
                                 <option th:each="s : ${specialties}"
                                         th:value="${s}"
                                         th:text="${s}"
-                                        th:selected="${specialtyFilter == s}"></option>
+                                        th:selected="${specialtyFilter != null && specialtyFilter == s}"></option>
                             </select>
                         </div>
                         <div class="flex items-end space-x-2">
@@ -270,20 +286,19 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center space-x-2">
                                         <i class="fas fa-school text-gray-400"></i>
-                                        <span th:text="${student.classRoom.name}">Form 4</span>
+                                        <span th:text="${student.classRoom?.name} ?: 'N/A'"></span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
+                                    <!-- FIXED: Use departmentCssClass helper method -->
                                     <span th:if="${student.department}"
-                                          th:class="${(student.department.code == 'SCI') ? 'bg-green-100 text-green-800' :
-                                                   (student.department.code == 'ART') ? 'bg-yellow-100 text-yellow-800' :
-                                                   (student.department.code == 'COM') ? 'bg-blue-100 text-blue-800' :
-                                                   (student.department.code == 'TEC') ? 'bg-purple-100 text-purple-800' :
-                                                   (student.department.code == 'HE') ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-800'}"
+                                          th:class="${student.departmentCssClass}"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                          th:text="${student.department.name}">
-                                    </span>
-                                    <span th:unless="${student.department}" class="text-gray-500 text-xs">N/A</span>
+                                          th:text="${student.departmentName}">
+    </span>
+                                    <span th:unless="${student.department}" class="text-gray-500 text-xs">
+        N/A
+    </span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span th:if="${student.specialty}"
@@ -383,7 +398,7 @@
         <!-- Footer -->
         <footer class="bg-white border-t mt-8">
             <div class="px-6 py-4 text-center text-gray-600">
-                <p>Copyright © 2024. All rights reserved.</p>
+                <p>Copyright © <span th:text="${currentYear}"></span>. All rights reserved.</p>
             </div>
         </footer>
     </div>

@@ -1,6 +1,8 @@
 package com.akentech.schoolreport.model;
 
 import com.akentech.schoolreport.model.enums.DepartmentCode;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,18 +15,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonProperty("id")
     private Long id;
 
     @Column(nullable = false, unique = true)
+    @JsonProperty("name")
     private String name;
 
     // UPDATED: Use enum instead of String
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true, length = 10)
+    @JsonProperty("code")
     private DepartmentCode code;
 
     @Column(name = "description")

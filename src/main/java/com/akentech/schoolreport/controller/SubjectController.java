@@ -10,11 +10,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/subjects")
@@ -28,11 +30,11 @@ public class SubjectController {
     @GetMapping
     public String listSubjects(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) String specialty,
             Model model) {
 
@@ -40,7 +42,10 @@ public class SubjectController {
             Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            Page<Subject> subjectPage = subjectService.getSubjectsByFilters(name, departmentId, specialty, pageable);
+            // FIXED: Use safe parsing
+            Long departmentIdLong = safeParseLong(departmentId);
+
+            Page<Subject> subjectPage = subjectService.getSubjectsByFilters(name, departmentIdLong, specialty, pageable);
 
             model.addAttribute("subjects", subjectPage.getContent());
             model.addAttribute("currentPage", subjectPage.getNumber());
@@ -54,9 +59,8 @@ public class SubjectController {
             model.addAttribute("groupedSubjects", subjectService.getSubjectsGroupedByDepartmentAndSpecialty());
             model.addAttribute("subject", new Subject());
 
-            // Add filter values for form persistence
             model.addAttribute("nameFilter", name);
-            model.addAttribute("departmentIdFilter", departmentId);
+            model.addAttribute("departmentIdFilter", departmentIdLong);
             model.addAttribute("specialtyFilter", specialty);
 
             return "subjects";
@@ -64,6 +68,19 @@ public class SubjectController {
             log.error("Error loading subjects list", e);
             model.addAttribute("error", "Unable to load subjects");
             return "subjects";
+        }
+    }
+
+    // FIXED: Helper method to safely parse Long
+    private Long safeParseLong(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse Long from value: {}", value);
+            return null;
         }
     }
 
@@ -137,5 +154,18 @@ public class SubjectController {
     @ResponseBody
     public List<String> getSpecialtiesByDepartment(@PathVariable Long departmentId) {
         return subjectService.getSpecialtiesByDepartment(departmentId);
+    }
+
+    // NEW: Statistics endpoint
+    @GetMapping("/statistics")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getStatistics() {
+        try {
+            Map<String, Object> stats = subjectService.getSubjectStatistics();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting subject statistics", e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -48,10 +48,6 @@ public class SpecialtyService {
         return List.of("H1", "H2", "H3");
     }
 
-    public List<String> getGeneralSpecialties() {
-        return List.of();
-    }
-
     public List<String> getAllSpecialties() {
         List<String> all = new ArrayList<>();
         all.addAll(getCommercialSpecialties());
@@ -71,11 +67,6 @@ public class SpecialtyService {
         return specialties;
     }
 
-    public List<String> getSpecialtiesByDepartmentCode(String departmentCode) {
-        return getSpecialtiesByDepartment(departmentCode);
-    }
-
-    // KEEP: This method works with string codes for AJAX compatibility
     public SpecialtyRequirement checkSpecialtyRequirement(String classCode, String departmentCode) {
         log.info("Checking specialty requirement for class: {}, department: {}", classCode, departmentCode);
 
@@ -111,10 +102,7 @@ public class SpecialtyService {
         }
 
         // Specialty allowed for Forms 4-5 and Sixth Form in all departments except General
-        boolean result = !departmentCode.equals("GEN");
-        log.debug("Specialty allowed for class {} department {}: {}", classCode, departmentCode, result);
-
-        return result;
+        return !departmentCode.equals("GEN");
     }
 
     @Getter
@@ -124,5 +112,16 @@ public class SpecialtyService {
         private boolean required;
         private boolean allowed;
         private List<String> specialties;
+
+        // NEW: Added getMessage() method
+        public String getMessage() {
+            if (required) {
+                return "Specialty is required for this class and department combination";
+            } else if (allowed) {
+                return "Specialty is optional for this class and department combination";
+            } else {
+                return "Specialty is not allowed for this class and department combination";
+            }
+        }
     }
 }

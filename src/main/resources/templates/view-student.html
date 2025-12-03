@@ -7,53 +7,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .performance-excellent {
-            background-color: #10B981;
-            color: white;
-        }
-        .performance-good {
-            background-color: #3B82F6;
-            color: white;
-        }
-        .performance-average {
-            background-color: #F59E0B;
-            color: white;
-        }
-        .performance-poor {
-            background-color: #EF4444;
-            color: white;
-        }
-        .performance-undefined {
-            background-color: #6B7280;
-            color: white;
-        }
-        .subject-card {
-            transition: all 0.3s ease;
-            border-left: 4px solid transparent;
-        }
-        .subject-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .compulsory-subject {
-            border-left-color: #10B981;
-        }
-        .optional-subject {
-            border-left-color: #3B82F6;
-        }
-        .fade-in {
-            animation: fadeIn 0.6s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .stats-card {
-            transition: all 0.3s ease;
-        }
-        .stats-card:hover {
-            transform: scale(1.02);
-        }
+        .performance-excellent { background-color: #10B981; color: white; }
+        .performance-good { background-color: #3B82F6; color: white; }
+        .performance-average { background-color: #F59E0B; color: white; }
+        .performance-poor { background-color: #EF4444; color: white; }
+        .performance-undefined { background-color: #6B7280; color: white; }
+        .subject-card { transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .subject-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .compulsory-subject { border-left-color: #10B981; }
+        .optional-subject { border-left-color: #3B82F6; }
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-card { transition: all 0.3s ease; }
+        .stats-card:hover { transform: scale(1.02); }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -85,9 +51,10 @@
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white">Student Information</h2>
                     <div class="flex items-center space-x-2">
-                        <span class="text-blue-100 text-sm" th:text="${student.classRoom.name}"></span>
+                        <!-- FIXED: Use helper methods from Student entity -->
+                        <span class="text-blue-100 text-sm" th:text="${student.classroomName}"></span>
                         <span class="text-white">•</span>
-                        <span class="text-blue-100 text-sm" th:text="${student.department?.name ?: 'General'}"></span>
+                        <span class="text-blue-100 text-sm" th:text="${student.departmentName}"></span>
                     </div>
                 </div>
             </div>
@@ -98,14 +65,14 @@
                     <div class="space-y-6">
                         <div class="flex items-center space-x-4">
                             <div class="flex-shrink-0">
-                                <div th:class="${student.gender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100'}
-                                              + ' w-16 h-16 rounded-full flex items-center justify-center'">
+                                <!-- FIXED: Use genderCssClass helper method -->
+                                <div th:class="${student.genderCssClass} + ' w-16 h-16 rounded-full flex items-center justify-center'">
                                     <i th:class="${student.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'}
                                                + ' text-2xl'"></i>
                                 </div>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900" th:text="${student.firstName + ' ' + student.lastName}"></h3>
+                                <h3 class="text-2xl font-bold text-gray-900" th:text="${student.fullName}"></h3>
                                 <p class="text-gray-600" th:text="${student.rollNumber}"></p>
                             </div>
                         </div>
@@ -118,7 +85,8 @@
                                 </div>
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Date of Birth</span>
-                                    <span class="text-gray-900 font-medium" th:text="${student.dateOfBirth}"></span>
+                                    <!-- FIXED: Use helper method -->
+                                    <span class="text-gray-900 font-medium" th:text="${student.formattedDateOfBirth}"></span>
                                 </div>
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Specialty</span>
@@ -131,15 +99,18 @@
                             <div class="space-y-3">
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Academic Year</span>
+                                    <!-- FIXED: Use helper method -->
                                     <span class="text-gray-900 font-medium" th:text="${student.academicYear}"></span>
                                 </div>
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Classroom</span>
-                                    <span class="text-gray-900 font-medium" th:text="${student.classRoom.name}"></span>
+                                    <!-- FIXED: Use helper method -->
+                                    <span class="text-gray-900 font-medium" th:text="${student.classroomName}"></span>
                                 </div>
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Department</span>
-                                    <span class="text-gray-900 font-medium" th:text="${student.department?.name ?: 'General'}"></span>
+                                    <!-- FIXED: Use helper method -->
+                                    <span class="text-gray-900 font-medium" th:text="${student.departmentName}"></span>
                                 </div>
                             </div>
                         </div>
@@ -200,7 +171,9 @@
                     <h2 class="text-xl font-bold text-white flex items-center">
                         <i class="fas fa-chart-line mr-2"></i>Academic Performance
                     </h2>
-                    <span class="text-green-100 text-sm" th:text="${student.classRoom.name + ' • ' + (student.department?.name ?: 'General')}"></span>
+                    <!-- FIXED: Use helper methods -->
+                    <span class="text-green-100 text-sm"
+                          th:text="${student.classroomName} + ' • ' + ${student.departmentName}"></span>
                 </div>
             </div>
 
@@ -289,7 +262,8 @@
                                           th:text="${studentSubject.subject.subjectCode}"></code>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="text-gray-700" th:text="${studentSubject.subject.department?.name ?: 'General'}"></span>
+                                    <!-- FIXED: Use safe navigation -->
+                                    <span class="text-gray-700" th:text="${studentSubject.subject.department?.name} ?: 'General'"></span>
                                 </td>
                                 <td class="px-6 py-4">
                                         <span th:if="${studentSubject.isCompulsory}"
@@ -362,18 +336,21 @@
                         <i class="fas fa-info-circle mr-2"></i>Academic Context
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <!-- FIXED: Use helper methods -->
                         <div>
                             <span class="block font-semibold text-blue-700">Class Level</span>
-                            <span class="text-blue-900" th:text="${student.classRoom.name}"></span>
+                            <span class="text-blue-900" th:text="${student.classroomName}"></span>
                         </div>
+                        <!-- FIXED: Use helper methods -->
                         <div>
                             <span class="block font-semibold text-blue-700">Department</span>
-                            <span class="text-blue-900" th:text="${student.department?.name ?: 'General'}"></span>
+                            <span class="text-blue-900" th:text="${student.departmentName}"></span>
                         </div>
                         <div th:if="${student.specialty}">
                             <span class="block font-semibold text-blue-700">Specialization</span>
                             <span class="text-blue-900" th:text="${student.specialty}"></span>
                         </div>
+                        <!-- FIXED: Use helper method -->
                         <div>
                             <span class="block font-semibold text-blue-700">Academic Year</span>
                             <span class="text-blue-900" th:text="${student.academicYear}"></span>

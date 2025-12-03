@@ -1,5 +1,8 @@
 package com.akentech.schoolreport.controller;
 
+import com.akentech.schoolreport.util.ParameterUtils;
+import com.akentech.schoolreport.dto.GroupedSubjectsResponse;
+import com.akentech.schoolreport.dto.SubjectDTO;
 import com.akentech.schoolreport.exception.BusinessRuleException;
 import com.akentech.schoolreport.exception.DataIntegrityException;
 import com.akentech.schoolreport.exception.EntityNotFoundException;
@@ -8,7 +11,6 @@ import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
-import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.service.SpecialtyService;
 import com.akentech.schoolreport.service.StudentEnrollmentService;
 import com.akentech.schoolreport.service.StudentService;
@@ -27,10 +29,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -43,9 +42,7 @@ public class StudentController {
     private final ClassRoomRepository classRoomRepository;
     private final DepartmentRepository departmentRepository;
     private final StudentEnrollmentService studentEnrollmentService;
-    private final StudentRepository studentRepository;
     private final SubjectService subjectService;
-    private final SpecialtyService specialtyService;
 
     @GetMapping
     public String listStudents(
@@ -62,12 +59,13 @@ public class StudentController {
             Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            // Handle filter parameter conversion
-            Long classRoomIdLong = parseLongParameter(classRoomId, "classRoomId");
-            Long departmentIdLong = parseLongParameter(departmentId, "departmentId");
+            // FIXED: Use ParameterUtils for safe parsing
+            Long classRoomIdLong = ParameterUtils.safeParseLong(classRoomId);
+            Long departmentIdLong = ParameterUtils.safeParseLong(departmentId);
+            String cleanedSpecialty = ParameterUtils.cleanString(specialty);
 
             Page<Student> studentPage = studentService.getStudentsByFilters(
-                    null, null, classRoomIdLong, departmentIdLong, specialty, pageable);
+                    null, null, classRoomIdLong, departmentIdLong, cleanedSpecialty, pageable);
 
             model.addAttribute("students", studentPage.getContent());
             model.addAttribute("currentPage", studentPage.getNumber());
@@ -85,7 +83,7 @@ public class StudentController {
             // Add filter values for form persistence
             model.addAttribute("classRoomIdFilter", classRoomIdLong);
             model.addAttribute("departmentIdFilter", departmentIdLong);
-            model.addAttribute("specialtyFilter", specialty);
+            model.addAttribute("specialtyFilter", cleanedSpecialty);
 
             return "students";
         } catch (Exception e) {
@@ -96,25 +94,14 @@ public class StudentController {
         }
     }
 
-    private Long parseLongParameter(String paramValue, String paramName) {
-        if (paramValue != null && !paramValue.equals("null") && !paramValue.trim().isEmpty()) {
-            try {
-                return Long.parseLong(paramValue);
-            } catch (NumberFormatException e) {
-                log.warn("Invalid {} provided: {}", paramName, paramValue);
-            }
-        }
-        return null;
-    }
-
     @GetMapping("/sort")
     public String sortStudents(
             @RequestParam String sortBy,
             @RequestParam(required = false) String currentSortDir,
             @RequestParam(required = false) Integer currentPage,
             @RequestParam(required = false) Integer currentSize,
-            @RequestParam(required = false) Long classRoomId,
-            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) String classRoomId,
+            @RequestParam(required = false) String departmentId,
             @RequestParam(required = false) String specialty,
             RedirectAttributes redirectAttributes) {
 
@@ -128,9 +115,16 @@ public class StudentController {
         redirectAttributes.addAttribute("page", currentPage != null ? currentPage : 0);
         redirectAttributes.addAttribute("size", currentSize != null ? currentSize : 100);
 
-        if (classRoomId != null) redirectAttributes.addAttribute("classRoomId", classRoomId);
-        if (departmentId != null) redirectAttributes.addAttribute("departmentId", departmentId);
-        if (specialty != null) redirectAttributes.addAttribute("specialty", specialty);
+        // FIXED: Directly pass string values, let the listStudents method handle parsing
+        if (classRoomId != null && !classRoomId.equals("null")) {
+            redirectAttributes.addAttribute("classRoomId", classRoomId);
+        }
+        if (departmentId != null && !departmentId.equals("null")) {
+            redirectAttributes.addAttribute("departmentId", departmentId);
+        }
+        if (specialty != null && !specialty.equals("null")) {
+            redirectAttributes.addAttribute("specialty", specialty);
+        }
 
         return "redirect:/students";
     }
@@ -164,7 +158,7 @@ public class StudentController {
         }
 
         // Set specialty if provided
-        if (specialty != null && !specialty.trim().isEmpty()) {
+        if (specialty != null && !specialty.trim().isEmpty() && !"null".equals(specialty)) {
             student.setSpecialty(specialty);
         }
 
@@ -205,7 +199,7 @@ public class StudentController {
 
     // Helper methods for default selection
     private ClassRoom findDefaultClass(List<ClassRoom> classRooms, String classLevel) {
-        if (classLevel != null) {
+        if (classLevel != null && !classLevel.equals("null")) {
             return classRooms.stream()
                     .filter(cr -> cr.getCode().name().equalsIgnoreCase(classLevel))
                     .findFirst()
@@ -219,7 +213,7 @@ public class StudentController {
     }
 
     private Department findDefaultDepartment(List<Department> departments, String departmentCode) {
-        if (departmentCode != null) {
+        if (departmentCode != null && !departmentCode.equals("null")) {
             return departments.stream()
                     .filter(d -> d.getCode().name().equalsIgnoreCase(departmentCode))
                     .findFirst()
@@ -244,7 +238,9 @@ public class StudentController {
         }
 
         try {
-            studentService.createStudent(student, subjectIds);
+            Student savedStudent = studentService.createStudent(student, subjectIds);
+            log.info("Successfully created student with ID: {}", savedStudent.getStudentId());
+
             redirectAttributes.addFlashAttribute("success", "Student created successfully!");
             return "redirect:/students?success";
         } catch (BusinessRuleException | DataIntegrityException e) {
@@ -307,7 +303,9 @@ public class StudentController {
         }
 
         try {
-            studentService.updateStudent(id, student, subjectIds);
+            Student updatedStudent = studentService.updateStudent(id, student, subjectIds);
+            log.info("Successfully updated student with ID: {}", updatedStudent.getStudentId());
+
             redirectAttributes.addFlashAttribute("success", "Student updated successfully!");
             return "redirect:/students?updated";
         } catch (BusinessRuleException | DataIntegrityException e) {
@@ -346,13 +344,10 @@ public class StudentController {
             Student student = studentService.getStudentByIdOrThrow(id);
             List<StudentSubject> studentSubjects = studentService.getStudentSubjects(id);
 
-            // Use the enhanced enrollment summary
             Map<String, Object> subjectsSummary = studentEnrollmentService.getStudentEnrollmentSummary(id);
 
-            // Get available subjects for this student (for reference)
             List<Subject> availableSubjects = studentService.getAvailableSubjectsForStudentView(id);
 
-            // Get grouped subjects for display context
             Map<String, List<Subject>> groupedSubjects = studentService.getGroupedSubjectsForStudent(id);
 
             model.addAttribute("student", student);
@@ -372,25 +367,9 @@ public class StudentController {
         }
     }
 
-    @GetMapping("/available-subjects")
-    @ResponseBody
-    public ResponseEntity<List<Subject>> getAvailableSubjects(
-            @RequestParam String classCode,
-            @RequestParam Long departmentId,
-            @RequestParam(required = false) String specialty) {
-        try {
-            List<Subject> subjects = studentService.getFilteredSubjectsForStudent(classCode, departmentId, specialty);
-            return ResponseEntity.ok(subjects);
-        } catch (Exception e) {
-            log.error("Error getting available subjects for class: {}, department: {}, specialty: {}",
-                    classCode, departmentId, specialty, e);
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
     @GetMapping("/grouped-subjects")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getGroupedSubjects(
+    public ResponseEntity<GroupedSubjectsResponse> getGroupedSubjects(
             @RequestParam String classCode,
             @RequestParam Long departmentId,
             @RequestParam(required = false) String specialty) {
@@ -399,40 +378,62 @@ public class StudentController {
             log.info("Fetching grouped subjects for class: {}, department: {}, specialty: {}",
                     classCode, departmentId, specialty);
 
-            Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
+            Map<String, List<Subject>> groupedSubjects =
+                    subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
 
-            log.info("Found {} compulsory, {} department, {} specialty, {} optional subjects",
-                    groupedSubjects.getOrDefault("compulsory", List.of()).size(),
-                    groupedSubjects.getOrDefault("department", List.of()).size(),
-                    groupedSubjects.getOrDefault("specialty", List.of()).size(),
-                    groupedSubjects.getOrDefault("optional", List.of()).size());
+            Map<String, List<SubjectDTO>> groupedSubjectsDTO = convertToDTO(groupedSubjects);
 
-            // Return as a proper response object
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("groupedSubjects", groupedSubjects);
-            response.put("compulsoryCount", groupedSubjects.getOrDefault("compulsory", List.of()).size());
-            response.put("departmentCount", groupedSubjects.getOrDefault("department", List.of()).size());
-            response.put("specialtyCount", groupedSubjects.getOrDefault("specialty", List.of()).size());
-            response.put("optionalCount", groupedSubjects.getOrDefault("optional", List.of()).size());
+            GroupedSubjectsResponse response = new GroupedSubjectsResponse();
+            response.setSuccess(true);
+            response.setGroupedSubjects(groupedSubjectsDTO);
+            response.setCompulsoryCount(groupedSubjects.getOrDefault("compulsory", List.of()).size());
+            response.setDepartmentCount(groupedSubjects.getOrDefault("department", List.of()).size());
+            response.setSpecialtyCount(groupedSubjects.getOrDefault("specialty", List.of()).size());
+            response.setOptionalCount(groupedSubjects.getOrDefault("optional", List.of()).size());
+            response.setMessage("Subjects loaded successfully");
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            log.error("Error getting grouped subjects for class: {}, department: {}, specialty: {}",
-                    classCode, departmentId, specialty, e);
-
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Failed to load subjects: " + e.getMessage());
-            errorResponse.put("groupedSubjects", Map.of(
-                    "compulsory", List.of(),
-                    "department", List.of(),
-                    "specialty", List.of(),
-                    "optional", List.of()
-            ));
-
-            return ResponseEntity.badRequest().body(errorResponse);
+            log.error("Error getting grouped subjects", e);
+            return buildGroupedSubjectErrorResponse(e);
         }
+    }
+
+    /**
+     * Converts a map of subjects grouped by category into subject DTOs.
+     */
+    private Map<String, List<SubjectDTO>> convertToDTO(Map<String, List<Subject>> groupedSubjects) {
+        return groupedSubjects.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(SubjectDTO::fromEntity)
+                                .collect(Collectors.toList())
+                ));
+    }
+
+    /**
+     * Reusable method for building consistent error responses for grouped-subject failures.
+     */
+    private ResponseEntity<GroupedSubjectsResponse> buildGroupedSubjectErrorResponse(Exception e) {
+        GroupedSubjectsResponse errorResponse = new GroupedSubjectsResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage("Failed to load subjects: " + e.getMessage());
+
+        errorResponse.setGroupedSubjects(Map.of(
+                "compulsory", List.of(),
+                "department", List.of(),
+                "specialty", List.of(),
+                "optional", List.of()
+        ));
+
+        errorResponse.setCompulsoryCount(0);
+        errorResponse.setDepartmentCount(0);
+        errorResponse.setSpecialtyCount(0);
+        errorResponse.setOptionalCount(0);
+
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @GetMapping("/search")
@@ -476,71 +477,15 @@ public class StudentController {
         Map<String, Object> debugInfo = new HashMap<>();
 
         try {
-            // Get all subjects
             List<Subject> allSubjects = subjectService.getAllSubjects();
             debugInfo.put("totalSubjectsInSystem", allSubjects.size());
 
-            // Get filtered subjects
             List<Subject> filteredSubjects = subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
             debugInfo.put("filteredSubjectsCount", filteredSubjects.size());
 
-            // Get grouped subjects
             Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
             debugInfo.put("groupedSubjects", groupedSubjects);
 
-            // Log subject details
-            List<Map<String, Object>> subjectDetails = allSubjects.stream()
-                    .map(subject -> {
-                        Map<String, Object> details = new HashMap<>();
-                        details.put("id", subject.getId());
-                        details.put("name", subject.getName());
-                        details.put("subjectCode", subject.getSubjectCode());
-                        details.put("department", subject.getDepartment() != null ?
-                                subject.getDepartment().getName() + " (" + subject.getDepartment().getCode() + ")" : "None");
-                        details.put("specialty", subject.getSpecialty());
-                        details.put("optional", subject.getOptional());
-                        details.put("coefficient", subject.getCoefficient());
-                        return details;
-                    })
-                    .collect(Collectors.toList());
-
-            debugInfo.put("allSubjects", subjectDetails);
-
-            return ResponseEntity.ok(debugInfo);
-
-        } catch (Exception e) {
-            debugInfo.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(debugInfo);
-        }
-    }
-
-    @GetMapping("/debug-subjects-s7")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> debugS7Subjects() {
-        Map<String, Object> debugInfo = new HashMap<>();
-
-        try {
-            // Test LOWER_SIXTH + SCI + S7 combination
-            String classCode = "LOWER_SIXTH";
-            Long sciDepartmentId = departmentRepository.findByCode(DepartmentCode.SCI)
-                    .map(Department::getId)
-                    .orElse(1L); // Fallback to ID 1
-
-            List<Subject> allSubjects = subjectService.getAllSubjects();
-            List<Subject> filteredSubjects = subjectService.getSubjectsByClassDepartmentAndSpecialty(
-                    classCode, sciDepartmentId, "S7");
-
-            Map<String, List<Subject>> grouped = subjectService.getGroupedSubjectsForEnrollment(
-                    classCode, sciDepartmentId, "S7");
-
-            debugInfo.put("classCode", classCode);
-            debugInfo.put("departmentId", sciDepartmentId);
-            debugInfo.put("specialty", "S7");
-            debugInfo.put("totalSubjects", allSubjects.size());
-            debugInfo.put("filteredSubjects", filteredSubjects.size());
-            debugInfo.put("groupedSubjects", grouped);
-
-            // List all subjects with details
             List<Map<String, Object>> subjectDetails = allSubjects.stream()
                     .map(subject -> {
                         Map<String, Object> details = new HashMap<>();
@@ -582,7 +527,6 @@ public class StudentController {
         model.addAttribute("departments", departmentRepository.findAll());
         model.addAttribute("specialties", studentService.getAllSpecialties());
 
-        // Get grouped subjects based on current student configuration
         Map<String, List<Subject>> groupedSubjects = studentService.getGroupedAvailableSubjects(student);
         model.addAttribute("groupedSubjects", groupedSubjects);
 
@@ -594,24 +538,31 @@ public class StudentController {
         model.addAttribute("departments", departmentRepository.findAll());
         model.addAttribute("specialties", studentService.getAllSpecialties());
 
-        // Get grouped subjects based on current student configuration
         Map<String, List<Subject>> groupedSubjects = studentService.getGroupedAvailableSubjects(student);
         model.addAttribute("groupedSubjects", groupedSubjects);
 
-        // Get current subject selections
         List<Long> selectedSubjectIds = studentService.getSelectedSubjectIds(student.getId());
         model.addAttribute("selectedSubjectIds", selectedSubjectIds);
     }
 
     @GetMapping("/check-specialty-requirements")
     @ResponseBody
-    public ResponseEntity<SpecialtyService.SpecialtyRequirement> checkSpecialtyRequirements(
+    public ResponseEntity<Map<String, Object>> checkSpecialtyRequirements(
             @RequestParam String classCode,
             @RequestParam String departmentCode) {
         try {
             log.info("Checking specialty requirements for class: {}, department: {}", classCode, departmentCode);
-            SpecialtyService.SpecialtyRequirement requirement = specialtyService.checkSpecialtyRequirement(classCode, departmentCode);
-            return ResponseEntity.ok(requirement);
+            SpecialtyService.SpecialtyRequirement requirement = studentService.checkSpecialtyRequirement(classCode, departmentCode);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("required", requirement.isRequired());
+            response.put("allowed", requirement.isAllowed());
+            response.put("message", requirement.getMessage());
+            response.put("specialties", requirement.getSpecialties());
+            response.put("specialtiesCount", requirement.getSpecialties().size());
+
+            log.info("Specialty requirement check completed: {}", requirement.getMessage());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error checking specialty requirements for class: {}, department: {}", classCode, departmentCode, e);
             return ResponseEntity.badRequest().build();
@@ -622,29 +573,7 @@ public class StudentController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getStudentStatistics() {
         try {
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("totalStudents", studentService.getStudentCount());
-
-            // Get counts by class
-            Map<String, Long> classCounts = new HashMap<>();
-            List<ClassRoom> classes = classRoomRepository.findAll();
-            for (ClassRoom cls : classes) {
-                long count = studentRepository.countByClassRoom(cls);
-                classCounts.put(cls.getName(), count);
-            }
-            stats.put("classDistribution", classCounts);
-
-            // Get counts by department
-            Map<String, Long> deptCounts = new HashMap<>();
-            List<Department> departments = departmentRepository.findAll();
-            for (Department dept : departments) {
-                long count = studentRepository.findAll().stream()
-                        .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(dept.getId()))
-                        .count();
-                deptCounts.put(dept.getName(), count);
-            }
-            stats.put("departmentDistribution", deptCounts);
-
+            Map<String, Object> stats = studentService.getStudentStatistics();
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             log.error("Error getting student statistics", e);
@@ -652,63 +581,66 @@ public class StudentController {
         }
     }
 
-    @GetMapping("/debug-filtering")
+    @GetMapping("/debug-filter")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> debugFiltering(
+    public ResponseEntity<Map<String, Object>> debugFilter(
             @RequestParam String classCode,
             @RequestParam Long departmentId,
             @RequestParam(required = false) String specialty) {
 
-        Map<String, Object> debugInfo = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         try {
             List<Subject> allSubjects = subjectService.getAllSubjects();
-            List<Subject> filteredSubjects = subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
+            response.put("totalSubjects", allSubjects.size());
 
-            debugInfo.put("totalSubjects", allSubjects.size());
-            debugInfo.put("filteredSubjects", filteredSubjects.size());
-            debugInfo.put("classCode", classCode);
-            debugInfo.put("departmentId", departmentId);
-            debugInfo.put("specialty", specialty);
+            Optional<Department> department = departmentRepository.findById(departmentId);
+            response.put("requestedDepartmentId", departmentId);
+            response.put("requestedDepartmentName", department.map(Department::getName).orElse("Not Found"));
+            response.put("requestedDepartmentCode", department.map(Department::getCode).orElse(null));
 
-            // List all subjects with their properties
-            List<Map<String, Object>> subjectDetails = allSubjects.stream()
-                    .map(subject -> {
-                        Map<String, Object> details = new HashMap<>();
-                        details.put("id", subject.getId());
-                        details.put("name", subject.getName());
-                        details.put("subjectCode", subject.getSubjectCode());
-                        details.put("department", subject.getDepartment() != null ?
-                                subject.getDepartment().getName() + " (" + subject.getDepartment().getCode() + ")" : "None");
-                        details.put("specialty", subject.getSpecialty());
-                        details.put("optional", subject.getOptional());
-                        details.put("coefficient", subject.getCoefficient());
-                        return details;
-                    })
+            List<Map<String, Object>> scienceSubjects = allSubjects.stream()
+                    .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(2L))
+                    .map(this::buildSubjectDebugInfo)
                     .collect(Collectors.toList());
 
-            debugInfo.put("allSubjects", subjectDetails);
+            response.put("scienceSubjectsCount", scienceSubjects.size());
+            response.put("scienceSubjects", scienceSubjects);
 
-            // List filtered subjects
-            List<Map<String, Object>> filteredDetails = filteredSubjects.stream()
-                    .map(subject -> {
-                        Map<String, Object> details = new HashMap<>();
-                        details.put("id", subject.getId());
-                        details.put("name", subject.getName());
-                        details.put("subjectCode", subject.getSubjectCode());
-                        details.put("department", subject.getDepartment() != null ?
-                                subject.getDepartment().getName() : "None");
-                        return details;
-                    })
+            List<Map<String, Object>> subjectsInfo = allSubjects.stream()
+                    .map(this::buildSubjectDebugInfo)
                     .collect(Collectors.toList());
 
-            debugInfo.put("filteredSubjectsDetails", filteredDetails);
+            response.put("subjectsInfo", subjectsInfo);
 
-            return ResponseEntity.ok(debugInfo);
+
+            List<Subject> filtered = subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
+            response.put("filteredCount", filtered.size());
+            response.put("filteredSubjects", filtered.stream()
+                    .map(s -> s.getName() + " (Dept: " +
+                            (s.getDepartment() != null ? s.getDepartment().getName() : "None") +
+                            ", Specialty: " + s.getSpecialty() + ")")
+                    .collect(Collectors.toList()));
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            debugInfo.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(debugInfo);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
+
+    private Map<String, Object> buildSubjectDebugInfo(Subject s) {
+        Map<String, Object> info = new HashMap<>();
+        info.put("id", s.getId());
+        info.put("name", s.getName());
+        info.put("subjectCode", s.getSubjectCode());
+        info.put("departmentId", s.getDepartment() != null ? s.getDepartment().getId() : null);
+        info.put("departmentName", s.getDepartment() != null ? s.getDepartment().getName() : null);
+        info.put("departmentCode", s.getDepartment() != null ? s.getDepartment().getCode() : null);
+        info.put("specialty", s.getSpecialty());
+        info.put("optional", s.getOptional());
+        return info;
+    }
+
 }

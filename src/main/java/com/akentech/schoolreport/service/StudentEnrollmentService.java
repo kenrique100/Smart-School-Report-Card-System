@@ -8,8 +8,11 @@ import com.akentech.schoolreport.model.StudentSubject;
 import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
+import com.akentech.schoolreport.model.enums.PerformanceLevel;
 import com.akentech.schoolreport.repository.StudentSubjectRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,20 +21,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class StudentEnrollmentService {
 
     private final StudentSubjectRepository studentSubjectRepository;
+    @Lazy
     private final SubjectService subjectService;
 
     private static final Map<ClassLevel, List<String>> COMPULSORY_SUBJECT_NAMES = createEnhancedCompulsoryMap();
     private static final Map<DepartmentCode, List<String>> DEPARTMENT_CORE_SUBJECTS = createDepartmentCoreMap();
-
-    public StudentEnrollmentService(StudentSubjectRepository studentSubjectRepository,
-                                    SubjectService subjectService) {
-        this.studentSubjectRepository = studentSubjectRepository;
-        this.subjectService = subjectService;
-    }
 
     private static Map<ClassLevel, List<String>> createEnhancedCompulsoryMap() {
         Map<ClassLevel, List<String>> compulsoryMap = new HashMap<>();
@@ -61,8 +60,6 @@ public class StudentEnrollmentService {
 
         return deptCoreMap;
     }
-
-    /* ============================ CORE ENROLLMENT METHODS ============================ */
 
     public void enrollStudentInSubjects(Student student, List<Long> subjectIds) {
         if (student == null) {
@@ -117,7 +114,7 @@ public class StudentEnrollmentService {
             return new ArrayList<>();
         }
 
-        List<StudentSubject> enrollments = studentSubjectRepository.findByStudentIdWithSubject(studentId);
+        List<StudentSubject> enrollments = studentSubjectRepository.findByStudent_Id(studentId);
         enrollments.sort(Comparator.comparing(ss -> ss.getSubject().getName()));
         return enrollments;
     }
@@ -181,23 +178,43 @@ public class StudentEnrollmentService {
                         "studentId: " + studentId + ", subjectId: " + subjectId));
 
         enrollment.setScore(score);
+        enrollment.setPerformance(calculatePerformanceLevel(score));
         studentSubjectRepository.save(enrollment);
+
+        log.info("Updated score for student {} in subject {} to {}", studentId, subjectId, score);
+    }
+
+    public PerformanceLevel calculatePerformanceLevel(Double score) {
+        if (score == null) return null;
+        if (score >= 80) return PerformanceLevel.EXCELLENT;
+        if (score >= 70) return PerformanceLevel.GOOD;
+        if (score >= 60) return PerformanceLevel.FAIR;
+        if (score >= 50) return PerformanceLevel.AVERAGE;
+        return PerformanceLevel.FAIL;
+    }
+
+    public void removeStudentFromSubject(Long studentId, Long subjectId) {
+        studentSubjectRepository.findByStudentIdAndSubjectId(studentId, subjectId)
+                .ifPresent(enrollment -> {
+                    studentSubjectRepository.delete(enrollment);
+                    log.info("Removed student {} from subject {}", studentId, subjectId);
+                });
     }
 
     @Transactional(readOnly = true)
-    public List<Subject> getAvailableSubjectsForStudent(Student student) {
-        if (student == null) {
-            return new ArrayList<>();
-        }
-
-        String classCode = student.getClassRoom() != null ? student.getClassRoom().getCode().name() : null;
-        Long departmentId = student.getDepartment() != null ? student.getDepartment().getId() : null;
-        String specialty = student.getSpecialty();
-
-        return subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
+    public boolean isStudentEnrolledInSubject(Long studentId, Long subjectId) {
+        return studentSubjectRepository.existsByStudent_IdAndSubject_Id(studentId, subjectId);
     }
 
-    /* ============================ PRIVATE HELPER METHODS ============================ */
+    @Transactional(readOnly = true)
+    public long countEnrollmentsByStudent(Long studentId) {
+        return studentSubjectRepository.countByStudent_Id(studentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentSubject> getEnrollmentsBySubject(Long subjectId) {
+        return studentSubjectRepository.findBySubject_Id(subjectId);
+    }
 
     private void enrollAppropriateSubjects(Student student) {
         List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(student);
@@ -236,8 +253,7 @@ public class StudentEnrollmentService {
         Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
                 classCode, departmentId, specialty);
 
-        List<Subject> appropriateSubjects = new ArrayList<>();
-        appropriateSubjects.addAll(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
+        List<Subject> appropriateSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
 
         ClassLevel classLevel = student.getClassRoom().getCode();
         if ((classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5 || classLevel.isSixthForm())) {
@@ -354,7 +370,7 @@ public class StudentEnrollmentService {
             return new HashMap<>();
         }
 
-        List<StudentSubject> existing = studentSubjectRepository.findByStudentIdWithSubject(studentId);
+        List<StudentSubject> existing = studentSubjectRepository.findByStudent_Id(studentId);
         return existing.stream()
                 .collect(Collectors.toMap(
                         ss -> ss.getSubject().getId(),

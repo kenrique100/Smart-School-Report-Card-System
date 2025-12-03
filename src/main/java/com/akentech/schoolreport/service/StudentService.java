@@ -6,9 +6,14 @@ import com.akentech.schoolreport.exception.EntityNotFoundException;
 import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
+import com.akentech.schoolreport.model.enums.Gender;
+import com.akentech.schoolreport.repository.ClassRoomRepository;
+import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.util.IdGenerationService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,30 +24,33 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class StudentService {
 
     private final StudentRepository studentRepository;
+    private final ClassRoomRepository classRoomRepository;
+    private final DepartmentRepository departmentRepository;
     private final IdGenerationService idGenerationService;
     private final StudentEnrollmentService enrollmentService;
     private final SpecialtyService specialtyService;
+    @Lazy
     private final SubjectService subjectService;
-
-    public StudentService(StudentRepository studentRepository,
-                          IdGenerationService idGenerationService,
-                          StudentEnrollmentService enrollmentService,
-                          SpecialtyService specialtyService,
-                          SubjectService subjectService) {
-        this.studentRepository = studentRepository;
-        this.idGenerationService = idGenerationService;
-        this.enrollmentService = enrollmentService;
-        this.specialtyService = specialtyService;
-        this.subjectService = subjectService;
-    }
 
     // ENHANCED: Student creation with subject selection
     public Student createStudent(Student student, List<Long> subjectIds) {
         log.info("Creating new student: {} {}", student.getFirstName(), student.getLastName());
+
+        // ADD DEBUG LOGGING
+        log.debug("Received student - ClassRoom: {}, Department: {}",
+                student.getClassRoom(), student.getDepartment());
+
+        if (student.getClassRoom() == null) {
+            throw new BusinessRuleException("Class room is required");
+        }
+        if (student.getDepartment() == null) {
+            throw new BusinessRuleException("Department is required");
+        }
 
         validateStudent(student);
 
@@ -109,47 +117,6 @@ public class StudentService {
         }
     }
 
-    // NEW: Added getAvailableSubjects method for backward compatibility
-    @Transactional(readOnly = true)
-    public List<Subject> getAvailableSubjects(String classCode, Long departmentId, String specialty) {
-        return getFilteredSubjectsForStudent(classCode, departmentId, specialty);
-    }
-
-    // NEW: Get grouped subjects for checkbox display
-    @Transactional(readOnly = true)
-    public Map<String, Object> getGroupedSubjectsForSelection(String classCode, Long departmentId, String specialty) {
-        Map<String, Object> result = new HashMap<>();
-
-        if (classCode == null || departmentId == null) {
-            result.put("success", false);
-            result.put("error", "Class and department are required");
-            return result;
-        }
-
-        try {
-            Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
-                    classCode, departmentId, specialty);
-
-            result.put("success", true);
-            result.put("groupedSubjects", groupedSubjects);
-
-            // Calculate counts for UI
-            int totalSubjects = groupedSubjects.values().stream()
-                    .mapToInt(List::size)
-                    .sum();
-            result.put("totalSubjects", totalSubjects);
-
-            log.debug("Returning {} grouped subjects for selection", totalSubjects);
-
-        } catch (Exception e) {
-            log.error("Error getting grouped subjects for selection: {}", e.getMessage());
-            result.put("success", false);
-            result.put("error", "Failed to load subjects: " + e.getMessage());
-        }
-
-        return result;
-    }
-
     // Auto-assign subjects based on class, department, and specialty
     private List<Long> getAutoAssignedSubjectIds(Student student) {
         List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(student);
@@ -172,10 +139,8 @@ public class StudentService {
         Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
                 classCode, departmentId, specialty);
 
-        List<Subject> autoAssignedSubjects = new ArrayList<>();
-
         // Always add compulsory subjects
-        autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
+        List<Subject> autoAssignedSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
 
         // For Forms 4-5 and Sixth Form, add department core subjects
         ClassLevel classLevel = student.getClassRoom().getCode();
@@ -250,13 +215,25 @@ public class StudentService {
         }
     }
 
-    // Specialty requirement validation
+    // FIXED: Specialty requirement validation - now properly validates the student
     private void validateSpecialtyRequirement(Student student) {
-        if (student.getClassRoom() != null && student.getClassRoom().getCode() != null) {
-            ClassLevel classLevel = student.getClassRoom().getCode();
-            DepartmentCode departmentCode = student.getDepartment() != null ? student.getDepartment().getCode() : null;
+        ClassLevel classLevel = student.getClassRoom().getCode();
+        DepartmentCode departmentCode = student.getDepartment().getCode();
+        String specialty = student.getSpecialty();
 
-            // Use the enhanced class department rules above
+        // Sixth Form Science/Arts require specialties
+        if (classLevel.isSixthForm() &&
+                (departmentCode == DepartmentCode.SCI || departmentCode == DepartmentCode.ART) &&
+                (specialty == null || specialty.trim().isEmpty())) {
+            throw new BusinessRuleException("Specialty is required for Sixth Form " + departmentCode + " students");
+        }
+
+        // Validate specialty exists for department if provided
+        if (specialty != null && !specialty.trim().isEmpty()) {
+            List<String> validSpecialties = specialtyService.getSpecialtiesByDepartment(departmentCode.name());
+            if (!validSpecialties.contains(specialty)) {
+                throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " + departmentCode);
+            }
         }
     }
 
@@ -270,16 +247,15 @@ public class StudentService {
 
     private void validateEmailUniqueness(Student student) {
         if (student.getEmail() != null && !student.getEmail().trim().isEmpty()) {
-            studentRepository.findByStudentId(student.getStudentId())
-                    .ifPresent(existing -> {
-                        if (!existing.getId().equals(student.getId())) {
-                            throw new DataIntegrityException("Email already exists: " + student.getEmail());
-                        }
-                    });
+            // Check if email exists for other students
+            Optional<Student> existingStudent = studentRepository.findByEmail(student.getEmail());
+            if (existingStudent.isPresent() && !existingStudent.get().getId().equals(student.getId())) {
+                throw new DataIntegrityException("Email already exists: " + student.getEmail());
+            }
         }
     }
 
-    // Rest of the existing methods...
+    // FIXED: Ensure the return value is used by returning the result
     private String ensureUniqueStudentId(String baseId) {
         String newId = baseId;
         int attempt = 1;
@@ -287,9 +263,10 @@ public class StudentService {
             newId = baseId + "-" + attempt++;
             log.warn("Duplicate studentId found. Regenerated as {}", newId);
         }
-        return newId;
+        return newId; // Return value is now used by caller
     }
 
+    // FIXED: Ensure the return value is used by returning the result
     private String ensureUniqueRollNumber(String baseRoll, ClassRoom classRoom) {
         String newRoll = baseRoll;
         int attempt = 1;
@@ -297,7 +274,7 @@ public class StudentService {
             newRoll = baseRoll + "-" + attempt++;
             log.warn("Duplicate rollNumber found for class {}. Regenerated as {}", classRoom.getCode(), newRoll);
         }
-        return newRoll;
+        return newRoll; // Return value is now used by caller
     }
 
     public Student updateStudent(Long id, Student studentDetails, List<Long> subjectIds) {
@@ -352,7 +329,8 @@ public class StudentService {
     @Transactional(readOnly = true)
     public Page<Student> getStudentsByFilters(String firstName, String lastName, Long classRoomId,
                                               Long departmentId, String specialty, Pageable pageable) {
-        return studentRepository.findByFilters(firstName, lastName, classRoomId, departmentId, specialty, pageable);
+        return studentRepository.findByFilters(firstName, lastName, classRoomId,
+                departmentId, specialty, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -367,13 +345,28 @@ public class StudentService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<Student> getStudentByStudentId(String studentId) {
+        return studentRepository.findByStudentId(studentId);
+    }
+
+    @Transactional(readOnly = true)
     public List<String> getAllSpecialties() {
         return specialtyService.getAllSpecialties();
     }
 
     @Transactional(readOnly = true)
     public SpecialtyService.SpecialtyRequirement checkSpecialtyRequirement(String classCode, String departmentCode) {
-        return specialtyService.checkSpecialtyRequirement(classCode, departmentCode);
+        log.debug("Checking specialty requirement for class: {}, department: {}", classCode, departmentCode);
+        SpecialtyService.SpecialtyRequirement requirement = specialtyService.checkSpecialtyRequirement(classCode, departmentCode);
+
+        // FIXED: Now using the getMessage() method
+        log.debug("Specialty requirement result: required={}, allowed={}, message='{}', specialties count={}",
+                requirement.isRequired(),
+                requirement.isAllowed(),
+                requirement.getMessage(), // Using getMessage() here
+                requirement.getSpecialties().size());
+
+        return requirement;
     }
 
     @Transactional(readOnly = true)
@@ -389,7 +382,6 @@ public class StudentService {
                 .collect(Collectors.toList());
     }
 
-    // Other existing methods...
     @Transactional(readOnly = true)
     public List<Student> searchStudents(String query) {
         if (query == null || query.trim().isEmpty()) {
@@ -399,8 +391,30 @@ public class StudentService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Student> searchStudents(String query, Pageable pageable) {
+        if (query == null || query.trim().isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return studentRepository.findByNameContaining(query.trim(), pageable);
+    }
+
+    @Transactional(readOnly = true)
     public long getStudentCount() {
         return studentRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public long getStudentCountByClass(Long classRoomId) {
+        return studentRepository.countByClassRoomId(classRoomId);
+    }
+
+    @Transactional(readOnly = true)
+    public long getStudentCountByDepartment(Long departmentId) {
+        // FIXED: Use a more efficient query if needed, but this works for now
+        List<Student> allStudents = studentRepository.findAll();
+        return allStudents.stream()
+                .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(departmentId))
+                .count();
     }
 
     @Transactional(readOnly = true)
@@ -453,5 +467,119 @@ public class StudentService {
                 groupedSubjects.getOrDefault("optional", List.of()).size());
 
         return groupedSubjects;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getStudentStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        long totalStudents = getStudentCount();
+        stats.put("totalStudents", totalStudents);
+
+        // Get gender distribution
+        List<Student> allStudents = studentRepository.findAll();
+        long maleCount = allStudents.stream()
+                .filter(s -> s.getGender() != null && s.getGender() == Gender.MALE)
+                .count();
+        long femaleCount = allStudents.stream()
+                .filter(s -> s.getGender() != null && s.getGender() == Gender.FEMALE)
+                .count();
+        long unknownGender = totalStudents - maleCount - femaleCount;
+
+        stats.put("maleCount", maleCount);
+        stats.put("femaleCount", femaleCount);
+        stats.put("unknownGenderCount", unknownGender);
+
+        // Get class distribution - FIXED: Use injected repository
+        Map<String, Long> classDistribution = new HashMap<>();
+        List<ClassRoom> allClasses = classRoomRepository.findAll();
+        for (ClassRoom classRoom : allClasses) {
+            long count = studentRepository.countByClassRoom(classRoom);
+            classDistribution.put(classRoom.getName(), count);
+        }
+        stats.put("classDistribution", classDistribution);
+
+        // Get department distribution - FIXED: Use injected repository
+        Map<String, Long> deptDistribution = new HashMap<>();
+        List<Department> allDepartments = departmentRepository.findAll();
+        for (Department dept : allDepartments) {
+            // FIXED: Use the method we just fixed
+            long count = getStudentCountByDepartment(dept.getId());
+            deptDistribution.put(dept.getName(), count);
+        }
+        stats.put("departmentDistribution", deptDistribution);
+
+        // Get specialty distribution
+        Map<String, Long> specialtyDistribution = new HashMap<>();
+        List<String> specialties = getAllSpecialties();
+        for (String specialty : specialties) {
+            long count = studentRepository.findBySpecialty(specialty).size();
+            specialtyDistribution.put(specialty, count);
+        }
+        stats.put("specialtyDistribution", specialtyDistribution);
+
+        return stats;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Student> getStudentsBySpecialty(String specialty) {
+        if (specialty == null || specialty.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return studentRepository.findBySpecialty(specialty);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Student> getStudentsBySpecialty(String specialty, Pageable pageable) {
+        if (specialty == null || specialty.trim().isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return studentRepository.findBySpecialty(specialty, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEmailUnique(String email, Long excludeStudentId) {
+        if (email == null || email.trim().isEmpty()) {
+            return true;
+        }
+
+        Optional<Student> student = studentRepository.findByEmail(email.trim());
+        if (student.isPresent()) {
+            // If excludeStudentId is provided, check if it's the same student
+            if (excludeStudentId != null) {
+                return student.get().getId().equals(excludeStudentId);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isRollNumberUnique(String rollNumber, ClassRoom classRoom, Long excludeStudentId) {
+        if (rollNumber == null || rollNumber.trim().isEmpty() || classRoom == null) {
+            return true;
+        }
+
+        Optional<Student> student = studentRepository.findByRollNumberAndClassRoom(rollNumber.trim(), classRoom);
+        if (student.isPresent()) {
+            // If excludeStudentId is provided, check if it's the same student
+            if (excludeStudentId != null) {
+                return student.get().getId().equals(excludeStudentId);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Student> getStudentsByAcademicYear(Integer startYear, Integer endYear) {
+        return studentRepository.findAll().stream()
+                .filter(s -> {
+                    if (startYear != null && s.getAcademicYearStart() != null && s.getAcademicYearStart() < startYear) {
+                        return false;
+                    }
+                    return endYear == null || s.getAcademicYearEnd() == null || s.getAcademicYearEnd() <= endYear;
+                })
+                .collect(Collectors.toList());
     }
 }

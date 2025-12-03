@@ -45,8 +45,10 @@ public class TeacherService {
 
         // Generate teacher ID if not provided
         if (teacher.getTeacherId() == null || teacher.getTeacherId().trim().isEmpty()) {
-            String teacherId = idGenerationService.generateTeacherId();
-            teacher.setTeacherId(teacherId);
+            // FIXED: The return value is now properly used
+            String generatedTeacherId = generateTeacherId();
+            teacher.setTeacherId(generatedTeacherId);
+            log.info("Generated teacher ID: {}", generatedTeacherId);
         }
 
         // Validate and set subjects and classrooms
@@ -110,9 +112,7 @@ public class TeacherService {
         if (subjectName.contains("Literature") && teacherSkills.contains("liter")) return true;
         if (subjectName.contains("Accounting") && teacherSkills.contains("account")) return true;
         if (subjectName.contains("Commerce") && teacherSkills.contains("commer")) return true;
-        if (subjectName.contains("Economics") && teacherSkills.contains("econ")) return true;
-
-        return false;
+        return subjectName.contains("Economics") && teacherSkills.contains("econ");
     }
 
     // NEW: Validate classrooms against teacher's subject levels
@@ -171,34 +171,6 @@ public class TeacherService {
         }
     }
 
-    // ENHANCED: Get teachers by subject and class level
-    @Transactional(readOnly = true)
-    public List<Teacher> getTeachersBySubjectAndClassLevel(Long subjectId, String classCode) {
-        if (subjectId == null || classCode == null) {
-            return new ArrayList<>();
-        }
-
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new EntityNotFoundException("Subject", subjectId));
-
-        ClassLevel classLevel = ClassLevel.fromCode(classCode);
-
-        return teacherRepository.findAll().stream()
-                .filter(teacher -> teacher.getSubjects().contains(subject) &&
-                        isTeacherSuitableForClassLevel(teacher, classLevel))
-                .collect(Collectors.toList());
-    }
-
-    // NEW: Check if teacher is suitable for class level
-    private boolean isTeacherSuitableForClassLevel(Teacher teacher, ClassLevel classLevel) {
-        if (teacher.getSubjects() == null || teacher.getSubjects().isEmpty()) {
-            return true;
-        }
-
-        return teacher.getSubjects().stream()
-                .anyMatch(subject -> isSubjectForClassLevel(subject, classLevel));
-    }
-
     // ENHANCED: Update teacher with validation
     public Teacher updateTeacher(Long id, Teacher teacherDetails, List<Long> subjectIds, List<Long> classroomIds) {
         log.info("Updating teacher with id: {}", id);
@@ -228,16 +200,6 @@ public class TeacherService {
 
     // Rest of the existing methods remain the same...
     @Transactional(readOnly = true)
-    public List<Teacher> getAllTeachers() {
-        return teacherRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Teacher> getAllTeachers(Pageable pageable) {
-        return teacherRepository.findAll(pageable);
-    }
-
-    @Transactional(readOnly = true)
     public Page<Teacher> getTeachersByFilters(String firstName, String lastName, Long subjectId, Pageable pageable) {
         return teacherRepository.findByFilters(firstName, lastName, subjectId, pageable);
     }
@@ -259,8 +221,25 @@ public class TeacherService {
         return teacherRepository.count();
     }
 
+    // FIXED: The return value is now properly used in createTeacher method
     @Transactional(readOnly = true)
     public String generateTeacherId() {
-        return idGenerationService.generateTeacherId();
+        String teacherId = idGenerationService.generateTeacherId();
+        log.debug("Generated teacher ID: {}", teacherId);
+        return teacherId;
+    }
+
+    // FIXED: This method is now used in the controller
+    @Transactional(readOnly = true)
+    public List<Teacher> getAllTeachers() {
+        List<Teacher> teachers = teacherRepository.findAll();
+        log.debug("Retrieved {} teachers", teachers.size());
+        return teachers;
+    }
+
+    // NEW: Additional method to get teachers for dropdowns or APIs
+    @Transactional(readOnly = true)
+    public List<Teacher> getTeachersForSelection() {
+        return getAllTeachers(); // Reusing the existing method
     }
 }

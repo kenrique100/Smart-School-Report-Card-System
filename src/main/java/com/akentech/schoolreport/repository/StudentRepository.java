@@ -26,8 +26,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     long countByClassRoomAndDepartment(ClassRoom classRoom, Department department);
     long countByClassRoomAndDepartmentAndSpecialty(ClassRoom classRoom, Department department, String specialty);
-
-    // ADD THIS MISSING METHOD
     long countByClassRoom(ClassRoom classRoom);
 
     @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId")
@@ -51,7 +49,17 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findBySpecialty(String specialty);
     Page<Student> findBySpecialty(String specialty, Pageable pageable);
 
-    @Query("SELECT s FROM Student s WHERE " +
+    @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL")
+    Long countDistinctSpecialties();
+
+    Optional<Student> findByEmail(String email);
+
+    @Query("SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject " +
+            "WHERE " +
             "(:firstName IS NULL OR s.firstName LIKE %:firstName%) AND " +
             "(:lastName IS NULL OR s.lastName LIKE %:lastName%) AND " +
             "(:classRoomId IS NULL OR s.classRoom.id = :classRoomId) AND " +
@@ -64,20 +72,31 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                                 @Param("specialty") String specialty,
                                 Pageable pageable);
 
-    // Add method to get all students with proper joins for sorting
-    @Query("SELECT s FROM Student s LEFT JOIN s.classRoom c LEFT JOIN s.department d " +
+    // NEW: Methods for eager loading
+    @Query("SELECT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department WHERE s.id = :id")
+    Optional<Student> findByIdWithClassRoomAndDepartment(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department")
+    List<Student> findAllWithClassRoomAndDepartment();
+
+    @Query("SELECT DISTINCT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department")
+    Page<Student> findAllWithClassRoomAndDepartment(Pageable pageable);
+    @Query("SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject " +
             "ORDER BY s.firstName, s.lastName")
-    List<Student> findAllWithJoins();
+    List<Student> findAllWithAssociations();
 
-    // Add method for sorting by class
-    @Query("SELECT s FROM Student s LEFT JOIN s.classRoom c ORDER BY c.name")
-    List<Student> findAllOrderByClassName();
+    // Also add a paged version
+    @Query(value = "SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject",
+            countQuery = "SELECT COUNT(DISTINCT s) FROM Student s")
+    Page<Student> findAllWithAssociations(Pageable pageable);
 
-    // Add method for sorting by department
-    @Query("SELECT s FROM Student s LEFT JOIN s.department d ORDER BY d.name")
-    List<Student> findAllOrderByDepartmentName();
 
-    // Add method for sorting by specialty
-    @Query("SELECT s FROM Student s ORDER BY s.specialty")
-    List<Student> findAllOrderBySpecialty();
 }

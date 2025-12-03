@@ -16,7 +16,6 @@ public class StatisticsService {
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
     private final SubjectRepository subjectRepository;
-    private final NoticeRepository noticeRepository;
     private final ClassRoomRepository classRoomRepository;
     private final DepartmentRepository departmentRepository;
 
@@ -27,10 +26,10 @@ public class StatisticsService {
             stats.put("totalStudents", studentRepository.count());
             stats.put("totalTeachers", teacherRepository.count());
             stats.put("totalSubjects", subjectRepository.count());
-            stats.put("totalNotices", noticeRepository.countByIsActive(true));
             stats.put("totalClasses", classRoomRepository.count());
             stats.put("totalDepartments", departmentRepository.count());
-            stats.put("totalSpecialties", studentRepository.count());
+            // FIXED: Count distinct specialties instead of duplicating student count
+            stats.put("totalSpecialties", studentRepository.countDistinctSpecialties());
 
             log.info("Dashboard statistics loaded successfully: {}", stats);
 
@@ -40,7 +39,6 @@ public class StatisticsService {
             stats.put("totalStudents", 0L);
             stats.put("totalTeachers", 0L);
             stats.put("totalSubjects", 0L);
-            stats.put("totalNotices", 0L);
             stats.put("totalClasses", 0L);
             stats.put("totalDepartments", 0L);
             stats.put("totalSpecialties", 0L);

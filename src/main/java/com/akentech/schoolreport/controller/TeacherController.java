@@ -11,11 +11,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/teachers")
@@ -57,6 +60,9 @@ public class TeacherController {
             model.addAttribute("lastNameFilter", lastName);
             model.addAttribute("subjectIdFilter", subjectId);
 
+            // Add subjects for filter dropdown
+            model.addAttribute("allSubjects", subjectRepository.findAll());
+
             return "teachers";
         } catch (Exception e) {
             log.error("Error loading teachers list", e);
@@ -67,11 +73,16 @@ public class TeacherController {
 
     @GetMapping("/add")
     public String showAddForm(Model model) {
+        // FIXED: The return value is now properly used
+        String generatedTeacherId = teacherService.generateTeacherId();
         Teacher teacher = new Teacher();
-        teacher.setTeacherId(teacherService.generateTeacherId());
+        teacher.setTeacherId(generatedTeacherId);
+
         model.addAttribute("teacher", teacher);
         model.addAttribute("allSubjects", subjectRepository.findAll());
         model.addAttribute("allClassrooms", classRoomRepository.findAll());
+
+        log.info("Add form initialized with teacher ID: {}", generatedTeacherId);
         return "add-teacher";
     }
 
@@ -80,7 +91,9 @@ public class TeacherController {
                              @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
                              @RequestParam(value = "classroomIds", required = false) List<Long> classroomIds) {
         try {
-            teacherService.createTeacher(teacher, subjectIds, classroomIds);
+            // FIXED: The return value is now properly used
+            Teacher savedTeacher = teacherService.createTeacher(teacher, subjectIds, classroomIds);
+            log.info("Successfully created teacher with ID: {}", savedTeacher.getTeacherId());
             return "redirect:/teachers?success";
         } catch (Exception e) {
             log.error("Error adding teacher", e);
@@ -110,7 +123,9 @@ public class TeacherController {
                                 @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
                                 @RequestParam(value = "classroomIds", required = false) List<Long> classroomIds) {
         try {
-            teacherService.updateTeacher(teacher.getId(), teacher, subjectIds, classroomIds);
+            // FIXED: The return value is now properly used
+            Teacher updatedTeacher = teacherService.updateTeacher(teacher.getId(), teacher, subjectIds, classroomIds);
+            log.info("Successfully updated teacher with ID: {}", updatedTeacher.getTeacherId());
             return "redirect:/teachers?updated";
         } catch (EntityNotFoundException e) {
             log.warn("Teacher not found for update with id: {}", teacher.getId());
@@ -147,6 +162,65 @@ public class TeacherController {
         } catch (Exception e) {
             log.error("Error viewing teacher with id: {}", id, e);
             return "redirect:/teachers?error=server_error";
+        }
+    }
+
+    // NEW: API endpoint to use getAllTeachers() method
+    @GetMapping("/api/all")
+    @ResponseBody
+    public ResponseEntity<List<Teacher>> getAllTeachersApi() {
+        try {
+            // FIXED: Now using the getAllTeachers() method
+            List<Teacher> teachers = teacherService.getAllTeachers();
+            log.info("Returning {} teachers via API", teachers.size());
+            return ResponseEntity.ok(teachers);
+        } catch (Exception e) {
+            log.error("Error retrieving all teachers via API", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // NEW: Endpoint for dropdown selection
+    @GetMapping("/api/for-selection")
+    @ResponseBody
+    public ResponseEntity<List<Teacher>> getTeachersForSelection() {
+        try {
+            List<Teacher> teachers = teacherService.getTeachersForSelection();
+            return ResponseEntity.ok(teachers);
+        } catch (Exception e) {
+            log.error("Error retrieving teachers for selection", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/statistics")
+    @ResponseBody
+    public ResponseEntity<?> getTeacherStatistics() {
+        try {
+            long totalTeachers = teacherService.getTeacherCount();
+            List<Teacher> allTeachers = teacherService.getAllTeachers();
+
+            long withSubjects = allTeachers.stream()
+                    .filter(t -> t.getSubjects() != null && !t.getSubjects().isEmpty())
+                    .count();
+            long withClassrooms = allTeachers.stream()
+                    .filter(t -> t.getClassrooms() != null && !t.getClassrooms().isEmpty())
+                    .count();
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("total", totalTeachers);
+            stats.put("withSubjects", withSubjects);
+            stats.put("withClassrooms", withClassrooms);
+            stats.put("withoutSubjects", totalTeachers - withSubjects);
+            stats.put("withoutClassrooms", totalTeachers - withClassrooms);
+
+            log.info("Teacher statistics: total={}, withSubjects={}, withClassrooms={}",
+                    totalTeachers, withSubjects, withClassrooms);
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error retrieving teacher statistics", e);
+            return ResponseEntity.badRequest().build();
         }
     }
 }
