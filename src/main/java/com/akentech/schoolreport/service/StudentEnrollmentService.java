@@ -1,11 +1,7 @@
 package com.akentech.schoolreport.service;
 
 import com.akentech.schoolreport.exception.EntityNotFoundException;
-import com.akentech.schoolreport.model.ClassRoom;
-import com.akentech.schoolreport.model.Department;
-import com.akentech.schoolreport.model.Student;
-import com.akentech.schoolreport.model.StudentSubject;
-import com.akentech.schoolreport.model.Subject;
+import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.model.enums.PerformanceLevel;
@@ -61,6 +57,95 @@ public class StudentEnrollmentService {
         return deptCoreMap;
     }
 
+    // NEW: Method to enroll existing student in new subjects
+    public void enrollStudentInAdditionalSubjects(Long studentId, List<Long> subjectIds) {
+        if (studentId == null) {
+            throw new IllegalArgumentException("Student ID cannot be null");
+        }
+
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            log.warn("No subject ID provided for student {}", studentId);
+            return;
+        }
+
+        log.info("Enrolling student {} in {} additional subject's", studentId, subjectIds.size());
+
+        // Get existing enrollments
+        List<StudentSubject> existingEnrollments = studentSubjectRepository.findByStudentId(studentId);
+        Set<Long> existingSubjectIds = existingEnrollments.stream()
+                .map(ss -> ss.getSubject().getId())
+                .collect(Collectors.toSet());
+
+        // Filter out subjects the student is already enrolled in
+        List<Long> newSubjectIds = subjectIds.stream()
+                .filter(subjectId -> !existingSubjectIds.contains(subjectId))
+                .collect(Collectors.toList());
+
+        if (newSubjectIds.isEmpty()) {
+            log.info("Student {} is already enrolled in all requested subjects", studentId);
+            return;
+        }
+
+        // Get the subjects
+        List<Subject> newSubjects = subjectService.getSubjectsByIds(newSubjectIds);
+
+        // Get student from existing enrollment (or you could fetch it separately)
+        Student student = existingEnrollments.isEmpty() ? null : existingEnrollments.getFirst().getStudent();
+        if (student == null) {
+            throw new EntityNotFoundException("Student", studentId);
+        }
+
+        // Enroll in new subjects
+        for (Subject subject : newSubjects) {
+            boolean isCompulsory = isCompulsorySubject(subject, student.getClassRoom()) ||
+                    isDepartmentCoreSubject(subject, student.getDepartment(), student.getClassRoom());
+
+            StudentSubject enrollment = StudentSubject.builder()
+                    .student(student)
+                    .subject(subject)
+                    .isCompulsory(isCompulsory)
+                    .build();
+
+            studentSubjectRepository.save(enrollment);
+            log.info("Enrolled student {} in new subject: {}", studentId, subject.getName());
+        }
+
+        log.info("Successfully enrolled student {} in {} new subject(s)", studentId, newSubjects.size());
+    }
+
+    // NEW: Method to get available subjects for enrollment (not already enrolled)
+    @Transactional(readOnly = true)
+    public List<Subject> getAvailableSubjectsForEnrollment(Long studentId) {
+        if (studentId == null) {
+            return new ArrayList<>();
+        }
+
+        // Get student's current subjects
+        List<StudentSubject> currentEnrollments = studentSubjectRepository.findByStudentId(studentId);
+        Set<Long> currentSubjectIds = currentEnrollments.stream()
+                .map(ss -> ss.getSubject().getId())
+                .collect(Collectors.toSet());
+
+        // Get student info
+        Student student = currentEnrollments.isEmpty() ? null : currentEnrollments.getFirst().getStudent();
+        if (student == null || student.getClassRoom() == null || student.getDepartment() == null) {
+            return new ArrayList<>();
+        }
+
+        // Get all available subjects for student
+        String classCode = student.getClassRoom().getCode().name();
+        Long departmentId = student.getDepartment().getId();
+        String specialty = student.getSpecialty();
+
+        List<Subject> allAvailableSubjects = subjectService.getSubjectsByClassDepartmentAndSpecialty(
+                classCode, departmentId, specialty);
+
+        // Filter out already enrolled subjects
+        return allAvailableSubjects.stream()
+                .filter(subject -> !currentSubjectIds.contains(subject.getId()))
+                .collect(Collectors.toList());
+    }
+
     public void enrollStudentInSubjects(Student student, List<Long> subjectIds) {
         if (student == null) {
             throw new IllegalArgumentException("Student cannot be null");
@@ -114,7 +199,8 @@ public class StudentEnrollmentService {
             return new ArrayList<>();
         }
 
-        List<StudentSubject> enrollments = studentSubjectRepository.findByStudent_Id(studentId);
+        // FIXED: Use repository method that fetches subject and department
+        List<StudentSubject> enrollments = studentSubjectRepository.findByStudentIdWithSubject(studentId);
         enrollments.sort(Comparator.comparing(ss -> ss.getSubject().getName()));
         return enrollments;
     }

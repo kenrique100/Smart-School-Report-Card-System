@@ -8,7 +8,8 @@ public enum DepartmentCode {
     ART("ART", "Arts"),
     COM("COM", "Commercial"),
     TEC("TEC", "Technical"),
-    HE("HE", "Home Economics");
+    HE("HE", "Home Economics"),
+    CI("CI", "Clothing Industry");
 
     @Getter
     private final String code;

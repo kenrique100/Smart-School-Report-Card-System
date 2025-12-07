@@ -47,7 +47,7 @@ public class SubjectService {
         compulsoryMap.put(ClassLevel.FORM_3, new ArrayList<>(forms1to3Core));
 
         // Forms 4-5: Reduced compulsory subjects
-        List<String> forms4to5Core = Arrays.asList("O-Mathematics", "O-English Language", "O-French Language");
+        List<String> forms4to5Core = Arrays.asList("O-Mathematics", "O-English Language", "O-French Language", "Physical Education");
         compulsoryMap.put(ClassLevel.FORM_4, new ArrayList<>(forms4to5Core));
         compulsoryMap.put(ClassLevel.FORM_5, new ArrayList<>(forms4to5Core));
 
@@ -65,7 +65,7 @@ public class SubjectService {
         deptCoreMap.put(DepartmentCode.ART, Arrays.asList("O-History", "O-Geography", "O-Literature in English", "O-Economics"));
         deptCoreMap.put(DepartmentCode.COM, Arrays.asList("O-Accounting", "O-Commerce", "O-Economics", "O-Business Studies"));
         deptCoreMap.put(DepartmentCode.TEC, Arrays.asList("Technical Drawing", "Workshop Practice", "Engineering Science", "O-Woodwork"));
-        deptCoreMap.put(DepartmentCode.HE, Arrays.asList("Food and Nutrition", "Home Management", "Clothing and Textiles", "O-Child Development"));
+        deptCoreMap.put(DepartmentCode.HE, Arrays.asList("Food and Nutrition", "Home Management", "Clothing and Textiles"));
         deptCoreMap.put(DepartmentCode.GEN, Arrays.asList("O-Computer Science", "O-ICT", "O-Religious Studies", "Citizenship Education"));
 
         return deptCoreMap;
@@ -117,7 +117,7 @@ public class SubjectService {
 
         for (Subject subject : allSubjects) {
             boolean isForClassLevel = isSubjectForClassLevel(subject, classLevel, isSixthForm);
-            boolean isForDepartment = isSubjectForDepartment(subject, departmentId);
+            boolean isForDepartment = isSubjectForDepartment(subject, departmentId, isSixthForm, department);
             boolean isForSpecialty = isSubjectForSpecialty(subject, specialty, isSixthForm);
 
             if (isForClassLevel && isForDepartment && isForSpecialty) {
@@ -366,54 +366,63 @@ public class SubjectService {
                 .anyMatch(spec -> spec.trim().equalsIgnoreCase(specialty.trim()));
     }
 
+    // FIXED: Enhanced class level filtering
     private boolean isSubjectForClassLevel(Subject subject, ClassLevel classLevel, boolean isSixthForm) {
         if (subject == null || subject.getName() == null) {
             return false;
         }
 
         String subjectName = subject.getName();
-
-        // FORMS 1-5: Allow O-Level subjects and general subjects
-        if (!isSixthForm) {
-            // Forms 1-5 should see O-Level subjects and general subjects
-            return subjectName.startsWith("O-") ||
-                    (!subjectName.startsWith("A-") &&
-                            subject.getDepartment() != null &&
-                            subject.getDepartment().getCode() == DepartmentCode.GEN);
-        }
-        // SIXTH FORM: Allow A-Level subjects and general languages
-        else {
-            // Sixth Form should see A-Level subjects and English/French
-            boolean isALevel = subjectName.startsWith("A-");
-            boolean isGeneralLanguage = subjectName.equals("O-English Language") ||
-                    subjectName.equals("O-French Language");
-
-            return isALevel || isGeneralLanguage;
-        }
-    }
-
-    private boolean isSubjectForForms1to5(String subjectName, Subject subject) {
-        // For Forms 1-5, include:
-        // 1. All O-Level subjects (starting with "O-")
-        // 2. All subjects without A-Level prefix (general subjects)
         boolean isOLevel = subjectName.startsWith("O-");
-        boolean isGeneralSubject = !subjectName.startsWith("A-");
-
-        return isOLevel || isGeneralSubject;
-    }
-
-    private boolean isSubjectForSixthForm(String subjectName, Subject subject) {
-        // For Sixth Form, include:
-        // 1. All A-Level subjects (starting with "A-")
-        // 2. General department languages (O-English, O-French)
         boolean isALevel = subjectName.startsWith("A-");
-        boolean isGeneralLanguage = subjectName.equals("O-English Language") ||
-                subjectName.equals("O-French Language");
 
-        return isALevel || isGeneralLanguage;
+        // Special handling for languages and mathematics
+        boolean isCompulsoryLanguage = subjectName.equals("O-English Language") ||
+                subjectName.equals("O-French Language") ||
+                subjectName.equals("O-Mathematics");
+
+        // FORMS 1-5: Show O-Level subjects
+        if (!isSixthForm) {
+            // Forms 1-5 should see compulsory languages and O-Level subjects
+            if (isCompulsoryLanguage) {
+                return true; // Languages are compulsory for Forms 1-5
+            }
+            return isOLevel || !isALevel;
+        }
+        // SIXTH FORM: Show A-Level subjects only
+        else {
+            // Sixth Form should NOT see O-English, O-French, or O-Mathematics
+            if (isCompulsoryLanguage) {
+                return false; // O-languages and O-maths are NOT for sixth form
+            }
+
+            // Check if it's an optional subject for Sixth Form
+            boolean isOptionalForSixthForm = subjectName.equals("A-Further Mathematics") ||
+                    subjectName.equals("A-Computer Science") ||
+                    subjectName.equals("A-ICT");
+
+            if (isOptionalForSixthForm) {
+                return true; // These are optional for sixth form
+            }
+
+            // Include A-Level subjects and subjects without O-/A- prefix that are not from General department
+            if (isALevel) {
+                return true;
+            }
+
+            // Include subjects without O-/A- prefix that are in Science department
+            if (!isOLevel && subject.getDepartment() != null &&
+                    subject.getDepartment().getCode() == DepartmentCode.SCI) {
+                return true;
+            }
+
+            // Exclude O-Level subjects for Sixth Form
+            return !isOLevel;
+        }
     }
 
-    private boolean isSubjectForDepartment(Subject subject, Long departmentId) {
+    // FIXED: Enhanced department filtering
+    private boolean isSubjectForDepartment(Subject subject, Long departmentId, boolean isSixthForm, Department studentDepartment) {
         if (subject.getDepartment() == null) {
             log.debug("Subject {} has no department, excluding", subject.getName());
             return false;
@@ -423,36 +432,90 @@ public class SubjectService {
             return false;
         }
 
-        // Include if:
-        // 1. Subject belongs to General department (available to all)
-        // 2. Subject belongs to the selected department
-        boolean isGeneral = subject.getDepartment().getCode() == DepartmentCode.GEN;
+        // Always include subjects from General department (except O-languages for Sixth Form)
+        if (subject.getDepartment().getCode() == DepartmentCode.GEN) {
+            // For sixth form, exclude O-French, O-English, and O-Maths from GEN department
+            if (isSixthForm) {
+                String subjectName = subject.getName();
+                boolean isCompulsoryLanguage = subjectName.equals("O-English Language") ||
+                        subjectName.equals("O-French Language") ||
+                        subjectName.equals("O-Mathematics");
+
+                if (isCompulsoryLanguage) {
+                    return false; // O-languages and O-maths are NOT for sixth form
+                }
+
+                // A-ICT from GEN department is optional for all Sixth Form
+                boolean isICT = subjectName.equals("A-ICT");
+                if (isICT) {
+                    return true; // A-ICT is optional for all Sixth Form
+                }
+            }
+            return true; // Other GEN subjects are available to all
+        }
+
+        // For sixth form Science: A-Computer Science and A-ICT are optional for all specialties
+        if (isSixthForm && subject.getDepartment().getCode() == DepartmentCode.SCI) {
+            String subjectName = subject.getName();
+            boolean isComputerScience = subjectName.equals("A-Computer Science");
+            boolean isICT = subjectName.equals("A-ICT");
+
+            // These are available to all Science specialties (specialty is null)
+            if (isComputerScience || isICT) {
+                return true;
+            }
+        }
+
+        // Check if subject belongs to the student's department
         boolean matchesDepartment = subject.getDepartment().getId().equals(departmentId);
 
-        log.debug("Department filter - Subject: {}, Dept: {} (ID: {}, Code: {}, IsGEN: {}), Requested: {}, Result: {}",
+        log.debug("Department filter - Subject: {}, Dept: {} (ID: {}, Code: {}), Requested: {}, Result: {}",
                 subject.getName(),
                 subject.getDepartment().getName(),
                 subject.getDepartment().getId(),
                 subject.getDepartment().getCode(),
-                isGeneral,
                 departmentId,
-                isGeneral || matchesDepartment);
+                matchesDepartment);
 
-        return isGeneral || matchesDepartment;
+        return matchesDepartment;
     }
 
-    // Enhanced specialty filtering
+    // FIXED: Enhanced specialty filtering
     private boolean isSubjectForSpecialty(Subject subject, String specialty, boolean isSixthForm) {
-        // If no specialty specified, include all subjects that don't require specialty
+        // If no specialty specified, include subjects that don't require specific specialty
         if (specialty == null || specialty.trim().isEmpty()) {
-            // For Sixth Form, exclude subjects that require specific specialties
-            return !isSixthForm || subject.getSpecialty() == null || subject.getSpecialty().trim().isEmpty();
+            // For Sixth Form, include subjects with null specialty or subjects that are optional
+            if (isSixthForm) {
+                String subjectName = subject.getName();
+                boolean isOptionalForAll = subjectName.equals("A-Computer Science") ||
+                        subjectName.equals("A-ICT") ||
+                        subjectName.equals("A-Further Mathematics");
+
+                if (isOptionalForAll) {
+                    return true; // These are optional for all Sixth Form students
+                }
+
+                // Include subjects without specialty for Sixth Form
+                return subject.getSpecialty() == null || subject.getSpecialty().trim().isEmpty();
+            }
+            // For Forms 1-5, include all subjects without specialty
+            return subject.getSpecialty() == null || subject.getSpecialty().trim().isEmpty();
         }
 
         // If specialty is specified, include subjects that match the specialty or have no specialty
         String subjectSpecialty = subject.getSpecialty();
         if (subjectSpecialty == null || subjectSpecialty.trim().isEmpty()) {
-            return true; // Subjects without specialty are available to all
+            // Check if this is an optional subject for all specialties
+            String subjectName = subject.getName();
+            boolean isOptionalForAll = subjectName.equals("A-Computer Science") ||
+                    subjectName.equals("A-ICT");
+
+            if (isOptionalForAll && isSixthForm) {
+                return true; // These are optional for all Sixth Form specialties
+            }
+
+            // Subjects without specialty are available to all specialties
+            return true;
         }
 
         // Check if subject's specialty matches the requested specialty
@@ -471,7 +534,6 @@ public class SubjectService {
         return classCode.startsWith("LOWER_SIXTH") || classCode.startsWith("UPPER_SIXTH") || classCode.contains("SIXTH");
     }
 
-    // FIXED: Improved class level parsing
     private ClassLevel toClassLevel(String classCode) {
         if (classCode == null) return ClassLevel.FORM_1;
 

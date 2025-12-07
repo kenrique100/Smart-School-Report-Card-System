@@ -228,17 +228,20 @@ public class DataInitializer implements CommandLineRunner {
                                 .specialty("S6,S8")
                                 .optional(true).build(),
 
+                        // FIXED: A-Computer Science available to all Science specialties
                         Subject.builder().name("A-Computer Science").coefficient(3)
                                 .department(deptMap.get(DepartmentCode.SCI))
                                 .subjectCode("A-COMP-SCI")
                                 .description("Optional Advanced Level Computer Science")
-                                .specialty("S5")
+                                .specialty(null)  // Available to all Science specialties
                                 .optional(true).build(),
 
+                        // FIXED: A-ICT available to all Science specialties
                         Subject.builder().name("A-ICT").coefficient(3)
                                 .department(deptMap.get(DepartmentCode.SCI))
                                 .subjectCode("A-ICT-SCI")
                                 .description("Optional Advanced Level ICT")
+                                .specialty(null)  // Available to all Science specialties
                                 .optional(true).build(),
 
                         Subject.builder().name("Food Science").coefficient(3)
@@ -250,8 +253,7 @@ public class DataInitializer implements CommandLineRunner {
                         Subject.builder().name("A-Geology").coefficient(4)
                                 .department(deptMap.get(DepartmentCode.SCI))
                                 .subjectCode("A-GEO-SCI").description("Advanced Level Geology")
-                                .specialty("S4")
-                                .optional(true).build()
+                                .specialty("S4").build()
                 ));
             }
 
@@ -282,9 +284,9 @@ public class DataInitializer implements CommandLineRunner {
                                 .department(deptMap.get(DepartmentCode.ART))
                                 .subjectCode("O-REL-ART").description("Ordinary Level Religious Studies").build(),
 
-                        Subject.builder().name("O-Philosophy").coefficient(2)
+                        Subject.builder().name("O-Logic").coefficient(2)
                                 .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("O-PHIL-ART").description("Ordinary Level Philosophy").build(),
+                                .subjectCode("O-LOG-ART").description("Ordinary Level Logic").build(),
 
                         // Advanced Level Arts - WITH SPECIALTY ASSIGNMENTS
                         Subject.builder().name("A-History").coefficient(4)
@@ -331,7 +333,7 @@ public class DataInitializer implements CommandLineRunner {
                         Subject.builder().name("A-Pure Mathematics With Stats").coefficient(4)
                                 .department(deptMap.get(DepartmentCode.ART))
                                 .subjectCode("A-PMATH-ART").description("Advanced Level Mathematics with Statistics")
-                                .specialty("A3")
+                                .specialty("A4")
                                 .optional(true).build()
                 ));
             }
@@ -481,7 +483,12 @@ public class DataInitializer implements CommandLineRunner {
                                 .department(deptMap.get(DepartmentCode.TEC))
                                 .subjectCode("A-PHY-TEC").description("Advanced Level Physics for Technical")
                                 .specialty("T1")
-                                .optional(true).build()
+                                .optional(true).build(),
+
+                        Subject.builder().name("A-Industrial-Computing").coefficient(4)
+                                .department(deptMap.get(DepartmentCode.TEC))
+                                .subjectCode("A-COMP-TEC").description("Advanced Level Industrial computing")
+                                .specialty("T1").build()
                 ));
             }
 
@@ -501,11 +508,11 @@ public class DataInitializer implements CommandLineRunner {
                                 .subjectCode("O-NUT-HE").description("Ordinary Level Nutrition and Food Science").build(),
 
                         Subject.builder().name("O-Clothing Technology").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
+                                .department(deptMap.get(DepartmentCode.CI))
                                 .subjectCode("O-CLOTH-HE").description("Ordinary Level Clothing Technology").build(),
 
                         Subject.builder().name("O-Fashion Design").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
+                                .department(deptMap.get(DepartmentCode.CI))
                                 .subjectCode("O-FASH-HE").description("Ordinary Level Fashion Design").build(),
 
                         // Advanced Level Home Economics - WITH SPECIALTY ASSIGNMENTS
@@ -520,12 +527,12 @@ public class DataInitializer implements CommandLineRunner {
                                 .specialty("H1,H2").build(),
 
                         Subject.builder().name("A-Clothing Technology").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
+                                .department(deptMap.get(DepartmentCode.CI))
                                 .subjectCode("A-CLOTH-HE").description("Advanced Level Clothing Technology")
                                 .specialty("H1,H3").build(),
 
                         Subject.builder().name("A-Fashion Design").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
+                                .department(deptMap.get(DepartmentCode.CI))
                                 .subjectCode("A-FASH-HE").description("Advanced Level Fashion Design")
                                 .specialty("H3").build(),
 
@@ -536,7 +543,7 @@ public class DataInitializer implements CommandLineRunner {
                                 .optional(true).build(),
 
                         Subject.builder().name("Textile Science").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
+                                .department(deptMap.get(DepartmentCode.CI))
                                 .subjectCode("A-TEXT-HE").description("Advanced Level Textile Science")
                                 .specialty("H3")
                                 .optional(true).build()

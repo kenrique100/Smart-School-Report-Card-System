@@ -1,44 +1,47 @@
 package com.akentech.schoolreport.dto;
 
-import com.akentech.schoolreport.model.Student;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * Report data returned to controller/Thymeleaf for rendering per-term report.
- */
+import static com.akentech.schoolreport.dto.YearlyReportDTO.getString;
+
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReportDTO {
-    private Student student;
+    private Long id;
+    private Object student; // Can be Student entity or StudentDTO
+    private String studentFullName;
+    private String rollNumber;
+    private String className;
+    private String department;
+    private String specialty;
     private Integer term;
     private Double termAverage;
+    private String formattedAverage;
     private Integer rankInClass;
-    private String remarks;
-
-    /**
-     * List of subject reports with detailed performance data
-     */
-    private List<SubjectReport> subjectReports;
-
-    // Additional fields for enhanced reporting
-    private String academicYear;
     private Integer totalStudentsInClass;
+    private String remarks;
+    private List<SubjectReport> subjectReports;
+    private String academicYear;
     private String classTeacher;
-
-    /**
-     * Get student's full name for templates
-     */
-    public String getStudentFullName() {
-        return student != null ? student.getFirstName() + " " + student.getLastName() : "";
-    }
 
     /**
      * Get formatted term average
      */
     public String getFormattedAverage() {
         return termAverage != null ? String.format("%.2f", termAverage) : "0.00";
+    }
+
+    /**
+     * Get student's full name from student object if needed
+     */
+    public String getStudentFullName() {
+        return getString(studentFullName, student);
     }
 }

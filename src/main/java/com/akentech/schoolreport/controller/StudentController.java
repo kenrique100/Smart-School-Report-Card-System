@@ -229,7 +229,7 @@ public class StudentController {
     @PostMapping("/save")
     public String saveStudent(@Valid @ModelAttribute("student") Student student,
                               BindingResult result,
-                              @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
+                              @RequestParam(value = "subjectIds", required = false) String subjectIdsParam, // Change to String
                               Model model,
                               RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -238,6 +238,19 @@ public class StudentController {
         }
 
         try {
+            // Parse subject IDs from comma-separated string
+            List<Long> subjectIds = new ArrayList<>();
+            if (subjectIdsParam != null && !subjectIdsParam.trim().isEmpty()) {
+                String[] ids = subjectIdsParam.split(",");
+                for (String id : ids) {
+                    try {
+                        subjectIds.add(Long.parseLong(id.trim()));
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid subject ID: {}", id);
+                    }
+                }
+            }
+
             Student savedStudent = studentService.createStudent(student, subjectIds);
             log.info("Successfully created student with ID: {}", savedStudent.getStudentId());
 
@@ -346,7 +359,7 @@ public class StudentController {
 
             Map<String, Object> subjectsSummary = studentEnrollmentService.getStudentEnrollmentSummary(id);
 
-            List<Subject> availableSubjects = studentService.getAvailableSubjectsForStudentView(id);
+            List<Subject> availableSubjects = studentEnrollmentService.getAvailableSubjectsForEnrollment(id);
 
             Map<String, List<Subject>> groupedSubjects = studentService.getGroupedSubjectsForStudent(id);
 
@@ -464,6 +477,55 @@ public class StudentController {
         } catch (Exception e) {
             log.error("Error updating score for student: {}, subject: {}", studentId, subjectId, e);
             return ResponseEntity.badRequest().body("Error updating score");
+        }
+    }
+
+    // NEW: Get available subjects for enrollment (not already enrolled)
+    @GetMapping("/{studentId}/available-subjects")
+    @ResponseBody
+    public ResponseEntity<List<SubjectDTO>> getAvailableSubjectsForEnrollment(@PathVariable Long studentId) {
+        try {
+            List<Subject> availableSubjects = studentEnrollmentService.getAvailableSubjectsForEnrollment(studentId);
+            List<SubjectDTO> subjectDTOs = availableSubjects.stream()
+                    .map(SubjectDTO::fromEntity)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(subjectDTOs);
+        } catch (Exception e) {
+            log.error("Error getting available subjects for student: {}", studentId, e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // NEW: Enroll student in additional subjects
+    @PostMapping("/{studentId}/enroll-subjects")
+    @ResponseBody
+    public ResponseEntity<?> enrollStudentInSubjects(
+            @PathVariable Long studentId,
+            @RequestBody List<Long> subjectIds) {
+        try {
+            studentEnrollmentService.enrollStudentInAdditionalSubjects(studentId, subjectIds);
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            log.warn("Student not found for enrollment: {}", studentId);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error enrolling student {} in subjects: {}", studentId, subjectIds, e);
+            return ResponseEntity.badRequest().body("Error enrolling in subjects: " + e.getMessage());
+        }
+    }
+
+    // NEW: Unenroll student from a subject
+    @DeleteMapping("/{studentId}/subjects/{subjectId}/unenroll")
+    @ResponseBody
+    public ResponseEntity<?> unenrollStudentFromSubject(
+            @PathVariable Long studentId,
+            @PathVariable Long subjectId) {
+        try {
+            studentEnrollmentService.removeStudentFromSubject(studentId, subjectId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error unenrolling student {} from subject {}", studentId, subjectId, e);
+            return ResponseEntity.badRequest().body("Error removing subject enrollment");
         }
     }
 

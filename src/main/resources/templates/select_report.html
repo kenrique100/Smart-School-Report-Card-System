@@ -3,39 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Report</title>
+    <title>Select Report - School Report System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-<div class="max-w-xl mx-auto mt-16 bg-white shadow rounded-2xl p-8">
-    <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">Generate Reports</h1>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/}" class="text-white hover:text-gray-200 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Home</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <h1 class="text-2xl font-bold text-white">School Report System</h1>
+                </div>
+                <div class="text-white text-sm">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    <span>Academic Year: 2024-2025</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <form th:action="@{/reports/class}" method="get" class="space-y-6">
-        <div>
-            <label class="block font-medium text-gray-700 mb-1">Select Class</label>
-            <select name="classId" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Choose Class</option>
-                <option th:each="c : ${classes}" th:value="${c.id}" th:text="${c.name}"></option>
-            </select>
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-800">Generate Reports</h2>
+            <p class="text-gray-600 mt-2">Select the type of report you want to generate</p>
         </div>
 
-        <div>
-            <label class="block font-medium text-gray-700 mb-1">Select Term</label>
-            <select name="term" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <option value="1">Term 1</option>
-                <option value="2">Term 2</option>
-                <option value="3">Term 3</option>
-            </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Individual Student Reports -->
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+                <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-user-graduate mr-2"></i>Student Reports
+                    </h3>
+                    <p class="text-blue-100 text-sm mt-1">Generate individual student performance reports</p>
+                </div>
+                <div class="p-6">
+                    <!-- Individual Student Report Form -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Term Report</h4>
+                        <form th:action="@{/reports/student/{id}}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                                <input type="number" name="id" required
+                                       placeholder="Enter Student ID"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
+                                <select name="term" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="1">Term 1</option>
+                                    <option value="2">Term 2</option>
+                                    <option value="3">Term 3</option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                <i class="fas fa-file-alt mr-2"></i>Generate Term Report
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Yearly Report Form -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report</h4>
+                        <form th:action="@{/reports/student/yearly/{id}}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                                <input type="number" name="id" required
+                                       placeholder="Enter Student ID"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button type="submit"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                <i class="fas fa-calendar-alt mr-2"></i>Generate Yearly Report
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Reports -->
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+                <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-users mr-2"></i>Class Reports
+                    </h3>
+                    <p class="text-green-100 text-sm mt-1">Generate reports for entire classes</p>
+                </div>
+                <div class="p-6">
+                    <!-- Class Term Report Form -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Class Term Report</h4>
+                        <form th:action="@{/reports/class}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                                <select name="classId" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Choose Class</option>
+                                    <option th:each="c : ${classes}"
+                                            th:value="${c.id}"
+                                            th:text="${c.name} + ' (' + c.academicYear + ')'">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
+                                <select name="term"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="1">Term 1</option>
+                                    <option value="2">Term 2</option>
+                                    <option value="3">Term 3</option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                <i class="fas fa-file-alt mr-2"></i>Generate Class Report
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Class Yearly Report Form -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Class Yearly Report</h4>
+                        <form th:action="@{/reports/class/yearly}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                                <select name="classId" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Choose Class</option>
+                                    <option th:each="c : ${classes}"
+                                            th:value="${c.id}"
+                                            th:text="${c.name} + ' (' + c.academicYear + ')'">
+                                    </option>
+                                </select>
+                            </div>
+                            <button type="submit"
+                                    class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                                <i class="fas fa-calendar-alt mr-2"></i>Generate Yearly Class Report
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="flex justify-center mt-6">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Generate Report</button>
+        <!-- Statistics Section -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Classes</p>
+                        <p class="text-2xl font-bold text-gray-900" th:text="${classes.size()}"></p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-school text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Academic Year</p>
+                        <p class="text-2xl font-bold text-gray-900">2024-2025</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Available Terms</p>
+                        <p class="text-2xl font-bold text-gray-900">3</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-file-alt text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
-    </form>
 
-    <div class="text-center mt-8">
-        <a th:href="@{/}" class="text-blue-600 hover:underline">← Back to Home</a>
+        <!-- Instructions -->
+        <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <h4 class="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>Report Generation Instructions
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h5 class="font-medium text-yellow-700 mb-2">Student Reports</h5>
+                    <ul class="space-y-2 text-yellow-600">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Term Report: Shows performance for a specific term</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Yearly Report: Comprehensive yearly performance analysis</span>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium text-yellow-700 mb-2">Class Reports</h5>
+                    <ul class="space-y-2 text-yellow-600">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Class Report: Performance overview for entire class</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Yearly Class Report: Yearly analysis with statistics</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add some interactivity
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const button = this.querySelector('button[type="submit"]');
+                if (button) {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+                    button.disabled = true;
+
+                    // Reset button after 3 seconds in case of error
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 3000);
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>

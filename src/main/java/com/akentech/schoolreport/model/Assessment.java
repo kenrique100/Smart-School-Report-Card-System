@@ -25,7 +25,7 @@ public class Assessment {
     private Integer term;
 
     /**
-     * Assessment type: "Assessment1", "Assessment2", "Exam"
+     * Assessment type: "Assessment1", "Assessment2", "Assessment3", "Assessment4", "Exam"
      */
     @Column(nullable = false)
     private String type;
@@ -43,4 +43,5 @@ public class Assessment {
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
+
 }

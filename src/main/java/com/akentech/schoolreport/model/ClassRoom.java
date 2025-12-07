@@ -35,6 +35,9 @@ public class ClassRoom {
     @JsonProperty("academicYear")
     private String academicYear;
 
+    @Column(name = "class_teacher")
+    private String classTeacher; // ADD THIS FIELD
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
@@ -54,6 +57,11 @@ public class ClassRoom {
     @Transient
     public String getDisplayInfo() {
         return name + " (" + code.getDisplayName() + ") - " + academicYear;
+    }
+
+    // ADD THIS METHOD
+    public String getClassTeacher() {
+        return classTeacher != null ? classTeacher : "Not Assigned";
     }
 
     @Override

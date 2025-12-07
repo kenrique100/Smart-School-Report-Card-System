@@ -52,4 +52,5 @@ public class StudentSubject {
     public String getSubjectName() {
         return subject != null ? subject.getName() : null;
     }
+
 }

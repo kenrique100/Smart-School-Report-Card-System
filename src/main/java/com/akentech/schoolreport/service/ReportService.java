@@ -1,284 +1,617 @@
 package com.akentech.schoolreport.service;
 
-import com.akentech.schoolreport.dto.ReportDTO;
-import com.akentech.schoolreport.dto.StudentRank;
-import com.akentech.schoolreport.dto.SubjectReport;
+import com.akentech.schoolreport.dto.*;
+import com.akentech.schoolreport.exception.EntityNotFoundException;
 import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.repository.*;
-import com.akentech.schoolreport.util.GradeCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
+import java.time.Year;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
 public class ReportService {
 
     private final StudentRepository studentRepository;
-    private final SubjectRepository subjectRepository;
     private final AssessmentRepository assessmentRepository;
-    private final AverageRecordRepository averageRecordRepository;
-    private final ExamResultRepository examResultRepository;
     private final ClassRoomRepository classRoomRepository;
-    private final RankingService rankingService;
+    private final TeacherRepository teacherRepository;
+    private final StudentSubjectRepository studentSubjectRepository;
+
+    // ========== PUBLIC METHODS CALLED BY CONTROLLER ==========
 
     /**
-     * Builds a ReportDTO for the student and term.
+     * Generate term report for a specific student
      */
-    @Transactional
     public ReportDTO generateReportForStudent(Long studentId, Integer term) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new NoSuchElementException("Student not found: " + studentId));
+        log.info("Generating term {} report for student ID: {}", term, studentId);
 
-        List<Subject> subjects = subjectRepository.findAll();
-        List<SubjectReport> subjectReports = new ArrayList<>();
-        double totalWeighted = 0.0;
-        int totalCoeff = 0;
+        // First generate the internal DTO
+        StudentTermReportDTO internalReport = generateStudentTermReportInternal(studentId, term);
 
-        for (Subject subj : subjects) {
-            SubjectReport subjectReport = calculateSubjectReport(student, subj, term);
-            subjectReports.add(subjectReport);
-
-            if (subjectReport.getSubjectAverage() > 0 || subjectReport.getExam() != null) {
-                totalWeighted += subjectReport.getSubjectAverage() * subj.getCoefficient();
-                totalCoeff += subj.getCoefficient();
-            }
-        }
-
-        double termAverage = (totalCoeff == 0) ? 0.0 : totalWeighted / totalCoeff;
-        termAverage = round(termAverage, 2);
-
-        saveAverageRecord(student, term, termAverage);
-        Integer rank = computeStudentRank(student, term);
-
-        ReportDTO dto = ReportDTO.builder()
-                .student(student)
-                .term(term)
-                .termAverage(termAverage)
-                .rankInClass(rank)
-                .remarks(GradeCalculator.remarkForAverage(termAverage))
-                .subjectReports(subjectReports)
-                .build();
-
-        log.info("Generated report for student {} {} term {} - Average: {}, Rank: {}",
-                student.getFirstName(),
-                student.getLastName(),
-                term,
-                termAverage,
-                rank);
-        return dto;
+        // Convert to the expected ReportDTO
+        return convertToReportDTO(internalReport);
     }
 
-    private SubjectReport calculateSubjectReport(Student student, Subject subject, Integer term) {
-        List<Assessment> assessments = assessmentRepository.findByStudentAndSubjectAndTerm(student, subject, term);
-        List<ExamResult> examResults = examResultRepository.findByStudentAndTerm(student, term);
+    /**
+     * Generate yearly report for a student
+     */
+    public YearlyReportDTO generateYearlyReportForStudent(Long studentId) {
+        log.info("Generating yearly report for student ID: {}", studentId);
 
-        Optional<ExamResult> subjectExamResult = examResults.stream()
-                .filter(er -> er.getExam() != null && er.getExam().getSubject() != null)
-                .filter(er -> er.getExam().getSubject().getId().equals(subject.getId()))
-                .findFirst();
+        Student student = studentRepository.findByIdWithClassRoomAndDepartment(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
 
-        Double a1 = null, a2 = null, exam = null;
+        // Get academic year from student
+        Integer academicYear = student.getAcademicYearStart();
+        if (academicYear == null) {
+            academicYear = Year.now().getValue();
+        }
 
-        for (Assessment a : assessments) {
-            switch (a.getType()) {
-                case "Assessment1" -> a1 = a.getScore();
-                case "Assessment2" -> a2 = a.getScore();
-                case "Exam" -> exam = a.getScore();
+        // Generate term reports
+        List<ReportDTO> termReports = new ArrayList<>();
+        for (int term = 1; term <= 3; term++) {
+            try {
+                ReportDTO termReport = generateReportForStudent(studentId, term);
+                termReports.add(termReport);
+            } catch (Exception e) {
+                log.warn("Could not generate term {} report: {}", term, e.getMessage());
             }
         }
 
-        if (term == 3 && subjectExamResult.isPresent()) {
-            exam = subjectExamResult.get().getMarks();
-            if (subjectExamResult.get().getExam().getTotalMarks() != null &&
-                    subjectExamResult.get().getExam().getTotalMarks() != 20) {
-                exam = (exam / subjectExamResult.get().getExam().getTotalMarks()) * 20;
+        // Calculate yearly statistics
+        return calculateYearlyReportDTO(student, termReports, academicYear);
+    }
+
+    /**
+     * Generate term reports for a class
+     */
+    public List<ReportDTO> generateReportsForClass(Long classId, Integer term) {
+        log.info("Generating term {} reports for class ID: {}", term, classId);
+
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("ClassRoom", classId));
+
+        List<Student> students = studentRepository.findByClassRoomId(classId);
+        List<ReportDTO> reports = new ArrayList<>();
+
+        for (Student student : students) {
+            try {
+                ReportDTO report = generateReportForStudent(student.getId(), term);
+                reports.add(report);
+            } catch (Exception e) {
+                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage());
             }
         }
 
-        double subjectAverage = calculateSubjectAverage(term, a1, a2, exam);
-        String letterGrade = GradeCalculator.toLetterGrade(subjectAverage);
+        // Sort by rank
+        reports.sort(Comparator.comparing(ReportDTO::getRankInClass));
+
+        return reports;
+    }
+
+    /**
+     * Generate yearly reports for a class
+     */
+    public List<YearlyReportDTO> generateYearlyReportsForClass(Long classId) {
+        log.info("Generating yearly reports for class ID: {}", classId);
+
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("ClassRoom", classId));
+
+        List<Student> students = studentRepository.findByClassRoomId(classId);
+        List<YearlyReportDTO> yearlyReports = new ArrayList<>();
+
+        for (Student student : students) {
+            try {
+                YearlyReportDTO yearlyReport = generateYearlyReportForStudent(student.getId());
+                yearlyReports.add(yearlyReport);
+            } catch (Exception e) {
+                log.error("Error generating yearly report for student {}: {}", student.getId(), e.getMessage());
+            }
+        }
+
+        // Sort by yearly rank
+        yearlyReports.sort(Comparator.comparing(YearlyReportDTO::getYearlyRank));
+
+        return yearlyReports;
+    }
+
+    /**
+     * Get available terms for student
+     */
+    public List<Integer> getAvailableTermsForStudent(Long studentId) {
+        return assessmentRepository.findDistinctTermByStudentId(studentId);
+    }
+
+    /**
+     * Get available academic years for student
+     */
+    public List<Integer> getAvailableAcademicYearsForStudent(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
+
+        List<Integer> academicYears = new ArrayList<>();
+        if (student.getAcademicYearStart() != null && student.getAcademicYearEnd() != null) {
+            for (int year = student.getAcademicYearStart(); year <= student.getAcademicYearEnd(); year++) {
+                academicYears.add(year);
+            }
+        }
+        return academicYears;
+    }
+
+    // ========== INTERNAL METHODS ==========
+
+    /**
+     * Internal method to generate student term report (for internal use)
+     */
+    private StudentTermReportDTO generateStudentTermReportInternal(Long studentId, Integer term) {
+        Student student = studentRepository.findByIdWithClassRoomAndDepartment(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
+
+        // Get all assessments for the student in the given term
+        List<Assessment> assessments = assessmentRepository.findByStudentIdAndTerm(studentId, term);
+
+        // Get student subjects
+        List<StudentSubject> studentSubjects = studentSubjectRepository.findByStudentId(studentId);
+
+        // Calculate subject reports
+        List<SubjectReport> subjectReports = calculateSubjectReports(student, assessments, studentSubjects, term);
+
+        // Calculate term statistics
+        Map<String, Object> statistics = calculateTermStatistics(subjectReports, student, term);
+
+        return buildStudentTermReportDTO(student, subjectReports, statistics, term);
+    }
+
+    private List<SubjectReport> calculateSubjectReports(Student student, List<Assessment> assessments,
+                                                        List<StudentSubject> studentSubjects, Integer term) {
+        List<SubjectReport> subjectReports = new ArrayList<>();
+
+        // Group assessments by subject
+        Map<Subject, List<Assessment>> assessmentsBySubject = assessments.stream()
+                .collect(Collectors.groupingBy(Assessment::getSubject));
+
+        for (Map.Entry<Subject, List<Assessment>> entry : assessmentsBySubject.entrySet()) {
+            Subject subject = entry.getKey();
+            List<Assessment> subjectAssessments = entry.getValue();
+
+            SubjectReport subjectReport = calculateSubjectReport(subject, subjectAssessments, term);
+            subjectReports.add(subjectReport);
+        }
+
+        return subjectReports;
+    }
+
+    private SubjectReport calculateSubjectReport(Subject subject, List<Assessment> assessments, Integer term) {
+        Double assessment1 = null;
+        Double assessment2 = null;
+        Double exam = null;
+
+        // Separate assessments by type
+        for (Assessment assessment : assessments) {
+            String type = assessment.getType();
+            if (type != null) {
+                if (type.equalsIgnoreCase("Assessment1") || type.equalsIgnoreCase("Quiz") || type.equalsIgnoreCase("Test1")) {
+                    assessment1 = assessment.getScore();
+                } else if (type.equalsIgnoreCase("Assessment2") || type.equalsIgnoreCase("Assignment") || type.equalsIgnoreCase("Test2")) {
+                    assessment2 = assessment.getScore();
+                } else if (type.equalsIgnoreCase("Exam") || type.equalsIgnoreCase("Final")) {
+                    exam = assessment.getScore();
+                }
+            }
+        }
+
+        // Calculate subject average based on term
+        Double subjectAverage = calculateSubjectAverage(assessment1, assessment2, exam, term);
+        String letterGrade = calculateLetterGrade(subjectAverage);
 
         return SubjectReport.builder()
-                .subjectId(subject.getId())
                 .subjectName(subject.getName())
                 .coefficient(subject.getCoefficient())
-                .assessment1(a1)
-                .assessment2(a2)
+                .assessment1(assessment1)
+                .assessment2(assessment2)
                 .exam(exam)
-                .subjectAverage(round(subjectAverage, 2))
+                .subjectAverage(subjectAverage)
                 .letterGrade(letterGrade)
                 .build();
     }
 
-    private double calculateSubjectAverage(Integer term, Double a1, Double a2, Double exam) {
-        if (term == 3) {
+    private Double calculateSubjectAverage(Double assessment1, Double assessment2, Double exam, Integer term) {
+        if (term == 1 || term == 2) {
+            // Terms 1 and 2: average of two assessments
+            if (assessment1 != null && assessment2 != null) {
+                return (assessment1 + assessment2) / 2;
+            } else if (assessment1 != null) {
+                return assessment1;
+            } else if (assessment2 != null) {
+                return assessment2;
+            }
+        } else if (term == 3) {
+            // Term 3: exam only
             return exam != null ? exam : 0.0;
-        } else {
-            double v1 = (a1 != null) ? a1 : 0.0;
-            double v2 = (a2 != null) ? a2 : 0.0;
+        }
+        return 0.0;
+    }
 
-            if (a1 != null || a2 != null) {
-                int count = (a1 != null ? 1 : 0) + (a2 != null ? 1 : 0);
-                return (v1 + v2) / count;
-            } else {
-                return 0.0;
+    private String calculateLetterGrade(Double average) {
+        if (average == null || average < 0) return "U";
+        if (average >= 18) return "A";
+        else if (average >= 15) return "B";
+        else if (average >= 10) return "C";
+        else if (average >= 5) return "D";
+        else return "U";
+    }
+
+    private Map<String, Object> calculateTermStatistics(List<SubjectReport> subjectReports,
+                                                        Student student, Integer term) {
+        Map<String, Object> statistics = new HashMap<>();
+
+        // Calculate term average
+        double totalWeightedScore = 0;
+        int totalCoefficient = 0;
+
+        for (SubjectReport subject : subjectReports) {
+            if (subject.getSubjectAverage() != null) {
+                totalWeightedScore += subject.getSubjectAverage() * subject.getCoefficient();
+                totalCoefficient += subject.getCoefficient();
             }
         }
+
+        Double termAverage = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0.0;
+
+        // Get class rank
+        Integer rankInClass = calculateStudentRank(student.getId(), student.getClassRoom().getId(), term);
+
+        // Get total students in class
+        Integer totalStudentsInClass = (int) studentRepository.countByClassRoomId(student.getClassRoom().getId());
+
+        // Generate remarks
+        String remarks = generateRemarks(termAverage);
+
+        statistics.put("termAverage", termAverage);
+        statistics.put("formattedAverage", String.format("%.2f", termAverage));
+        statistics.put("rankInClass", rankInClass);
+        statistics.put("totalStudentsInClass", totalStudentsInClass);
+        statistics.put("remarks", remarks);
+
+        return statistics;
     }
 
-    private void saveAverageRecord(Student student, Integer term, double termAverage) {
-        Optional<AverageRecord> opt = averageRecordRepository.findByStudentAndTerm(student, term);
-        AverageRecord record;
+    private Integer calculateStudentRank(Long studentId, Long classRoomId, Integer term) {
+        List<Student> students = studentRepository.findByClassRoomId(classRoomId);
 
-        if (opt.isPresent()) {
-            record = opt.get();
-            record.setAverage(termAverage);
-            record.setRemarks(GradeCalculator.remarkForAverage(termAverage));
-        } else {
-            record = AverageRecord.builder()
-                    .student(student)
-                    .term(term)
-                    .average(termAverage)
-                    .remarks(GradeCalculator.remarkForAverage(termAverage))
-                    .build();
-        }
-        averageRecordRepository.save(record);
-    }
-
-    private Integer computeStudentRank(Student student, Integer term) {
-        // Use the corrected repository method
-        List<Student> classStudents = studentRepository.findByClassRoomId(student.getClassRoom().getId());
-
-        if (classStudents.isEmpty()) {
-            return null;
-        }
-
-        List<StudentRank> ranks = rankingService.computeRanking(classStudents, term);
-
-        return ranks.stream()
-                .filter(r -> r.getStudent().getId().equals(student.getId()))
-                .findFirst()
-                .map(StudentRank::getRank)
-                .orElse(null);
-    }
-
-    /**
-     * Generate reports for all students in a class for a specific term
-     */
-    @Transactional
-    public List<ReportDTO> generateReportsForClass(Long classId, Integer term) {
-        // Use the corrected repository method
-        List<Student> students = studentRepository.findByClassRoomId(classId);
-
-        return students.stream()
-                .map(student -> generateReportForStudent(student.getId(), term))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get student's performance summary for dashboard
-     */
-    public Map<String, Object> getStudentPerformanceSummary(Long studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new NoSuchElementException("Student not found: " + studentId));
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("studentName", student.getFirstName() + " " + student.getLastName());
-        summary.put("studentId", student.getStudentId());
-        summary.put("class", student.getClassRoom().getName());
-
-        // Use the corrected repository method
-        List<AverageRecord> records = averageRecordRepository.findByStudentId(studentId);
-        Map<Integer, Double> termAverages = new HashMap<>();
-
-        for (AverageRecord record : records) {
-            termAverages.put(record.getTerm(), record.getAverage());
+        // Calculate average for each student
+        Map<Long, Double> studentAverages = new HashMap<>();
+        for (Student student : students) {
+            List<Assessment> studentAssessments = assessmentRepository.findByStudentIdAndTerm(student.getId(), term);
+            Double average = calculateStudentTermAverage(studentAssessments);
+            studentAverages.put(student.getId(), average);
         }
 
-        summary.put("termAverages", termAverages);
+        // Sort by average descending
+        List<Map.Entry<Long, Double>> sorted = studentAverages.entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .toList();
 
-        // Use the corrected repository method
-        long recentAssessments = assessmentRepository.findByStudentId(studentId).stream()
-                .filter(a -> a.getTerm() == 3)
-                .count();
-
-        summary.put("recentAssessments", recentAssessments);
-        summary.put("attendanceRate", 95.0); // Placeholder
-
-        return summary;
-    }
-
-    /**
-     * Get class performance summary for teacher dashboard
-     */
-    public Map<String, Object> getClassPerformanceSummary(Long classId, Integer term) {
-        // Use the corrected repository method
-        List<Student> students = studentRepository.findByClassRoomId(classId);
-        Map<String, Object> summary = new HashMap<>();
-
-        if (students.isEmpty()) {
-            return summary;
+        // Find rank
+        for (int i = 0; i < sorted.size(); i++) {
+            if (sorted.get(i).getKey().equals(studentId)) {
+                return i + 1;
+            }
         }
 
-        double classAverage = students.stream()
-                .mapToDouble(student -> {
-                    Optional<AverageRecord> record = averageRecordRepository.findByStudentAndTerm(student, term);
-                    return record.map(AverageRecord::getAverage).orElse(0.0);
-                })
+        return students.size(); // Default to last position
+    }
+
+    private Double calculateStudentTermAverage(List<Assessment> assessments) {
+        if (assessments.isEmpty()) return 0.0;
+
+        double total = 0;
+        for (Assessment assessment : assessments) {
+            total += assessment.getScore() != null ? assessment.getScore() : 0;
+        }
+
+        return total / assessments.size();
+    }
+
+    private String generateRemarks(Double average) {
+        if (average == null) return "No assessment data";
+        if (average >= 18) return "Excellent performance! Keep up the good work.";
+        else if (average >= 15) return "Very good performance. Continue with the good work.";
+        else if (average >= 10) return "Good performance. Room for improvement.";
+        else if (average >= 5) return "Satisfactory. Needs to work harder.";
+        else return "Needs significant improvement. Please seek additional help.";
+    }
+
+    private StudentTermReportDTO buildStudentTermReportDTO(Student student, List<SubjectReport> subjectReports,
+                                                           Map<String, Object> statistics, Integer term) {
+        return StudentTermReportDTO.builder()
+                .student(student)
+                .studentFullName(student.getFullName())
+                .term(term)
+                .academicYear(student.getAcademicYearStart() + "-" + student.getAcademicYearEnd())
+                .classTeacher(student.getClassRoom() != null ? student.getClassRoom().getClassTeacher() : "Not Assigned")
+                .termAverage((Double) statistics.get("termAverage"))
+                .formattedAverage((String) statistics.get("formattedAverage"))
+                .rankInClass((Integer) statistics.get("rankInClass"))
+                .totalStudentsInClass((Integer) statistics.get("totalStudentsInClass"))
+                .remarks((String) statistics.get("remarks"))
+                .subjectReports(subjectReports)
+                .build();
+    }
+
+    // ========== DTO CONVERSION METHODS ==========
+
+    private ReportDTO convertToReportDTO(StudentTermReportDTO internalReport) {
+        Student student = (Student) internalReport.getStudent();
+
+        return ReportDTO.builder()
+                .id(student.getId())
+                .student(student)
+                .studentFullName(internalReport.getStudentFullName())
+                .rollNumber(student.getRollNumber())
+                .className(student.getClassRoom() != null ? student.getClassRoom().getName() : "")
+                .department(student.getDepartment() != null ? student.getDepartment().getName() : "")
+                .specialty(student.getSpecialty())
+                .term(internalReport.getTerm())
+                .termAverage(internalReport.getTermAverage())
+                .formattedAverage(internalReport.getFormattedAverage())
+                .rankInClass(internalReport.getRankInClass())
+                .totalStudentsInClass(internalReport.getTotalStudentsInClass())
+                .remarks(internalReport.getRemarks())
+                .subjectReports(internalReport.getSubjectReports())
+                .academicYear(internalReport.getAcademicYear())
+                .classTeacher(internalReport.getClassTeacher())
+                .build();
+    }
+
+    private YearlyReportDTO calculateYearlyReportDTO(Student student, List<ReportDTO> termReports, Integer academicYear) {
+        // Calculate yearly average
+        Double yearlyAverage = termReports.stream()
+                .filter(r -> r.getTermAverage() != null)
+                .mapToDouble(ReportDTO::getTermAverage)
                 .average()
                 .orElse(0.0);
 
-        summary.put("classAverage", round(classAverage, 2));
-        summary.put("totalStudents", students.size());
+        // Calculate pass/fail status
+        boolean passed = termReports.stream()
+                .allMatch(r -> r.getTermAverage() != null && r.getTermAverage() >= 10);
 
-        long excellent = students.stream()
-                .filter(student -> {
-                    Optional<AverageRecord> record = averageRecordRepository.findByStudentAndTerm(student, term);
-                    return record.map(r -> r.getAverage() >= 18.0).orElse(false);
+        // Calculate overall grade
+        String overallGrade = calculateLetterGrade(yearlyAverage);
+
+        // Calculate pass rate (percentage of passed subjects)
+        long totalSubjects = termReports.stream()
+                .mapToLong(r -> r.getSubjectReports().size())
+                .sum();
+
+        long passedSubjects = termReports.stream()
+                .flatMap(r -> r.getSubjectReports().stream())
+                .filter(sr -> {
+                    String grade = sr.getLetterGrade();
+                    return grade != null && grade.matches("[ABC]");
                 })
                 .count();
 
-        long good = students.stream()
-                .filter(student -> {
-                    Optional<AverageRecord> record = averageRecordRepository.findByStudentAndTerm(student, term);
-                    double avg = record.map(AverageRecord::getAverage).orElse(0.0);
-                    return avg >= 15.0 && avg < 18.0;
-                })
-                .count();
+        double passRate = totalSubjects > 0 ? (passedSubjects * 100.0) / totalSubjects : 0.0;
 
-        long needsImprovement = students.stream()
-                .filter(student -> {
-                    Optional<AverageRecord> record = averageRecordRepository.findByStudentAndTerm(student, term);
-                    double avg = record.map(AverageRecord::getAverage).orElse(0.0);
-                    return avg < 15.0 && avg >= 10.0;
-                })
-                .count();
+        // Get class statistics
+        Long classId = student.getClassRoom().getId();
+        int totalStudentsInClass = (int) studentRepository.countByClassRoomId(classId);
 
-        long failing = students.stream()
-                .filter(student -> {
-                    Optional<AverageRecord> record = averageRecordRepository.findByStudentAndTerm(student, term);
-                    double avg = record.map(AverageRecord::getAverage).orElse(0.0);
-                    return avg < 10.0;
-                })
-                .count();
+        // Count passed/failed students in class
+        List<Student> classStudents = studentRepository.findByClassRoomId(classId);
+        long totalPassed = 0;
+        long totalFailed = 0;
 
-        summary.put("excellentCount", excellent);
-        summary.put("goodCount", good);
-        summary.put("needsImprovementCount", needsImprovement);
-        summary.put("failingCount", failing);
+        for (Student classmate : classStudents) {
+            try {
+                // Simplified logic - check if any term report exists
+                boolean classmatePassed = true;
+                for (int term = 1; term <= 3; term++) {
+                    List<Assessment> assessments = assessmentRepository.findByStudentIdAndTerm(classmate.getId(), term);
+                    if (!assessments.isEmpty()) {
+                        Double avg = calculateStudentTermAverage(assessments);
+                        if (avg < 10) {
+                            classmatePassed = false;
+                            break;
+                        }
+                    }
+                }
+                if (classmatePassed) {
+                    totalPassed++;
+                } else {
+                    totalFailed++;
+                }
+            } catch (Exception e) {
+                log.warn("Could not calculate pass/fail for student {}: {}", classmate.getId(), e.getMessage());
+                totalFailed++;
+            }
+        }
 
-        return summary;
+        // Create term summaries
+        List<TermReportSummary> termSummaries = termReports.stream()
+                .map(tr -> TermReportSummary.builder()
+                        .term(tr.getTerm())
+                        .termAverage(tr.getTermAverage())
+                        .formattedAverage(tr.getFormattedAverage())
+                        .rankInClass(tr.getRankInClass())
+                        .remarks(tr.getRemarks())
+                        .passed(tr.getTermAverage() != null && tr.getTermAverage() >= 10)
+                        .build())
+                .collect(Collectors.toList());
+
+        // Create yearly subject reports
+        List<YearlySubjectReport> yearlySubjectReports = calculateYearlySubjectReports(termReports);
+
+        return YearlyReportDTO.builder()
+                .student(student)
+                .studentFullName(student.getFullName())
+                .rollNumber(student.getRollNumber())
+                .className(student.getClassRoom().getName())
+                .department(student.getDepartment().getName())
+                .specialty(student.getSpecialty())
+                .academicYear(academicYear)
+                .yearlyAverage(yearlyAverage)
+                .formattedYearlyAverage(String.format("%.2f", yearlyAverage))
+                .passRate(passRate)
+                .formattedPassRate(String.format("%.1f%%", passRate))
+                .yearlyRank(calculateYearlyRank(student.getId(), classId))
+                .term1Rank(getTermRank(termReports, 1))
+                .term2Rank(getTermRank(termReports, 2))
+                .term3Rank(getTermRank(termReports, 3))
+                .remarks(generateYearlyRemarks(yearlyAverage, passRate))
+                .passed(passed)
+                .overallGrade(overallGrade)
+                .totalStudentsInClass(totalStudentsInClass)
+                .totalPassed((int) totalPassed)
+                .totalFailed((int) totalFailed)
+                .subjectsPassed((int) passedSubjects)
+                .totalSubjects((int) totalSubjects)
+                .subjectReports(yearlySubjectReports)
+                .termSummaries(termSummaries)
+                .build();
     }
 
-    private static double round(double v, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-        long factor = (long) Math.pow(10, places);
-        return Math.round(v * factor) / (double) factor;
+    private List<YearlySubjectReport> calculateYearlySubjectReports(List<ReportDTO> termReports) {
+        // Group subject reports by subject name
+        Map<String, List<SubjectReport>> subjectReportsByTerm = new HashMap<>();
+
+        for (ReportDTO termReport : termReports) {
+            for (SubjectReport subjectReport : termReport.getSubjectReports()) {
+                String subjectName = subjectReport.getSubjectName();
+                subjectReportsByTerm.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(subjectReport);
+            }
+        }
+
+        // Create yearly subject reports
+        List<YearlySubjectReport> yearlySubjectReports = new ArrayList<>();
+
+        for (Map.Entry<String, List<SubjectReport>> entry : subjectReportsByTerm.entrySet()) {
+            String subjectName = entry.getKey();
+            List<SubjectReport> reports = entry.getValue();
+
+            // Find coefficients (should be the same for all terms)
+            Integer coefficient = reports.stream()
+                    .map(SubjectReport::getCoefficient)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(1);
+
+            // Calculate averages for each term
+            Double term1Avg = getTermAverage(reports, termReports, 1);
+            Double term2Avg = getTermAverage(reports, termReports, 2);
+            Double term3Avg = getTermAverage(reports, termReports, 3);
+
+            // Calculate yearly average
+            double yearlyAvg = 0.0;
+            int count = 0;
+            if (term1Avg != null) { yearlyAvg += term1Avg; count++; }
+            if (term2Avg != null) { yearlyAvg += term2Avg; count++; }
+            if (term3Avg != null) { yearlyAvg += term3Avg; count++; }
+            yearlyAvg = count > 0 ? yearlyAvg / count : 0.0;
+
+            // Calculate yearly grade
+            String yearlyGrade = calculateLetterGrade(yearlyAvg);
+
+            yearlySubjectReports.add(YearlySubjectReport.builder()
+                    .subjectName(subjectName)
+                    .coefficient(coefficient)
+                    .term1Average(term1Avg)
+                    .term2Average(term2Avg)
+                    .term3Average(term3Avg)
+                    .yearlyAverage(yearlyAvg)
+                    .yearlyGrade(yearlyGrade)
+                    .passed(yearlyGrade.matches("[ABC]"))
+                    .build());
+        }
+
+        return yearlySubjectReports;
+    }
+
+    private Double getTermAverage(List<SubjectReport> reports, List<ReportDTO> termReports, int term) {
+        return reports.stream()
+                .filter(r -> {
+                    // Find which term this report belongs to
+                    for (ReportDTO termReport : termReports) {
+                        if (termReport.getTerm() == term &&
+                                termReport.getSubjectReports().contains(r)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .map(SubjectReport::getSubjectAverage)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Integer getTermRank(List<ReportDTO> termReports, int term) {
+        return termReports.stream()
+                .filter(r -> r.getTerm() == term)
+                .map(ReportDTO::getRankInClass)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Integer calculateYearlyRank(Long studentId, Long classId) {
+        List<Student> students = studentRepository.findByClassRoomId(classId);
+
+        // Calculate yearly average for each student
+        Map<Long, Double> studentYearlyAverages = new HashMap<>();
+        for (Student student : students) {
+            double total = 0.0;
+            int count = 0;
+
+            for (int term = 1; term <= 3; term++) {
+                List<Assessment> assessments = assessmentRepository.findByStudentIdAndTerm(student.getId(), term);
+                if (!assessments.isEmpty()) {
+                    Double avg = calculateStudentTermAverage(assessments);
+                    total += avg;
+                    count++;
+                }
+            }
+
+            studentYearlyAverages.put(student.getId(), count > 0 ? total / count : 0.0);
+        }
+
+        // Sort by average descending
+        List<Map.Entry<Long, Double>> sorted = studentYearlyAverages.entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .toList();
+
+        // Find rank
+        for (int i = 0; i < sorted.size(); i++) {
+            if (sorted.get(i).getKey().equals(studentId)) {
+                return i + 1;
+            }
+        }
+
+        return students.size();
+    }
+
+    private String generateYearlyRemarks(Double yearlyAverage, Double passRate) {
+        if (yearlyAverage == null) return "No assessment data available.";
+
+        if (yearlyAverage >= 16 && passRate >= 80) {
+            return "Outstanding performance throughout the year! Consistent excellence in all subjects.";
+        } else if (yearlyAverage >= 14 && passRate >= 70) {
+            return "Very good yearly performance. Shows consistent improvement and dedication.";
+        } else if (yearlyAverage >= 10 && passRate >= 60) {
+            return "Satisfactory yearly performance. Good effort shown across terms.";
+        } else if (yearlyAverage >= 5) {
+            return "Yearly performance needs improvement. Some subjects require more attention.";
+        } else {
+            return "Concern about yearly performance. Significant improvement needed in most subjects.";
+        }
     }
 }

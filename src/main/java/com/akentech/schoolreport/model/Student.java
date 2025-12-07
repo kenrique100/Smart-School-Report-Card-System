@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -20,7 +21,8 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "student", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"roll_number", "classroom_id"})
+        @UniqueConstraint(name = "UK_student_id", columnNames = {"student_id"}),
+        @UniqueConstraint(name = "UK_roll_number_classroom", columnNames = {"roll_number", "classroom_id"})
 })
 @Data
 @NoArgsConstructor
@@ -33,31 +35,39 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Student ID is required")
+    @Size(min = 1, max = 50, message = "Student ID must be between 1 and 50 characters")
     @Column(name = "student_id", unique = true, nullable = false)
     private String studentId;
 
     @NotBlank(message = "First name is required")
+    @Size(min = 1, max = 100, message = "First name must be between 1 and 100 characters")
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
     @NotBlank(message = "Last name is required")
+    @Size(min = 1, max = 100, message = "Last name must be between 1 and 100 characters")
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
+    @NotBlank(message = "Roll number is required")
+    @Size(min = 1, max = 50, message = "Roll number must be between 1 and 50 characters")
     @Column(name = "roll_number", nullable = false)
     private String rollNumber;
 
     @NotNull(message = "Class is required")
-    @ManyToOne(fetch = FetchType.EAGER) // CHANGED: EAGER fetch to prevent LazyInitializationException
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "classroom_id", nullable = false)
     @JsonProperty("classRoom")
     private ClassRoom classRoom;
 
-    @ManyToOne(fetch = FetchType.EAGER) // CHANGED: EAGER fetch to prevent LazyInitializationException
-    @JoinColumn(name = "department_id")
+    @NotNull(message = "Department is required")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id", nullable = false)
     @JsonProperty("department")
     private Department department;
 
+    @Size(max = 100, message = "Specialty must not exceed 100 characters")
     @Column(name = "specialty")
     private String specialty;
 
@@ -69,9 +79,12 @@ public class Student {
     private LocalDate dateOfBirth;
 
     @Email(message = "Invalid email format")
-    @Column(unique = true)
+    @Size(max = 100, message = "Email must not exceed 100 characters")
+    @Column(name = "email", unique = true)
     private String email;
 
+    @Size(max = 500, message = "Address must not exceed 500 characters")
+    @Column(name = "address")
     private String address;
 
     @Column(name = "academic_year_start")
@@ -85,6 +98,18 @@ public class Student {
     @ToString.Exclude
     @JsonManagedReference("student-subjects")
     private List<StudentSubject> studentSubjects = new ArrayList<>();
+
+    // PrePersist validation
+    @PrePersist
+    @PreUpdate
+    private void validateIds() {
+        if (this.studentId == null || this.studentId.trim().isEmpty()) {
+            throw new IllegalStateException("Student ID cannot be null or empty");
+        }
+        if (this.rollNumber == null || this.rollNumber.trim().isEmpty()) {
+            throw new IllegalStateException("Roll number cannot be null or empty");
+        }
+    }
 
     // NEW: Helper method for gender display
     @Transient

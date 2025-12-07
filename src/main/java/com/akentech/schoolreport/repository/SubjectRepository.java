@@ -16,6 +16,7 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
 
     // Core methods used by services
     List<Subject> findByDepartmentId(Long departmentId);
+    List<Subject> findByDepartmentIdAndSpecialty(Long departmentId, String specialty);
 
     @Query("SELECT DISTINCT s.specialty FROM Subject s WHERE s.specialty IS NOT NULL")
     List<String> findDistinctSpecialties();
@@ -34,6 +35,21 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
                                 @Param("specialty") String specialty,
                                 Pageable pageable);
 
+    @Query("SELECT s FROM Subject s WHERE " +
+            "(:classCode IS NULL OR s.subjectCode LIKE CONCAT(:classCode, '%')) AND " +
+            "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +
+            "(:specialty IS NULL OR s.specialty = :specialty)")
+    List<Subject> findFilteredSubjects(@Param("classCode") String classCode,
+                                       @Param("departmentId") Long departmentId,
+                                       @Param("specialty") String specialty);
+
+    @Query("SELECT COUNT(s) FROM Subject s WHERE s.department.id = :departmentId")
+    long countByDepartmentId(@Param("departmentId") Long departmentId);
+
     boolean existsBySubjectCode(String subjectCode);
     Optional<Subject> findBySubjectCode(String subjectCode);
+
+    // NEW: Method for ordering
+    @Query("SELECT s FROM Subject s LEFT JOIN FETCH s.department ORDER BY s.name ASC")
+    List<Subject> findAllByOrderByNameAsc();
 }
