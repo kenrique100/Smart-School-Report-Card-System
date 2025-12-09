@@ -68,7 +68,7 @@ public class StudentEnrollmentService {
             return;
         }
 
-        log.info("Enrolling student {} in {} additional subject's", studentId, subjectIds.size());
+        log.info("Enrolling student {} in {} additional subject(s)", studentId, subjectIds.size());
 
         // Get existing enrollments
         List<StudentSubject> existingEnrollments = studentSubjectRepository.findByStudentId(studentId);

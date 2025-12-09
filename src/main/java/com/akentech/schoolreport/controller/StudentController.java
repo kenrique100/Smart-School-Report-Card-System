@@ -1,5 +1,6 @@
 package com.akentech.schoolreport.controller;
 
+import com.akentech.schoolreport.util.DepartmentUtil;
 import com.akentech.schoolreport.util.ParameterUtils;
 import com.akentech.schoolreport.dto.GroupedSubjectsResponse;
 import com.akentech.schoolreport.dto.SubjectDTO;
@@ -11,7 +12,6 @@ import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
-import com.akentech.schoolreport.service.SpecialtyService;
 import com.akentech.schoolreport.service.StudentEnrollmentService;
 import com.akentech.schoolreport.service.StudentService;
 import com.akentech.schoolreport.service.SubjectService;
@@ -59,7 +59,6 @@ public class StudentController {
             Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            // FIXED: Use ParameterUtils for safe parsing
             Long classRoomIdLong = ParameterUtils.safeParseLong(classRoomId);
             Long departmentIdLong = ParameterUtils.safeParseLong(departmentId);
             String cleanedSpecialty = ParameterUtils.cleanString(specialty);
@@ -80,7 +79,6 @@ public class StudentController {
             model.addAttribute("specialties", studentService.getAllSpecialties());
             model.addAttribute("student", new Student());
 
-            // Add filter values for form persistence
             model.addAttribute("classRoomIdFilter", classRoomIdLong);
             model.addAttribute("departmentIdFilter", departmentIdLong);
             model.addAttribute("specialtyFilter", cleanedSpecialty);
@@ -115,7 +113,6 @@ public class StudentController {
         redirectAttributes.addAttribute("page", currentPage != null ? currentPage : 0);
         redirectAttributes.addAttribute("size", currentSize != null ? currentSize : 100);
 
-        // FIXED: Directly pass string values, let the listStudents method handle parsing
         if (classRoomId != null && !classRoomId.equals("null")) {
             redirectAttributes.addAttribute("classRoomId", classRoomId);
         }
@@ -141,14 +138,30 @@ public class StudentController {
         List<ClassRoom> classRooms = classRoomRepository.findAll();
         List<Department> departments = departmentRepository.findAll();
 
-        // Enhanced default selection logic
         ClassRoom defaultClass = findDefaultClass(classRooms, classLevel);
         Department defaultDepartment = findDefaultDepartment(departments, departmentCode);
+
+        // Make sure default class has a valid code
+        if (defaultClass != null && defaultClass.getCode() == null) {
+            log.warn("Default class has null code: {}", defaultClass.getName());
+            // Find another class with valid code
+            defaultClass = classRooms.stream()
+                    .filter(cr -> cr.getCode() != null)
+                    .findFirst()
+                    .orElse(null);
+        }
 
         if (defaultClass != null) {
             student.setClassRoom(defaultClass);
         } else if (!classRooms.isEmpty()) {
-            student.setClassRoom(classRooms.getFirst());
+            // Find first class with valid code
+            ClassRoom firstValidClass = classRooms.stream()
+                    .filter(cr -> cr.getCode() != null)
+                    .findFirst()
+                    .orElse(null);
+            if (firstValidClass != null) {
+                student.setClassRoom(firstValidClass);
+            }
         }
 
         if (defaultDepartment != null) {
@@ -157,14 +170,12 @@ public class StudentController {
             student.setDepartment(departments.getFirst());
         }
 
-        // Set specialty if provided
         if (specialty != null && !specialty.trim().isEmpty() && !"null".equals(specialty)) {
             student.setSpecialty(specialty);
         }
 
-        // Get grouped subjects based on default selection
         Map<String, List<Subject>> groupedSubjects = new HashMap<>();
-        if (student.getClassRoom() != null && student.getDepartment() != null) {
+        if (student.getClassRoom() != null && student.getClassRoom().getCode() != null && student.getDepartment() != null) {
             String classCode = student.getClassRoom().getCode().name();
             Long departmentId = student.getDepartment().getId();
             String studentSpecialty = student.getSpecialty();
@@ -186,7 +197,7 @@ public class StudentController {
         model.addAttribute("selectedSubjectIds", selectedSubjectIds);
 
         log.info("Add form initialized for class: {}, department: {}, specialty: {} with {} compulsory, {} department, {} specialty, {} optional subjects",
-                student.getClassRoom() != null ? student.getClassRoom().getCode() : "None",
+                student.getClassRoom() != null ? student.getClassRoom().getName() : "None",
                 student.getDepartment() != null ? student.getDepartment().getName() : "None",
                 student.getSpecialty(),
                 groupedSubjects.getOrDefault("compulsory", List.of()).size(),
@@ -197,7 +208,6 @@ public class StudentController {
         return "add-student";
     }
 
-    // Helper methods for default selection
     private ClassRoom findDefaultClass(List<ClassRoom> classRooms, String classLevel) {
         if (classLevel != null && !classLevel.equals("null")) {
             return classRooms.stream()
@@ -205,7 +215,6 @@ public class StudentController {
                     .findFirst()
                     .orElse(null);
         }
-        // Default to LOWER_SIXTH if available
         return classRooms.stream()
                 .filter(cr -> cr.getCode() == ClassLevel.LOWER_SIXTH)
                 .findFirst()
@@ -219,7 +228,6 @@ public class StudentController {
                     .findFirst()
                     .orElse(null);
         }
-        // Default to Sciences if available
         return departments.stream()
                 .filter(d -> d.getCode() == DepartmentCode.SCI)
                 .findFirst()
@@ -229,7 +237,7 @@ public class StudentController {
     @PostMapping("/save")
     public String saveStudent(@Valid @ModelAttribute("student") Student student,
                               BindingResult result,
-                              @RequestParam(value = "subjectIds", required = false) String subjectIdsParam, // Change to String
+                              @RequestParam(value = "subjectIds", required = false) String subjectIdsParam,
                               Model model,
                               RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -238,7 +246,6 @@ public class StudentController {
         }
 
         try {
-            // Parse subject IDs from comma-separated string
             List<Long> subjectIds = new ArrayList<>();
             if (subjectIdsParam != null && !subjectIdsParam.trim().isEmpty()) {
                 String[] ids = subjectIdsParam.split(",");
@@ -359,17 +366,22 @@ public class StudentController {
 
             Map<String, Object> subjectsSummary = studentEnrollmentService.getStudentEnrollmentSummary(id);
 
-            List<Subject> availableSubjects = studentEnrollmentService.getAvailableSubjectsForEnrollment(id);
-
             Map<String, List<Subject>> groupedSubjects = studentService.getGroupedSubjectsForStudent(id);
+
+            log.info("📊 Loading student {} {} (ID: {}) with {} subjects",
+                    student.getFirstName(), student.getLastName(),
+                    student.getStudentId(), studentSubjects.size());
+
+            log.info("📊 Student class: {}, department: {}, specialty: {}",
+                    student.getClassRoom() != null ? student.getClassRoom().getName() : "None",
+                    student.getDepartment() != null ? student.getDepartment().getName() : "None",
+                    student.getSpecialty() != null ? student.getSpecialty() : "None");
 
             model.addAttribute("student", student);
             model.addAttribute("subjectsSummary", subjectsSummary);
             model.addAttribute("studentSubjects", studentSubjects);
-            model.addAttribute("availableSubjects", availableSubjects);
             model.addAttribute("groupedSubjects", groupedSubjects);
 
-            log.debug("Loaded student {} with {} subjects", student.getFullName(), studentSubjects.size());
             return "view-student";
         } catch (EntityNotFoundException e) {
             log.warn("Student not found for viewing with id: {}", id);
@@ -413,9 +425,6 @@ public class StudentController {
         }
     }
 
-    /**
-     * Converts a map of subjects grouped by category into subject DTOs.
-     */
     private Map<String, List<SubjectDTO>> convertToDTO(Map<String, List<Subject>> groupedSubjects) {
         return groupedSubjects.entrySet().stream()
                 .collect(Collectors.toMap(
@@ -426,9 +435,6 @@ public class StudentController {
                 ));
     }
 
-    /**
-     * Reusable method for building consistent error responses for grouped-subject failures.
-     */
     private ResponseEntity<GroupedSubjectsResponse> buildGroupedSubjectErrorResponse(Exception e) {
         GroupedSubjectsResponse errorResponse = new GroupedSubjectsResponse();
         errorResponse.setSuccess(false);
@@ -447,6 +453,54 @@ public class StudentController {
         errorResponse.setOptionalCount(0);
 
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @GetMapping("/check-specialty-requirements")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> checkSpecialtyRequirements(
+            @RequestParam String classCode,
+            @RequestParam String departmentCode) {
+        try {
+            log.info("Checking specialty requirements for class: {}, department: {}", classCode, departmentCode);
+
+            // Use DepartmentUtil to get specialties
+            List<String> specialties = DepartmentUtil.getSpecialtiesForDepartment(departmentCode);
+            boolean hasSpecialties = DepartmentUtil.hasSpecialties(departmentCode);
+
+            // Check if sixth form
+            boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+
+            // Determine requirements
+            boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
+            boolean allowed = !classCode.equals("FORM_1") && !classCode.equals("FORM_2") &&
+                    !classCode.equals("FORM_3") && hasSpecialties;
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("required", required);
+            response.put("allowed", allowed);
+            response.put("hasSpecialties", hasSpecialties);
+            response.put("specialties", specialties);
+            response.put("specialtiesCount", specialties.size());
+
+            String message;
+            if (!hasSpecialties) {
+                message = "This department does not have specialties";
+            } else if (required) {
+                message = "Specialty is required for " + classCode + " " + departmentCode;
+            } else if (allowed) {
+                message = "Specialty is optional";
+            } else {
+                message = "Specialty is not allowed for this class";
+            }
+            response.put("message", message);
+
+            log.info("Specialty requirement check completed: {}", message);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error checking specialty requirements for class: {}, department: {}", classCode, departmentCode, e);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/search")
@@ -480,7 +534,6 @@ public class StudentController {
         }
     }
 
-    // NEW: Get available subjects for enrollment (not already enrolled)
     @GetMapping("/{studentId}/available-subjects")
     @ResponseBody
     public ResponseEntity<List<SubjectDTO>> getAvailableSubjectsForEnrollment(@PathVariable Long studentId) {
@@ -496,7 +549,6 @@ public class StudentController {
         }
     }
 
-    // NEW: Enroll student in additional subjects
     @PostMapping("/{studentId}/enroll-subjects")
     @ResponseBody
     public ResponseEntity<?> enrollStudentInSubjects(
@@ -514,7 +566,6 @@ public class StudentController {
         }
     }
 
-    // NEW: Unenroll student from a subject
     @DeleteMapping("/{studentId}/subjects/{subjectId}/unenroll")
     @ResponseBody
     public ResponseEntity<?> unenrollStudentFromSubject(
@@ -573,64 +624,6 @@ public class StudentController {
         }
     }
 
-    // Helper methods
-
-    private void populateModelAttributes(Model model) {
-        model.addAttribute("students", studentService.getAllStudents());
-        model.addAttribute("classes", classRoomRepository.findAll());
-        model.addAttribute("departments", departmentRepository.findAll());
-        model.addAttribute("specialties", studentService.getAllSpecialties());
-        model.addAttribute("student", new Student());
-    }
-
-    private void populateAddModelAttributes(Model model, Student student) {
-        model.addAttribute("student", student);
-        model.addAttribute("classes", classRoomRepository.findAll());
-        model.addAttribute("departments", departmentRepository.findAll());
-        model.addAttribute("specialties", studentService.getAllSpecialties());
-
-        Map<String, List<Subject>> groupedSubjects = studentService.getGroupedAvailableSubjects(student);
-        model.addAttribute("groupedSubjects", groupedSubjects);
-
-        model.addAttribute("selectedSubjectIds", List.of());
-    }
-
-    private void populateEditModelAttributes(Model model, Student student) {
-        model.addAttribute("classes", classRoomRepository.findAll());
-        model.addAttribute("departments", departmentRepository.findAll());
-        model.addAttribute("specialties", studentService.getAllSpecialties());
-
-        Map<String, List<Subject>> groupedSubjects = studentService.getGroupedAvailableSubjects(student);
-        model.addAttribute("groupedSubjects", groupedSubjects);
-
-        List<Long> selectedSubjectIds = studentService.getSelectedSubjectIds(student.getId());
-        model.addAttribute("selectedSubjectIds", selectedSubjectIds);
-    }
-
-    @GetMapping("/check-specialty-requirements")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> checkSpecialtyRequirements(
-            @RequestParam String classCode,
-            @RequestParam String departmentCode) {
-        try {
-            log.info("Checking specialty requirements for class: {}, department: {}", classCode, departmentCode);
-            SpecialtyService.SpecialtyRequirement requirement = studentService.checkSpecialtyRequirement(classCode, departmentCode);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("required", requirement.isRequired());
-            response.put("allowed", requirement.isAllowed());
-            response.put("message", requirement.getMessage());
-            response.put("specialties", requirement.getSpecialties());
-            response.put("specialtiesCount", requirement.getSpecialties().size());
-
-            log.info("Specialty requirement check completed: {}", requirement.getMessage());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error checking specialty requirements for class: {}, department: {}", classCode, departmentCode, e);
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
     @GetMapping("/statistics")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getStudentStatistics() {
@@ -675,7 +668,6 @@ public class StudentController {
 
             response.put("subjectsInfo", subjectsInfo);
 
-
             List<Subject> filtered = subjectService.getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
             response.put("filteredCount", filtered.size());
             response.put("filteredSubjects", filtered.stream()
@@ -705,4 +697,47 @@ public class StudentController {
         return info;
     }
 
+    private void populateModelAttributes(Model model) {
+        model.addAttribute("students", studentService.getAllStudents());
+        model.addAttribute("classes", classRoomRepository.findAll());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("specialties", studentService.getAllSpecialties());
+        model.addAttribute("student", new Student());
+    }
+
+    private void populateAddModelAttributes(Model model, Student student) {
+        model.addAttribute("student", student);
+        model.addAttribute("classes", classRoomRepository.findAll());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("specialties", studentService.getAllSpecialties());
+
+        Map<String, List<Subject>> groupedSubjects;
+
+        // Check if student has valid class and department before calling service
+        if (student.getClassRoom() != null && student.getClassRoom().getCode() != null &&
+                student.getDepartment() != null) {
+            groupedSubjects = studentService.getGroupedAvailableSubjects(student);
+        } else {
+            groupedSubjects = new HashMap<>();
+            groupedSubjects.put("compulsory", new ArrayList<>());
+            groupedSubjects.put("department", new ArrayList<>());
+            groupedSubjects.put("specialty", new ArrayList<>());
+            groupedSubjects.put("optional", new ArrayList<>());
+        }
+
+        model.addAttribute("groupedSubjects", groupedSubjects);
+        model.addAttribute("selectedSubjectIds", List.of());
+    }
+
+    private void populateEditModelAttributes(Model model, Student student) {
+        model.addAttribute("classes", classRoomRepository.findAll());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("specialties", studentService.getAllSpecialties());
+
+        Map<String, List<Subject>> groupedSubjects = studentService.getGroupedAvailableSubjects(student);
+        model.addAttribute("groupedSubjects", groupedSubjects);
+
+        List<Long> selectedSubjectIds = studentService.getSelectedSubjectIds(student.getId());
+        model.addAttribute("selectedSubjectIds", selectedSubjectIds);
+    }
 }

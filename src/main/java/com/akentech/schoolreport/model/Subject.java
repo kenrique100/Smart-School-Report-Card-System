@@ -23,7 +23,7 @@ public class Subject {
     @Column(nullable = false)
     private Integer coefficient;
 
-    @ManyToOne(fetch = FetchType.EAGER) // FIXED: Changed from LAZY to EAGER
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id")
     private Department department;
 
@@ -39,21 +39,33 @@ public class Subject {
     @Column(name = "is_optional")
     private Boolean optional = false;
 
-    // NEW: Helper method to get department name safely
+    // FIXED: Add getter for department name
     @Transient
     public String getDepartmentName() {
-        return this.department != null ? this.department.getName() : "General";
+        return department != null ? department.getName() : "General";
     }
 
-    // NEW: Helper method to check if subject is advanced level
+    // FIXED: Add getter for department code
     @Transient
-    public boolean isAdvancedLevel() {
-        return this.name != null && this.name.startsWith("A-");
+    public String getDepartmentCode() {
+        return department != null && department.getCode() != null ? department.getCode().name() : "GEN";
     }
 
-    // NEW: Helper method to check if subject is ordinary level
+    // FIXED: Add helper method to check if subject is compulsory
     @Transient
-    public boolean isOrdinaryLevel() {
-        return this.name != null && (this.name.startsWith("O-") || !this.isAdvancedLevel());
+    public boolean isCompulsory() {
+        return !optional;
+    }
+
+    // FIXED: Add helper method to get full name with code
+    @Transient
+    public String getFullNameWithCode() {
+        return this.name + " (" + this.subjectCode + ")";
+    }
+
+    // FIXED: Add helper method for display
+    @Transient
+    public String getDisplayName() {
+        return this.name + " - " + this.subjectCode;
     }
 }

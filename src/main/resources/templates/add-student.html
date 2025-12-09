@@ -6,6 +6,7 @@
     <title>Add Student - Student Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .subject-group {
             transition: all 0.3s ease;
@@ -56,6 +57,13 @@
         .required-field::after {
             content: " *";
             color: #ef4444;
+        }
+        .specialty-required {
+            border-color: #ef4444;
+        }
+        .specialty-required:focus {
+            ring-color: #ef4444;
+            border-color: #ef4444;
         }
     </style>
 </head>
@@ -146,7 +154,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Classroom</label>
-                    <select th:field="*{classRoom}" required
+                    <select th:field="*{classRoom}" id="classRoom" required
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             onchange="handleClassChange(this)">
                         <option value="">Select Classroom</option>
@@ -161,7 +169,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Department</label>
-                    <select th:field="*{department}" required
+                    <select th:field="*{department}" id="department" required
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             onchange="handleDepartmentChange(this)">
                         <option value="">Select Department</option>
@@ -174,18 +182,24 @@
                         <span th:errors="*{department}"></span>
                     </div>
                 </div>
-                <div id="specialtyField">
-                    <label class="block text-sm font-medium text-gray-700 mb-2" id="specialtyLabel">Specialty</label>
-                    <select th:field="*{specialty}" id="specialtySelect"
-                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            onchange="handleSpecialtyChange()">
-                        <option value="">Select Specialty</option>
+
+                <!-- Specialty Field Container -->
+                <div id="specialty-container" class="hidden">
+                    <label id="specialty-label" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-2"></i>Specialty
+                    </label>
+                    <select th:field="*{specialty}" id="specialty"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Select Specialty...</option>
                         <option th:each="specialty : ${specialties}"
                                 th:value="${specialty}"
                                 th:text="${specialty}"></option>
                     </select>
-                    <div id="specialtyHelp" class="text-sm mt-2"></div>
+                    <div id="specialty-help" class="text-sm mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>Select a class and department first
+                    </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Academic Year Start</label>
@@ -329,14 +343,7 @@
             }
         }
 
-        if (initialSpecialty && initialSpecialty !== 'null') {
-            const specialtySelect = document.getElementById('specialtySelect');
-            if (specialtySelect) {
-                specialtySelect.value = initialSpecialty;
-            }
-        }
-
-        // Trigger change events to load subjects
+        // Trigger change events to load subjects and update specialty field
         setTimeout(() => {
             const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
             const deptSelect = document.querySelector('select[th\\:field="*{department}"]');
@@ -355,6 +362,7 @@
 <script>
     let currentClassCode = '';
     let currentDepartmentId = '';
+    let currentDepartmentCode = '';
     let currentSpecialty = '';
 
     // Initialize form
@@ -374,98 +382,112 @@
             });
         }
 
-        // Initial specialty field setup
-        resetSpecialtyField();
+        // Set up event listeners for class and department changes
+        $('#classRoom, #department').on('change', function() {
+            const classCode = $('#classRoom option:selected').data('code');
+            const departmentCode = $('#department option:selected').data('code');
+            if (classCode && departmentCode) {
+                updateSpecialtyField(classCode, departmentCode);
+            }
+        });
     });
 
-    async function updateSpecialtyRequirements(classCode, departmentCode) {
-        console.log('Updating specialty requirements:', { classCode, departmentCode });
+    function updateSpecialtyField(classCode, departmentCode) {
+        const specialtyField = $('#specialty');
+        const specialtyContainer = $('#specialty-container');
+        const specialtyLabel = $('#specialty-label');
+        const specialtyHelp = $('#specialty-help');
 
         if (!classCode || !departmentCode) {
-            resetSpecialtyField();
+            specialtyContainer.hide();
             return;
         }
 
-        try {
-            const response = await fetch(`/students/check-specialty-requirements?classCode=${encodeURIComponent(classCode)}&departmentCode=${encodeURIComponent(departmentCode)}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch specialty requirements');
-            }
-            const requirement = await response.json();
-            console.log('Specialty requirement:', requirement);
+        // Check specialty requirements
+        $.ajax({
+            url: '/students/check-specialty-requirements',
+            data: {
+                classCode: classCode,
+                departmentCode: departmentCode
+            },
+            success: function(response) {
+                console.log('Specialty requirements response:', response);
 
-            const specialtyField = document.getElementById('specialtyField');
-            const specialtyLabel = document.getElementById('specialtyLabel');
-            const specialtySelect = document.getElementById('specialtySelect');
-            const specialtyHelp = document.getElementById('specialtyHelp');
-
-            if (!requirement.allowed) {
-                specialtyField.style.display = 'none';
-                specialtySelect.value = '';
-                currentSpecialty = '';
-                specialtyHelp.innerHTML = '<i class="fas fa-info-circle mr-1"></i>Specialty not allowed for this class/department combination';
-                specialtyHelp.className = 'text-sm text-gray-600 mt-2 flex items-center';
-            } else {
-                specialtyField.style.display = 'block';
-
-                if (requirement.required) {
-                    specialtyLabel.innerHTML = 'Specialty <span class="text-red-500">*</span>';
-                    specialtySelect.setAttribute('required', 'required');
-                    specialtyHelp.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i>Specialty is required for Sixth Form Science/Arts students';
-                    specialtyHelp.className = 'text-sm text-red-600 mt-2 flex items-center';
+                if (!response.hasSpecialties) {
+                    // Hide specialty field for departments without specialties
+                    specialtyContainer.hide();
+                    specialtyField.prop('disabled', true);
+                    specialtyField.val('');
+                    specialtyLabel.html('<i class="fas fa-info-circle mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Not available for this department)</span>');
+                    currentSpecialty = '';
                 } else {
-                    specialtyLabel.textContent = 'Specialty';
-                    specialtySelect.removeAttribute('required');
-                    specialtyHelp.innerHTML = '<i class="fas fa-info-circle mr-1"></i>Specialty is optional';
-                    specialtyHelp.className = 'text-sm text-gray-600 mt-2 flex items-center';
+                    specialtyContainer.show();
+
+                    if (response.required) {
+                        specialtyField.prop('required', true);
+                        specialtyField.prop('disabled', false);
+                        specialtyLabel.html('<i class="fas fa-asterisk text-red-500 mr-2"></i>Specialty <span class="text-red-500">*</span> <span class="text-gray-500 text-sm">(Required)</span>');
+                        specialtyField.addClass('border-red-300 focus:border-red-500 focus:ring-red-500');
+                        specialtyHelp.html('<i class="fas fa-exclamation-circle mr-1"></i>Specialty is required for Sixth Form Science/Arts students');
+                        specialtyHelp.removeClass('text-gray-600').addClass('text-red-600');
+                    } else if (response.allowed) {
+                        specialtyField.prop('required', false);
+                        specialtyField.prop('disabled', false);
+                        specialtyLabel.html('<i class="fas fa-tag mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Optional)</span>');
+                        specialtyField.removeClass('border-red-300 focus:border-red-500 focus:ring-red-500');
+                        specialtyHelp.html('<i class="fas fa-info-circle mr-1"></i>Specialty is optional');
+                        specialtyHelp.removeClass('text-red-600').addClass('text-gray-600');
+                    } else {
+                        specialtyField.prop('disabled', true);
+                        specialtyField.val('');
+                        specialtyLabel.html('<i class="fas fa-ban text-gray-400 mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Not allowed for this class)</span>');
+                        specialtyHelp.html('<i class="fas fa-info-circle mr-1"></i>Specialty not allowed for this class/department combination');
+                        specialtyHelp.removeClass('text-red-600').addClass('text-gray-600');
+                    }
+
+                    // Update specialty options
+                    updateSpecialtyOptions(response.specialties);
                 }
+
+                // Load subjects after updating specialty field
+                if (currentClassCode && currentDepartmentId) {
+                    loadSubjects();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error checking specialty requirements:', error);
+                specialtyHelp.html('<i class="fas fa-exclamation-triangle mr-1"></i>Error checking specialty requirements');
+                specialtyHelp.removeClass('text-gray-600').addClass('text-red-600');
             }
-
-            updateSpecialtyOptions(requirement.specialties);
-            await loadSubjects();
-
-        } catch (error) {
-            console.error('Error checking specialty requirements:', error);
-            resetSpecialtyField();
-        }
-    }
-
-    function resetSpecialtyField() {
-        const specialtyField = document.getElementById('specialtyField');
-        const specialtyLabel = document.getElementById('specialtyLabel');
-        const specialtySelect = document.getElementById('specialtySelect');
-        const specialtyHelp = document.getElementById('specialtyHelp');
-
-        specialtyField.style.display = 'block';
-        specialtyLabel.textContent = 'Specialty';
-        specialtySelect.removeAttribute('required');
-        specialtyHelp.innerHTML = '<i class="fas fa-info-circle mr-1"></i>Select a class and department first';
-        specialtyHelp.className = 'text-sm text-gray-600 mt-2 flex items-center';
+        });
     }
 
     function updateSpecialtyOptions(specialties) {
-        const specialtySelect = document.getElementById('specialtySelect');
+        const specialtySelect = $('#specialty');
+        specialtySelect.empty();
 
-        // Clear existing options except the first one
-        while (specialtySelect.options.length > 1) {
-            specialtySelect.remove(1);
-        }
-
-        // Add new options
         if (specialties && specialties.length > 0) {
-            specialties.forEach(specialty => {
-                const option = document.createElement('option');
-                option.value = specialty;
-                option.textContent = specialty;
-                specialtySelect.appendChild(option);
+            specialtySelect.append('<option value="">Select Specialty...</option>');
+            specialties.forEach(function(specialty) {
+                specialtySelect.append('<option value="' + specialty + '">' + specialty + '</option>');
             });
         } else {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'No specialties available';
-            option.disabled = true;
-            specialtySelect.appendChild(option);
+            specialtySelect.append('<option value="">No specialties available</option>');
         }
+
+        // Restore current specialty if it exists
+        if (currentSpecialty) {
+            specialtySelect.val(currentSpecialty);
+        }
+
+        // Add change event listener for specialty
+        specialtySelect.off('change').on('change', function() {
+            currentSpecialty = $(this).val();
+            console.log('Specialty changed to:', currentSpecialty);
+            if (currentClassCode && currentDepartmentId) {
+                loadSubjects();
+            }
+        });
     }
 
     async function loadSubjects() {
@@ -694,10 +716,11 @@
         const departmentSelect = document.querySelector('select[th\\:field="*{department}"]');
         if (departmentSelect && departmentSelect.value) {
             const selectedDeptOption = departmentSelect.options[departmentSelect.selectedIndex];
-            const departmentCode = selectedDeptOption ? selectedDeptOption.getAttribute('data-code') : '';
+            currentDepartmentCode = selectedDeptOption ? selectedDeptOption.getAttribute('data-code') : '';
             currentDepartmentId = departmentSelect.value;
 
-            updateSpecialtyRequirements(currentClassCode, departmentCode);
+            // Update specialty field
+            updateSpecialtyField(currentClassCode, currentDepartmentCode);
         } else {
             showNoSubjectsMessage('Please select a department to see available subjects.');
         }
@@ -705,26 +728,20 @@
 
     function handleDepartmentChange(select) {
         const selectedOption = select.options[select.selectedIndex];
-        const departmentCode = selectedOption ? selectedOption.getAttribute('data-code') : '';
+        currentDepartmentCode = selectedOption ? selectedOption.getAttribute('data-code') : '';
         currentDepartmentId = select.value;
-        console.log('Department changed:', { departmentCode, currentDepartmentId });
+        console.log('Department changed:', { currentDepartmentCode, currentDepartmentId });
 
         const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
         if (classSelect && classSelect.value) {
             const selectedClassOption = classSelect.options[classSelect.selectedIndex];
             currentClassCode = selectedClassOption ? selectedClassOption.getAttribute('data-code') : '';
 
-            updateSpecialtyRequirements(currentClassCode, departmentCode);
+            // Update specialty field
+            updateSpecialtyField(currentClassCode, currentDepartmentCode);
         } else {
             showNoSubjectsMessage('Please select a class to see available subjects.');
         }
-    }
-
-    function handleSpecialtyChange() {
-        const specialtySelect = document.getElementById('specialtySelect');
-        currentSpecialty = specialtySelect.value;
-        console.log('Specialty changed:', currentSpecialty);
-        loadSubjects();
     }
 
     // Form validation
@@ -739,12 +756,13 @@
         }
 
         // Validate specialty requirements
-        const specialtySelect = document.getElementById('specialtySelect');
-        const specialtyField = document.getElementById('specialtyField');
+        const specialtyField = $('#specialty');
+        const specialtyContainer = $('#specialty-container');
+        const specialtyLabel = $('#specialty-label');
 
-        if (specialtyField.style.display !== 'none' &&
-            specialtySelect.hasAttribute('required') &&
-            !specialtySelect.value) {
+        if (specialtyContainer.is(':visible') &&
+            specialtyField.prop('required') &&
+            !specialtyField.val()) {
             e.preventDefault();
             alert('Specialty is required for the selected class and department combination.');
             return false;

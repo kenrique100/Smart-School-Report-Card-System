@@ -9,7 +9,8 @@ public enum DepartmentCode {
     COM("COM", "Commercial"),
     TEC("TEC", "Technical"),
     HE("HE", "Home Economics"),
-    CI("CI", "Clothing Industry");
+    CI("CI", "Clothing Industry"),
+    EPS("EPS", "Electrical Power Systems");
 
     @Getter
     private final String code;

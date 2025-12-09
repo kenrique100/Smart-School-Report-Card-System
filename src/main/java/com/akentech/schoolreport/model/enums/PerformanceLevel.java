@@ -1,5 +1,8 @@
 package com.akentech.schoolreport.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum PerformanceLevel {
     EXCELLENT("Excellent", 90.0),
     VERY_GOOD("Very Good", 80.0),
@@ -15,9 +18,6 @@ public enum PerformanceLevel {
         this.displayName = displayName;
         this.minimumScore = minimumScore;
     }
-
-    public String getDisplayName() { return displayName; }
-    public Double getMinimumScore() { return minimumScore; }
 
     public static PerformanceLevel fromScore(Double score) {
         if (score == null) return FAIL;

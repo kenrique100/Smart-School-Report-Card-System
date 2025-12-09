@@ -1,6 +1,7 @@
 package com.akentech.schoolreport.model;
 
 import com.akentech.schoolreport.model.enums.ClassLevel;
+import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.model.enums.Gender;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -9,11 +10,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "student", uniqueConstraints = {
-        @UniqueConstraint(name = "UK_student_id", columnNames = {"student_id"}),
-        @UniqueConstraint(name = "UK_roll_number_classroom", columnNames = {"roll_number", "classroom_id"})
+        @UniqueConstraint(columnNames = {"roll_number", "classroom_id"})
 })
 @Data
 @NoArgsConstructor
@@ -35,23 +34,17 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Student ID is required")
-    @Size(min = 1, max = 50, message = "Student ID must be between 1 and 50 characters")
     @Column(name = "student_id", unique = true, nullable = false)
     private String studentId;
 
     @NotBlank(message = "First name is required")
-    @Size(min = 1, max = 100, message = "First name must be between 1 and 100 characters")
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
     @NotBlank(message = "Last name is required")
-    @Size(min = 1, max = 100, message = "Last name must be between 1 and 100 characters")
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @NotBlank(message = "Roll number is required")
-    @Size(min = 1, max = 50, message = "Roll number must be between 1 and 50 characters")
     @Column(name = "roll_number", nullable = false)
     private String rollNumber;
 
@@ -61,13 +54,11 @@ public class Student {
     @JsonProperty("classRoom")
     private ClassRoom classRoom;
 
-    @NotNull(message = "Department is required")
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     @JsonProperty("department")
     private Department department;
 
-    @Size(max = 100, message = "Specialty must not exceed 100 characters")
     @Column(name = "specialty")
     private String specialty;
 
@@ -79,12 +70,9 @@ public class Student {
     private LocalDate dateOfBirth;
 
     @Email(message = "Invalid email format")
-    @Size(max = 100, message = "Email must not exceed 100 characters")
-    @Column(name = "email", unique = true)
+    @Column(unique = true, nullable = true)
     private String email;
 
-    @Size(max = 500, message = "Address must not exceed 500 characters")
-    @Column(name = "address")
     private String address;
 
     @Column(name = "academic_year_start")
@@ -99,19 +87,54 @@ public class Student {
     @JsonManagedReference("student-subjects")
     private List<StudentSubject> studentSubjects = new ArrayList<>();
 
-    // PrePersist validation
     @PrePersist
     @PreUpdate
-    private void validateIds() {
-        if (this.studentId == null || this.studentId.trim().isEmpty()) {
-            throw new IllegalStateException("Student ID cannot be null or empty");
+    public void sanitizeFields() {
+        if (this.email != null && this.email.trim().isEmpty()) {
+            this.email = null;
         }
-        if (this.rollNumber == null || this.rollNumber.trim().isEmpty()) {
-            throw new IllegalStateException("Roll number cannot be null or empty");
+
+        if (this.rollNumber != null) {
+            this.rollNumber = this.rollNumber.trim();
+        }
+
+        if (this.firstName != null) {
+            this.firstName = this.firstName.trim();
+        }
+        if (this.lastName != null) {
+            this.lastName = this.lastName.trim();
         }
     }
 
-    // NEW: Helper method for gender display
+    @Transient
+    public String getFormattedDateOfBirth() {
+        if (this.dateOfBirth == null) {
+            return "Not Set";
+        }
+        return this.dateOfBirth.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    @Transient
+    public String getDateOfBirthISO() {
+        if (this.dateOfBirth == null) {
+            return "";
+        }
+        return this.dateOfBirth.toString();
+    }
+
+    @Transient
+    public String getSanitizedEmail() {
+        if (this.email == null || this.email.trim().isEmpty()) {
+            return null;
+        }
+        return this.email.trim();
+    }
+
+    @Transient
+    public boolean hasValidEmail() {
+        return this.email != null && !this.email.trim().isEmpty();
+    }
+
     @Transient
     public String getGenderDisplay() {
         if (this.gender == null) {
@@ -120,7 +143,6 @@ public class Student {
         return this.gender == Gender.MALE ? "Male" : "Female";
     }
 
-    // NEW: Helper method for gender CSS classes
     @Transient
     public String getGenderCssClass() {
         if (this.gender == null) {
@@ -129,7 +151,6 @@ public class Student {
         return this.gender == Gender.MALE ? "bg-blue-100 text-blue-800" : "bg-pink-100 text-pink-800";
     }
 
-    // NEW: Helper method to get department CSS class
     @Transient
     public String getDepartmentCssClass() {
         if (this.department == null || this.department.getCode() == null) {
@@ -146,19 +167,16 @@ public class Student {
         };
     }
 
-    // NEW: Helper method to get department name safely
     @Transient
     public String getDepartmentName() {
         return this.department != null ? this.department.getName() : "General";
     }
 
-    // NEW: Helper method to get classroom name safely
     @Transient
     public String getClassroomName() {
         return this.classRoom != null ? this.classRoom.getName() : "Not assigned";
     }
 
-    // Helper method for subject management
     public void addSubject(Subject subject, boolean isCompulsory) {
         StudentSubject enrollment = StudentSubject.builder()
                 .student(this)
@@ -181,7 +199,6 @@ public class Student {
 
     @Transient
     public List<Subject> getAvailableSubjects() {
-        // This will be populated by the service layer
         return new ArrayList<>();
     }
 
@@ -214,11 +231,10 @@ public class Student {
     }
 
     private boolean isCompulsorySubject(Subject subject) {
-        // Define compulsory subjects for Forms 1-5
         if (this.classRoom != null && this.classRoom.getCode() != null) {
             ClassLevel classLevel = this.classRoom.getCode();
             if (classLevel.isFormLevel()) {
-                List<String> compulsoryNames = Arrays.asList("Mathematics", "English Language", "French Language");
+                List<String> compulsoryNames = Arrays.asList("O-Mathematics", "O-English Language", "O-French Language");
                 return compulsoryNames.contains(subject.getName());
             }
         }
@@ -232,56 +248,89 @@ public class Student {
 
     @Transient
     public boolean isSubjectForLevel(Subject subject) {
-        if (subject == null || classRoom == null) return false;
-
-        boolean isAdvancedSubject = subject.getName().startsWith("A-");
-        boolean isOrdinarySubject = subject.getName().startsWith("O-") || !isAdvancedSubject;
+        if (subject == null || classRoom == null || classRoom.getCode() == null) return false;
 
         ClassLevel level = getClassLevel();
-        if (level == null) return false;
+        String subjectName = subject.getName();
 
-        return (level.isFormLevel() && isOrdinarySubject) ||
-                (level.isSixthForm() && isAdvancedSubject);
+        if (subjectName == null) return false;
+
+        boolean isAdvancedSubject = subjectName.startsWith("A-");
+        boolean isOrdinarySubject = subjectName.startsWith("O-");
+
+        if (level.isSixthForm()) {
+            return isAdvancedSubject;
+        } else {
+            return isOrdinarySubject ||
+                    (!isAdvancedSubject &&
+                            subject.getDepartment() != null &&
+                            subject.getDepartment().getCode() == DepartmentCode.GEN);
+        }
     }
 
-    // Helper method to check if student is in form level
     @Transient
     public boolean isFormLevel() {
         return this.classRoom != null && this.classRoom.getCode() != null && this.classRoom.getCode().isFormLevel();
     }
 
-    // Helper method to check if student is in sixth form
     @Transient
     public boolean isSixthForm() {
         return this.classRoom != null && this.classRoom.getCode() != null &&
                 (this.classRoom.getCode() == ClassLevel.LOWER_SIXTH || this.classRoom.getCode() == ClassLevel.UPPER_SIXTH);
     }
 
-    // Helper method to get full name
     @Transient
     public String getFullName() {
         return this.firstName + " " + this.lastName;
     }
 
-    // Helper method to get academic year
     @Transient
     public String getAcademicYear() {
         if (this.academicYearStart != null && this.academicYearEnd != null) {
             return this.academicYearStart + "-" + this.academicYearEnd;
         }
-        return "N/A";
+        return "Not Set";
     }
 
-    // NEW: Helper method to get age
     @Transient
     public Integer getAge() {
-        if (this.dateOfBirth == null) return null;
-        return Period.between(this.dateOfBirth, LocalDate.now()).getYears();
+        if (this.dateOfBirth == null) {
+            return null;
+        }
+        return java.time.Period.between(this.dateOfBirth, LocalDate.now()).getYears();
     }
 
-    // NEW: Helper method to get formatted date of birth
     @Transient
-    public String getFormattedDateOfBirth() {
-        return this.dateOfBirth != null ? this.dateOfBirth.toString() : "N/A";
+    public String getDisplayEmail() {
+        if (this.email == null || this.email.trim().isEmpty()) {
+            return "Not Set";
+        }
+        return this.email;
     }
+
+    @Transient
+    public String getFormattedAcademicYear() {
+        if (this.academicYearStart != null && this.academicYearEnd != null) {
+            return this.academicYearStart + "/" + this.academicYearEnd;
+        }
+        return "Not Set";
+    }
+
+    @Transient
+    public String getAgeWithLabel() {
+        Integer age = getAge();
+        if (age == null) {
+            return "Age: Not Set";
+        }
+        return "Age: " + age + " years";
+    }
+
+    public void setEmail(String email) {
+        if (email != null && email.trim().isEmpty()) {
+            this.email = null;
+        } else {
+            this.email = email;
+        }
+    }
+
 }

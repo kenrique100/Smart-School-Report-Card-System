@@ -3,6 +3,7 @@ package com.akentech.schoolreport.repository;
 import com.akentech.schoolreport.model.ClassRoom;
 import com.akentech.schoolreport.model.Department;
 import com.akentech.schoolreport.model.Student;
+import com.akentech.schoolreport.model.enums.Gender;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,33 +17,61 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
+    List<Student> findByClassRoom(ClassRoom classRoom);
+    Page<Student> findByClassRoom(ClassRoom classRoom, Pageable pageable);
+
+    Optional<Student> findByRollNumberAndClassRoom(String rollNumber, ClassRoom classRoom);
+    Optional<Student> findByRollNumber(String rollNumber);
     Optional<Student> findByStudentId(String studentId);
 
-    Optional<Student> findByEmail(String email);
+    long countByClassRoomAndDepartment(ClassRoom classRoom, Department department);
+    long countByClassRoomAndDepartmentAndSpecialty(ClassRoom classRoom, Department department, String specialty);
+    long countByClassRoom(ClassRoom classRoom);
 
-    List<Student> findByClassRoom(ClassRoom classRoom);
+    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId")
+    List<Student> findByClassRoomId(@Param("classRoomId") Long classRoomId);
 
-    List<Student> findByDepartment(Department department);
+    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId")
+    Page<Student> findByClassRoomId(@Param("classRoomId") Long classRoomId, Pageable pageable);
+
+    @Query("SELECT s FROM Student s WHERE s.firstName LIKE %:name% OR s.lastName LIKE %:name%")
+    List<Student> findByNameContaining(@Param("name") String name);
+
+    @Query("SELECT s FROM Student s WHERE s.firstName LIKE %:name% OR s.lastName LIKE %:name%")
+    Page<Student> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId AND s.gender = :gender")
+    List<Student> findByClassRoomIdAndGender(@Param("classRoomId") Long classRoomId, @Param("gender") Gender gender);
+
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.classRoom.id = :classRoomId")
+    long countByClassRoomId(@Param("classRoomId") Long classRoomId);
 
     List<Student> findBySpecialty(String specialty);
+    Page<Student> findBySpecialty(String specialty, Pageable pageable);
 
-    List<Student> findByClassRoomId(Long classRoomId);
+    @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL")
+    Long countDistinctSpecialties();
 
-    @Query("SELECT s FROM Student s WHERE LOWER(s.firstName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.studentId) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.rollNumber) LIKE LOWER(CONCAT('%', :query, '%'))")
-    List<Student> findByNameContaining(@Param("query") String query);
+    // FIXED: Email query that properly handles null values
+    @Query("SELECT s FROM Student s WHERE s.email = :email AND s.email IS NOT NULL")
+    Optional<Student> findByEmail(@Param("email") String email);
 
-    @Query("SELECT s FROM Student s WHERE LOWER(s.firstName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.studentId) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "OR LOWER(s.rollNumber) LIKE LOWER(CONCAT('%', :query, '%'))")
-    Page<Student> findByNameContaining(@Param("query") String query, Pageable pageable);
+    // NEW: Find by email ignoring case
+    @Query("SELECT s FROM Student s WHERE LOWER(s.email) = LOWER(:email) AND s.email IS NOT NULL")
+    Optional<Student> findByEmailIgnoreCase(@Param("email") String email);
 
-    @Query("SELECT s FROM Student s WHERE " +
-            "(:firstName IS NULL OR LOWER(s.firstName) LIKE LOWER(CONCAT('%', :firstName, '%'))) AND " +
-            "(:lastName IS NULL OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :lastName, '%'))) AND " +
+    // NEW: Find students with empty emails (to fix the bug)
+    @Query("SELECT s FROM Student s WHERE s.email = '' OR TRIM(s.email) = ''")
+    List<Student> findByEmptyEmail();
+
+    @Query("SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject " +
+            "WHERE " +
+            "(:firstName IS NULL OR s.firstName LIKE %:firstName%) AND " +
+            "(:lastName IS NULL OR s.lastName LIKE %:lastName%) AND " +
             "(:classRoomId IS NULL OR s.classRoom.id = :classRoomId) AND " +
             "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +
             "(:specialty IS NULL OR s.specialty = :specialty)")
@@ -53,62 +82,62 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                                 @Param("specialty") String specialty,
                                 Pageable pageable);
 
-    Page<Student> findBySpecialty(String specialty, Pageable pageable);
-
-    long countByClassRoom(ClassRoom classRoom);
-
-    long countByClassRoomId(Long classRoomId);
-
-    long countByDepartmentId(Long departmentId);
-
-    @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL AND s.specialty <> ''")
-    Long countDistinctSpecialties();
-
+    // Methods for eager loading
     @Query("SELECT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department WHERE s.id = :id")
     Optional<Student> findByIdWithClassRoomAndDepartment(@Param("id") Long id);
 
-    @Query("SELECT s FROM Student s LEFT JOIN FETCH s.studentSubjects WHERE s.id = :id")
-    Optional<Student> findByIdWithSubjects(@Param("id") Long id);
+    @Query("SELECT DISTINCT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department")
+    List<Student> findAllWithClassRoomAndDepartment();
 
-    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId AND s.department.id = :departmentId")
-    List<Student> findByClassRoomIdAndDepartmentId(@Param("classRoomId") Long classRoomId,
-                                                   @Param("departmentId") Long departmentId);
+    @Query("SELECT DISTINCT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department")
+    Page<Student> findAllWithClassRoomAndDepartment(Pageable pageable);
 
-    @Query("SELECT s FROM Student s WHERE s.academicYearStart = :year OR s.academicYearEnd = :year")
-    List<Student> findByAcademicYear(@Param("year") Integer year);
+    @Query("SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject " +
+            "ORDER BY s.firstName, s.lastName")
+    List<Student> findAllWithAssociations();
 
-    Optional<Student> findByRollNumberAndClassRoom(String rollNumber, ClassRoom classRoom);
+    // Also add a paged version
+    @Query(value = "SELECT DISTINCT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.department " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject",
+            countQuery = "SELECT COUNT(DISTINCT s) FROM Student s")
+    Page<Student> findAllWithAssociations(Pageable pageable);
 
-    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId AND s.department.id = :departmentId " +
-            "AND (:specialty IS NULL OR s.specialty = :specialty)")
-    List<Student> findByClassDepartmentAndSpecialty(@Param("classRoomId") Long classRoomId,
-                                                    @Param("departmentId") Long departmentId,
-                                                    @Param("specialty") String specialty);
+    // NEW: Count students by email status
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.email IS NOT NULL AND TRIM(s.email) != ''")
+    long countByHasEmail();
 
-    @Query("SELECT COUNT(s) FROM Student s WHERE s.gender = 'MALE'")
-    long countMaleStudents();
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.email IS NULL OR TRIM(s.email) = ''")
+    long countByNoEmail();
 
-    @Query("SELECT COUNT(s) FROM Student s WHERE s.gender = 'FEMALE'")
-    long countFemaleStudents();
+    // NEW: Find students by department
+    @Query("SELECT s FROM Student s WHERE s.department.id = :departmentId")
+    List<Student> findByDepartmentId(@Param("departmentId") Long departmentId);
 
-    @Query("SELECT s FROM Student s WHERE s.academicYearStart >= :startYear AND s.academicYearEnd <= :endYear")
+    @Query("SELECT s FROM Student s WHERE s.department.id = :departmentId")
+    Page<Student> findByDepartmentId(@Param("departmentId") Long departmentId, Pageable pageable);
+
+    // NEW: Count students by department
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.department.id = :departmentId")
+    long countByDepartmentId(@Param("departmentId") Long departmentId);
+
+    // NEW: Find students by academic year range
+    @Query("SELECT s FROM Student s WHERE " +
+            "(:startYear IS NULL OR s.academicYearStart >= :startYear) AND " +
+            "(:endYear IS NULL OR s.academicYearEnd <= :endYear)")
     List<Student> findByAcademicYearRange(@Param("startYear") Integer startYear,
                                           @Param("endYear") Integer endYear);
 
-    boolean existsByEmailAndIdNot(String email, Long id);
-
-    boolean existsByStudentId(String studentId);
-
-    @Query("SELECT COUNT(s) FROM Student s WHERE s.classRoom = :classRoom AND s.department = :department AND " +
-            "(:specialty IS NULL OR s.specialty = :specialty)")
-    long countByClassRoomAndDepartmentAndSpecialty(@Param("classRoom") ClassRoom classRoom,
-                                                   @Param("department") Department department,
-                                                   @Param("specialty") String specialty);
-
-    // OR use this alternative which might work better with null specialties
-    @Query("SELECT COUNT(s) FROM Student s WHERE s.classRoom.id = :classRoomId AND s.department.id = :departmentId AND " +
-            "(:specialty IS NULL OR s.specialty = :specialty)")
-    long countByClassRoomIdAndDepartmentIdAndSpecialty(@Param("classRoomId") Long classRoomId,
-                                                       @Param("departmentId") Long departmentId,
-                                                       @Param("specialty") String specialty);
+    @Query("SELECT s FROM Student s WHERE " +
+            "(:startYear IS NULL OR s.academicYearStart >= :startYear) AND " +
+            "(:endYear IS NULL OR s.academicYearEnd <= :endYear)")
+    Page<Student> findByAcademicYearRange(@Param("startYear") Integer startYear,
+                                          @Param("endYear") Integer endYear,
+                                          Pageable pageable);
 }

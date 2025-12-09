@@ -20,26 +20,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .stats-card { transition: all 0.3s ease; }
         .stats-card:hover { transform: scale(1.02); }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-        @keyframes modalSlideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -57,7 +37,9 @@
                     <h1 class="text-2xl font-bold text-gray-900">Student Details</h1>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-sm text-gray-500">Student ID: <span class="font-mono font-semibold" th:text="${student.studentId}"></span></span>
+                    <span class="text-sm text-gray-500">Student ID:
+                        <span class="font-mono font-semibold" th:text="${student.studentId}"></span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -85,13 +67,13 @@
                         <div class="flex items-center space-x-4">
                             <div class="flex-shrink-0">
                                 <div th:class="${student.genderCssClass} + ' w-16 h-16 rounded-full flex items-center justify-center'">
-                                    <i th:class="${student.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'}
+                                    <i th:class="${student.gender == T(com.akentech.schoolreport.model.enums.Gender).MALE ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'}
                                                + ' text-2xl'"></i>
                                 </div>
                             </div>
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-900" th:text="${student.fullName}"></h3>
-                                <p class="text-gray-600" th:text="${student.rollNumber}"></p>
+                                <p class="text-gray-600">Roll Number: <span th:text="${student.rollNumber}"></span></p>
                             </div>
                         </div>
 
@@ -107,10 +89,11 @@
                                 </div>
                                 <div>
                                     <span class="block text-sm font-semibold text-gray-500">Specialty</span>
-                                    <span th:if="${student.specialty}"
+                                    <span th:if="${student.specialty != null and student.specialty != ''}"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                                           th:text="${student.specialty}"></span>
-                                    <span th:unless="${student.specialty}" class="text-gray-500 text-sm">Not specified</span>
+                                    <span th:if="${student.specialty == null or student.specialty == ''}"
+                                          class="text-gray-500 text-sm">Not specified</span>
                                 </div>
                             </div>
                             <div class="space-y-3">
@@ -141,20 +124,22 @@
                                     <i class="fas fa-envelope text-gray-400 w-5"></i>
                                     <div>
                                         <span class="block text-sm font-semibold text-gray-500">Email</span>
-                                        <span th:if="${student.email}"
+                                        <span th:if="${student.email != null and student.email != ''}"
                                               class="text-blue-600 hover:text-blue-800 font-medium"
                                               th:text="${student.email}"></span>
-                                        <span th:unless="${student.email}" class="text-gray-500 text-sm">Not provided</span>
+                                        <span th:if="${student.email == null or student.email == ''}"
+                                              class="text-gray-500 text-sm">Not provided</span>
                                     </div>
                                 </div>
                                 <div class="flex items-start space-x-3">
                                     <i class="fas fa-map-marker-alt text-gray-400 w-5 mt-1"></i>
                                     <div>
                                         <span class="block text-sm font-semibold text-gray-500">Address</span>
-                                        <span th:if="${student.address}"
+                                        <span th:if="${student.address != null and student.address != ''}"
                                               class="text-gray-900 font-medium"
                                               th:text="${student.address}"></span>
-                                        <span th:unless="${student.address}" class="text-gray-500 text-sm">Not provided</span>
+                                        <span th:if="${student.address == null or student.address == ''}"
+                                              class="text-gray-500 text-sm">Not provided</span>
                                     </div>
                                 </div>
                             </div>
@@ -167,11 +152,11 @@
                                 <i class="fas fa-edit"></i>
                                 <span>Edit Student</span>
                             </a>
-                            <button onclick="openEnrollmentModal()"
-                                    class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-center font-medium flex items-center justify-center space-x-2">
-                                <i class="fas fa-plus-circle"></i>
-                                <span>Enroll in New Subjects</span>
-                            </button>
+                            <a th:href="@{/students}"
+                               class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-center font-medium flex items-center justify-center space-x-2">
+                                <i class="fas fa-list"></i>
+                                <span>All Students</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -185,8 +170,10 @@
                     <h2 class="text-xl font-bold text-white flex items-center">
                         <i class="fas fa-chart-line mr-2"></i>Academic Performance
                     </h2>
-                    <span class="text-green-100 text-sm"
-                          th:text="${student.classroomName} + ' • ' + ${student.departmentName}"></span>
+                    <span class="text-green-100 text-sm">
+                        <span th:text="${student.classroomName}"></span> •
+                        <span th:text="${student.departmentName}"></span>
+                    </span>
                 </div>
             </div>
 
@@ -194,28 +181,32 @@
                 <!-- Performance Statistics -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div class="stats-card bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
-                        <div class="text-3xl font-bold text-blue-600" th:text="${subjectsSummary.totalSubjects}">0</div>
+                        <div class="text-3xl font-bold text-blue-600"
+                             th:text="${subjectsSummary.totalSubjects != null ? subjectsSummary.totalSubjects : 0}">0</div>
                         <div class="text-sm font-semibold text-blue-800 mt-1">Total Subjects</div>
                         <div class="text-xs text-blue-600 mt-1">Enrolled</div>
                     </div>
                     <div class="stats-card bg-green-50 p-4 rounded-xl text-center border border-green-200">
-                        <div class="text-3xl font-bold text-green-600" th:text="${subjectsSummary.subjectsWithScores}">0</div>
+                        <div class="text-3xl font-bold text-green-600"
+                             th:text="${subjectsSummary.subjectsWithScores != null ? subjectsSummary.subjectsWithScores : 0}">0</div>
                         <div class="text-sm font-semibold text-green-800 mt-1">With Scores</div>
                         <div class="text-xs text-green-600 mt-1">Assessed</div>
                     </div>
                     <div class="stats-card bg-purple-50 p-4 rounded-xl text-center border border-purple-200">
-                        <div class="text-3xl font-bold text-purple-600" th:text="${subjectsSummary.compulsorySubjects}">0</div>
+                        <div class="text-3xl font-bold text-purple-600"
+                             th:text="${subjectsSummary.compulsorySubjects != null ? subjectsSummary.compulsorySubjects : 0}">0</div>
                         <div class="text-sm font-semibold text-purple-800 mt-1">Compulsory</div>
                         <div class="text-xs text-purple-600 mt-1">Required</div>
                     </div>
                     <div class="stats-card bg-orange-50 p-4 rounded-xl text-center border border-orange-200"
-                         th:if="${subjectsSummary.averageScore > 0}">
-                        <div class="text-3xl font-bold text-orange-600" th:text="${subjectsSummary.averageScore}">0</div>
+                         th:if="${subjectsSummary.averageScore != null and subjectsSummary.averageScore > 0}">
+                        <div class="text-3xl font-bold text-orange-600"
+                             th:text="${#numbers.formatDecimal(subjectsSummary.averageScore, 1, 1)}">0</div>
                         <div class="text-sm font-semibold text-orange-800 mt-1">Average Score</div>
                         <div class="text-xs text-orange-600 mt-1">Overall</div>
                     </div>
                     <div class="stats-card bg-gray-50 p-4 rounded-xl text-center border border-gray-200"
-                         th:unless="${subjectsSummary.averageScore > 0}">
+                         th:if="${subjectsSummary.averageScore == null or subjectsSummary.averageScore == 0}">
                         <div class="text-3xl font-bold text-gray-600">-</div>
                         <div class="text-sm font-semibold text-gray-800 mt-1">Average Score</div>
                         <div class="text-xs text-gray-600 mt-1">No scores yet</div>
@@ -230,12 +221,12 @@
                             <span class="ml-2 text-sm font-normal text-gray-600 bg-gray-100 px-2 py-1 rounded-full"
                                   th:text="${studentSubjects.size() + ' subjects'}"></span>
                         </h3>
-                        <div class="flex items-center space-x-2">
-                            <div class="flex items-center space-x-1 text-sm text-gray-600">
+                        <div class="flex items-center space-x-2 text-sm text-gray-600">
+                            <div class="flex items-center space-x-1">
                                 <div class="w-3 h-3 bg-green-500 rounded-full"></div>
                                 <span>Compulsory</span>
                             </div>
-                            <div class="flex items-center space-x-1 text-sm text-gray-600">
+                            <div class="flex items-center space-x-1">
                                 <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
                                 <span>Optional</span>
                             </div>
@@ -253,43 +244,41 @@
                                 <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coefficient</th>
                                 <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Score</th>
                                 <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Performance</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Actions</th>
+                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
                             </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
                             <tr th:each="studentSubject : ${studentSubjects}"
                                 class="hover:bg-gray-50 transition-colors duration-150">
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center space-x-3">
-                                        <div th:class="${studentSubject.isCompulsory ? 'compulsory-subject' : 'optional-subject'}
-                                                          + ' subject-card bg-white p-3 rounded-lg border'">
-                                            <div class="font-semibold text-gray-900" th:text="${studentSubject.subject.name}"></div>
-                                            <div th:if="${studentSubject.subject.description}"
-                                                 class="text-xs text-gray-600 mt-1"
-                                                 th:text="${studentSubject.subject.description}"></div>
-                                        </div>
-                                    </div>
+                                    <div class="font-semibold text-gray-900" th:text="${studentSubject.subject.name}"></div>
+                                    <div th:if="${studentSubject.subject.description != null and studentSubject.subject.description != ''}"
+                                         class="text-xs text-gray-600 mt-1"
+                                         th:text="${studentSubject.subject.description}"></div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
                                           th:text="${studentSubject.subject.subjectCode}"></code>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <!-- FIXED: Use helper method from Subject entity -->
-                                    <span class="text-gray-700" th:text="${studentSubject.subject.departmentName}"></span>
+                                    <span class="text-gray-700"
+                                          th:text="${studentSubject.subject.department != null ? studentSubject.subject.department.name : 'General'}"></span>
                                 </td>
                                 <td class="px-6 py-4">
-                                        <span th:if="${studentSubject.isCompulsory}"
-                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                            <i class="fas fa-check-circle mr-1"></i>Compulsory
-                                        </span>
-                                    <span th:unless="${studentSubject.isCompulsory}"
+                                    <!-- FIXED: Use studentSubject.compulsory (transient getter) -->
+                                    <span th:if="${studentSubject.compulsory}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Compulsory
+                                    </span>
+                                    <!-- FIXED: Use not studentSubject.compulsory -->
+                                    <span th:if="${not studentSubject.compulsory}"
                                           class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                            <i class="fas fa-list-alt mr-1"></i>Optional
-                                        </span>
+                                        <i class="fas fa-list-alt mr-1"></i>Optional
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="font-semibold text-gray-900" th:text="${studentSubject.subject.coefficient}"></span>
+                                    <span class="font-semibold text-gray-900"
+                                          th:text="${studentSubject.subject.coefficient}"></span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div th:if="${studentSubject.score != null}">
@@ -297,35 +286,33 @@
                                         <span class="text-xs text-gray-500">/100</span>
                                     </div>
                                     <div th:if="${studentSubject.score == null}">
-                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                <i class="fas fa-clock mr-1"></i>No score
-                                            </span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <i class="fas fa-clock mr-1"></i>No score
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                        <span th:if="${studentSubject.performance != null}"
-                                              th:class="${'performance-' + #strings.toLowerCase(studentSubject.performance)}
-                                                        + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'">
-                                            <i class="fas fa-chart-bar mr-1"></i>
-                                            <span th:text="${studentSubject.performance}"></span>
-                                        </span>
-                                    <span th:if="${studentSubject.performance == null}"
+                                    <!-- FIXED: Safe navigation and null check -->
+                                    <span th:if="${studentSubject?.performanceString != null and !#strings.isEmpty(studentSubject.performanceString)}"
+                                          th:class="${'performance-' + #strings.toLowerCase(studentSubject.performanceString)}
+                                                    + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'">
+                                        <i class="fas fa-chart-bar mr-1"></i>
+                                        <span th:text="${studentSubject.performanceString}"></span>
+                                    </span>
+                                    <span th:if="${studentSubject?.performanceString == null or #strings.isEmpty(studentSubject.performanceString)}"
                                           class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            <i class="fas fa-minus mr-1"></i>Not assessed
-                                        </span>
+                                        <i class="fas fa-minus mr-1"></i>Not assessed
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex space-x-2">
-                                        <button onclick="updateScore([[${studentSubject.id}]], [[${studentSubject.student.id}]], [[${studentSubject.subject.id}]])"
-                                                class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50">
-                                            <i class="fas fa-edit mr-1"></i>Score
-                                        </button>
-                                        <button onclick="removeSubject([[${studentSubject.student.id}]], [[${studentSubject.subject.id}]])"
-                                                th:unless="${studentSubject.isCompulsory}"
-                                                class="text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50">
-                                            <i class="fas fa-trash mr-1"></i>Remove
-                                        </button>
-                                    </div>
+                                    <span th:if="${studentSubject.score != null}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>Assessed
+                                    </span>
+                                    <span th:if="${studentSubject.score == null}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                                        <i class="fas fa-clock mr-1"></i>Pending
+                                    </span>
                                 </td>
                             </tr>
                             </tbody>
@@ -338,11 +325,11 @@
                     <div class="max-w-md mx-auto">
                         <i class="fas fa-book-open text-6xl text-gray-300 mb-4"></i>
                         <h3 class="text-xl font-semibold text-gray-700 mb-2">No Subjects Enrolled</h3>
-                        <p class="text-gray-500 mb-6">This student is not currently enrolled in any subjects.</p>
-                        <button onclick="openEnrollmentModal()"
-                                class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                        <p class="text-gray-500 mb-6">This student is not currently enrolled in any subjects for the selected academic configuration.</p>
+                        <a th:href="@{'/students/edit/' + ${student.id}}"
+                           class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
                             <i class="fas fa-plus mr-2"></i>Enroll in Subjects
-                        </button>
+                        </a>
                     </div>
                 </div>
 
@@ -360,7 +347,7 @@
                             <span class="block font-semibold text-blue-700">Department</span>
                             <span class="text-blue-900" th:text="${student.departmentName}"></span>
                         </div>
-                        <div th:if="${student.specialty}">
+                        <div th:if="${student.specialty != null and student.specialty != ''}">
                             <span class="block font-semibold text-blue-700">Specialization</span>
                             <span class="text-blue-900" th:text="${student.specialty}"></span>
                         </div>
@@ -368,58 +355,6 @@
                             <span class="block font-semibold text-blue-700">Academic Year</span>
                             <span class="text-blue-900" th:text="${student.academicYear}"></span>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Available Subjects Card -->
-        <div th:if="${not availableSubjects.empty}" class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
-            <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-plus-circle mr-2"></i>Available Subjects for Enrollment
-                    </h2>
-                    <span class="text-purple-100 text-sm" th:text="${availableSubjects.size() + ' available'}"></span>
-                </div>
-            </div>
-            <div class="p-6">
-                <p class="text-gray-600 mb-4">These subjects are available for enrollment based on the student's class, department, and specialty.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div th:each="subject : ${availableSubjects}"
-                         class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-semibold text-gray-900" th:text="${subject.name}"></h4>
-                            <span th:if="${subject.optional}"
-                                  class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                Optional
-                            </span>
-                        </div>
-                        <div class="space-y-2 text-sm text-gray-600">
-                            <div>
-                                <span class="font-medium">Code:</span>
-                                <code class="ml-2 bg-gray-200 px-2 py-1 rounded" th:text="${subject.subjectCode}"></code>
-                            </div>
-                            <div>
-                                <span class="font-medium">Coefficient:</span>
-                                <span class="ml-2 font-semibold" th:text="${subject.coefficient}"></span>
-                            </div>
-                            <div>
-                                <span class="font-medium">Department:</span>
-                                <span class="ml-2" th:text="${subject.departmentName}"></span>
-                            </div>
-                            <div th:if="${subject.specialty}">
-                                <span class="font-medium">Specialty:</span>
-                                <span class="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs" th:text="${subject.specialty}"></span>
-                            </div>
-                            <div th:if="${subject.description}">
-                                <p class="mt-2 text-gray-700" th:text="${subject.description}"></p>
-                            </div>
-                        </div>
-                        <button onclick="enrollInSubject([[${subject.id}]])"
-                                class="mt-4 w-full bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-                            <i class="fas fa-plus mr-2"></i>Enroll in this Subject
-                        </button>
                     </div>
                 </div>
             </div>
@@ -441,123 +376,11 @@
                     <i class="fas fa-edit"></i>
                     <span>Edit Student</span>
                 </a>
-                <button onclick="openEnrollmentModal()"
-                        class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                <a th:href="@{'/students/edit/' + ${student.id} + '#subjects'}"
+                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
                     <i class="fas fa-book"></i>
-                    <span>Enroll in New Subjects</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Enrollment Modal -->
-<div id="enrollmentModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="flex items-center justify-center min-h-screen">
-        <div class="modal-content w-full max-w-4xl mx-4" onclick="event.stopPropagation()">
-            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 rounded-t-lg">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-plus-circle mr-2"></i>Enroll in New Subjects
-                    </h2>
-                    <button onclick="closeModal(event)" class="text-white hover:text-gray-200 text-2xl">&times;</button>
-                </div>
-            </div>
-            <div class="p-6">
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Student Information</h3>
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="font-medium text-gray-600">Student:</span>
-                            <span class="ml-2 font-semibold" th:text="${student.fullName}"></span>
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-600">Class:</span>
-                            <span class="ml-2" th:text="${student.classroomName}"></span>
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-600">Department:</span>
-                            <span class="ml-2" th:text="${student.departmentName}"></span>
-                        </div>
-                        <div th:if="${student.specialty}">
-                            <span class="font-medium text-gray-600">Specialty:</span>
-                            <span class="ml-2" th:text="${student.specialty}"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="availableSubjectsContainer">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Available Subjects</h3>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600" id="selectedCount">0 selected</span>
-                            <button onclick="selectAllSubjects()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                Select All
-                            </button>
-                            <button onclick="deselectAllSubjects()" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
-                                Deselect All
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="subjectsList" class="space-y-4 max-h-96 overflow-y-auto p-2">
-                        <!-- Subjects will be loaded here -->
-                        <div class="text-center py-8 text-gray-500">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                            <p>Loading available subjects...</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span class="text-sm text-gray-600">Selected subjects: </span>
-                                <span id="totalSelected" class="font-semibold">0</span>
-                            </div>
-                            <div class="flex space-x-3">
-                                <button onclick="closeModal(event)" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                                    Cancel
-                                </button>
-                                <button onclick="enrollSelectedSubjects()" id="enrollButton" disabled
-                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                    Enroll Selected Subjects
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Score Update Modal -->
-<div id="scoreModal" class="modal-overlay" onclick="closeScoreModal(event)">
-    <div class="flex items-center justify-center min-h-screen">
-        <div class="modal-content w-full max-w-md mx-4" onclick="event.stopPropagation()">
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 rounded-t-lg">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white">Update Score</h2>
-                    <button onclick="closeScoreModal(event)" class="text-white hover:text-gray-200 text-2xl">&times;</button>
-                </div>
-            </div>
-            <div class="p-6">
-                <div id="scoreForm">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Score (0-100)</label>
-                        <input type="number" id="scoreInput" min="0" max="100" step="0.5"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <p class="text-xs text-gray-500 mt-1">Enter a score between 0 and 100</p>
-                    </div>
-                    <div class="flex justify-end space-x-3 pt-4">
-                        <button onclick="closeScoreModal(event)" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                            Cancel
-                        </button>
-                        <button onclick="saveScore()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            Save Score
-                        </button>
-                    </div>
-                </div>
+                    <span>Manage Subjects</span>
+                </a>
             </div>
         </div>
     </div>
@@ -565,284 +388,58 @@
 
 <!-- JavaScript for enhanced interactivity -->
 <script>
-    let currentStudentId = [[${student.id}]];
-    let currentEnrollmentId = null;
-    let currentSubjectId = null;
-    let selectedSubjectIds = new Set();
-
     document.addEventListener('DOMContentLoaded', function() {
-        // Load available subjects for modal
-        loadAvailableSubjects();
-    });
-
-    function openEnrollmentModal() {
-        document.getElementById('enrollmentModal').style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            document.getElementById('enrollmentModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-            selectedSubjectIds.clear();
-            updateSelectedCount();
-        }
-    }
-
-    function closeScoreModal(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            document.getElementById('scoreModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-            currentEnrollmentId = null;
-            currentSubjectId = null;
-            document.getElementById('scoreInput').value = '';
-        }
-    }
-
-    async function loadAvailableSubjects() {
-        try {
-            const response = await fetch(`/students/${currentStudentId}/available-subjects`);
-            if (!response.ok) throw new Error('Failed to load subjects');
-
-            const subjects = await response.json();
-            displaySubjectsInModal(subjects);
-        } catch (error) {
-            console.error('Error loading subjects:', error);
-            document.getElementById('subjectsList').innerHTML = `
-                <div class="text-center py-8 text-red-500">
-                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                    <p>Error loading subjects. Please try again.</p>
-                </div>
-            `;
-        }
-    }
-
-    function displaySubjectsInModal(subjects) {
-        const container = document.getElementById('subjectsList');
-
-        if (subjects.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-book-open text-2xl mb-2"></i>
-                    <p>No additional subjects available for enrollment.</p>
-                    <p class="text-sm mt-2">The student may already be enrolled in all available subjects.</p>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        subjects.forEach(subject => {
-            html += `
-                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex items-start">
-                        <input type="checkbox"
-                               id="subject_${subject.id}"
-                               value="${subject.id}"
-                               onchange="toggleSubjectSelection(${subject.id})"
-                               class="mt-1 mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
-                        <div class="flex-1">
-                            <label for="subject_${subject.id}" class="cursor-pointer">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h4 class="font-semibold text-gray-900">${subject.name}</h4>
-                                    <span class="text-xs px-2 py-1 rounded ${subject.optional ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">
-                                        ${subject.optional ? 'Optional' : 'Core'}
-                                    </span>
-                                </div>
-                                <div class="space-y-1 text-sm text-gray-600">
-                                    <div>
-                                        <span class="font-medium">Code:</span>
-                                        <code class="ml-2 bg-gray-100 px-2 py-1 rounded">${subject.subjectCode}</code>
-                                    </div>
-                                    <div>
-                                        <span class="font-medium">Coefficient:</span>
-                                        <span class="ml-2 font-semibold">${subject.coefficient}</span>
-                                    </div>
-                                    <div>
-                                        <span class="font-medium">Department:</span>
-                                        <span class="ml-2">${subject.departmentName}</span>
-                                    </div>
-                                    ${subject.specialty ? `
-                                    <div>
-                                        <span class="font-medium">Specialty:</span>
-                                        <span class="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">${subject.specialty}</span>
-                                    </div>` : ''}
-                                    ${subject.description ? `
-                                    <div class="mt-2">
-                                        <p class="text-gray-700">${subject.description}</p>
-                                    </div>` : ''}
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
-    function toggleSubjectSelection(subjectId) {
-        const checkbox = document.getElementById(`subject_${subjectId}`);
-
-        if (checkbox.checked) {
-            selectedSubjectIds.add(subjectId);
-        } else {
-            selectedSubjectIds.delete(subjectId);
-        }
-
-        updateSelectedCount();
-    }
-
-    function selectAllSubjects() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-            const subjectId = parseInt(checkbox.value);
-            selectedSubjectIds.add(subjectId);
-        });
-        updateSelectedCount();
-    }
-
-    function deselectAllSubjects() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        selectedSubjectIds.clear();
-        updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-        const count = selectedSubjectIds.size;
-        document.getElementById('selectedCount').textContent = `${count} selected`;
-        document.getElementById('totalSelected').textContent = count;
-
-        const enrollButton = document.getElementById('enrollButton');
-        enrollButton.disabled = count === 0;
-        enrollButton.textContent = count === 0 ? 'Enroll Selected Subjects' : `Enroll ${count} Subject${count > 1 ? 's' : ''}`;
-    }
-
-    async function enrollSelectedSubjects() {
-        if (selectedSubjectIds.size === 0) return;
-
-        try {
-            const response = await fetch(`/students/${currentStudentId}/enroll-subjects`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(Array.from(selectedSubjectIds))
+        // Add smooth scrolling for subject cards
+        const subjectCards = document.querySelectorAll('.subject-card');
+        subjectCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-4px)';
+                this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
             });
 
-            if (response.ok) {
-                alert('Successfully enrolled student in selected subjects!');
-                closeModal({ target: document.querySelector('.modal-overlay') });
-                location.reload(); // Refresh to show updated subjects
-            } else {
-                throw new Error('Failed to enroll subjects');
-            }
-        } catch (error) {
-            console.error('Error enrolling subjects:', error);
-            alert('Error enrolling subjects: ' + error.message);
-        }
-    }
-
-    async function enrollInSubject(subjectId) {
-        try {
-            const response = await fetch(`/students/${currentStudentId}/enroll-subjects`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify([subjectId])
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
             });
-
-            if (response.ok) {
-                alert('Successfully enrolled student in subject!');
-                location.reload();
-            } else {
-                throw new Error('Failed to enroll subject');
-            }
-        } catch (error) {
-            console.error('Error enrolling subject:', error);
-            alert('Error enrolling subject: ' + error.message);
-        }
-    }
-
-    function updateScore(enrollmentId, studentId, subjectId) {
-        currentEnrollmentId = enrollmentId;
-        currentSubjectId = subjectId;
-        document.getElementById('scoreModal').style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-
-    async function saveScore() {
-        const score = parseFloat(document.getElementById('scoreInput').value);
-
-        if (isNaN(score) || score < 0 || score > 100) {
-            alert('Please enter a valid score between 0 and 100');
-            return;
-        }
-
-        try {
-            const response = await fetch(`/students/${currentStudentId}/subjects/${currentSubjectId}/score?score=${score}`, {
-                method: 'POST'
-            });
-
-            if (response.ok) {
-                alert('Score updated successfully!');
-                closeScoreModal({ target: document.querySelector('#scoreModal') });
-                location.reload();
-            } else {
-                throw new Error('Failed to update score');
-            }
-        } catch (error) {
-            console.error('Error updating score:', error);
-            alert('Error updating score: ' + error.message);
-        }
-    }
-
-    async function removeSubject(studentId, subjectId) {
-        if (!confirm('Are you sure you want to remove this subject?')) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/students/${studentId}/subjects/${subjectId}/unenroll`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                alert('Subject removed successfully!');
-                location.reload();
-            } else {
-                throw new Error('Failed to remove subject');
-            }
-        } catch (error) {
-            console.error('Error removing subject:', error);
-            alert('Error removing subject: ' + error.message);
-        }
-    }
-
-    // Add smooth scrolling for subject cards
-    const subjectCards = document.querySelectorAll('.subject-card');
-    subjectCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-4px)';
-            this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
         });
 
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
         });
-    });
 
-    // Add animation to stats cards
-    const statsCards = document.querySelectorAll('.stats-card');
-    statsCards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
+        // Performance level color coding
+        const performanceCells = document.querySelectorAll('td:has(.performance-excellent), td:has(.performance-good), td:has(.performance-average), td:has(.performance-poor)');
+        performanceCells.forEach(cell => {
+            const perfSpan = cell.querySelector('span');
+            if (perfSpan) {
+                const perfText = perfSpan.textContent.toLowerCase();
+                if (perfText.includes('excellent')) {
+                    perfSpan.className = 'performance-excellent inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+                } else if (perfText.includes('good')) {
+                    perfSpan.className = 'performance-good inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+                } else if (perfText.includes('average')) {
+                    perfSpan.className = 'performance-average inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+                } else if (perfText.includes('poor')) {
+                    perfSpan.className = 'performance-poor inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+                }
+            }
+        });
+
+        // Add print functionality
+        const printButton = document.createElement('button');
+        printButton.innerHTML = '<i class="fas fa-print mr-2"></i>Print Report';
+        printButton.className = 'px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center';
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+
+        // Add print button to actions
+        const actionButtons = document.querySelector('.flex.space-x-3:last-child');
+        if (actionButtons) {
+            actionButtons.appendChild(printButton);
+        }
     });
 
     // Keyboard shortcuts
@@ -856,28 +453,17 @@
         if (e.key === 'Escape') {
             window.history.back();
         }
-        // Escape key to close modals
-        if (e.key === 'Escape') {
-            if (document.getElementById('enrollmentModal').style.display === 'block') {
-                closeModal({ target: document.getElementById('enrollmentModal') });
-            }
-            if (document.getElementById('scoreModal').style.display === 'block') {
-                closeScoreModal({ target: document.getElementById('scoreModal') });
-            }
-        }
     });
 </script>
 
 <!-- Print Styles -->
 <style>
     @media print {
-        .modal-overlay, #enrollmentModal, #scoreModal,
-        .flex.space-x-3:last-child,
-        .flex.justify-between.items-center.pt-6,
-        button { display: none !important; }
         .bg-gray-50 { background: white !important; }
         .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
         .border, .border-b, .border-t { border: 1px solid #ddd !important; }
+        .flex.space-x-3:last-child,
+        .flex.justify-between.items-center.pt-6 { display: none !important; }
         .stats-card { break-inside: avoid; }
         .text-blue-600, .text-green-600, .text-purple-600, .text-orange-600 { color: #333 !important; }
         .bg-gradient-to-r { background: #333 !important; color: white !important; }

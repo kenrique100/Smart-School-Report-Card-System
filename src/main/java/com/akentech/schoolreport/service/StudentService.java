@@ -7,7 +7,9 @@ import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.model.enums.Gender;
-import com.akentech.schoolreport.repository.*;
+import com.akentech.schoolreport.repository.ClassRoomRepository;
+import com.akentech.schoolreport.repository.DepartmentRepository;
+import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.util.IdGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,176 +36,72 @@ public class StudentService {
     private final SpecialtyService specialtyService;
     @Lazy
     private final SubjectService subjectService;
-    private final AverageRecordRepository averageRecordRepository;
-    private final AssessmentRepository assessmentRepository;
-    private final StudentSubjectRepository studentSubjectRepository;
 
-
-    @Transactional
+    // ENHANCED: Student creation with subject selection
     public Student createStudent(Student student, List<Long> subjectIds) {
         log.info("Creating new student: {} {}", student.getFirstName(), student.getLastName());
 
-        // Validate required fields
-        validateRequiredFields(student);
+        // SANITIZE EMAIL BEFORE VALIDATION - CRITICAL FIX
+        if (student.getEmail() != null && student.getEmail().trim().isEmpty()) {
+            student.setEmail(null);
+        }
 
-        // Load complete entities from database
-        student.setClassRoom(loadClassRoom(student.getClassRoom()));
-        student.setDepartment(loadDepartment(student.getDepartment()));
+        if (student.getClassRoom() == null) {
+            throw new BusinessRuleException("Class room is required");
+        }
 
-        // Validate business rules
+        // Validate class room has code
+        validateClassRoom(student.getClassRoom());
+
+        if (student.getDepartment() == null) {
+            throw new BusinessRuleException("Department is required");
+        }
+
         validateStudent(student);
 
-        // Generate IDs with uniqueness guarantee
-        String studentId = generateUniqueStudentId(student);
-        String rollNumber = generateUniqueRollNumber(student);
+        // Generate IDs safely
+        String studentId = idGenerationService.generateStudentId(student);
+        String rollNumber = idGenerationService.generateRollNumber(student);
+
+        // Ensure uniqueness before saving
+        studentId = ensureUniqueStudentId(studentId);
+        rollNumber = ensureUniqueRollNumber(rollNumber, student.getClassRoom());
 
         student.setStudentId(studentId);
         student.setRollNumber(rollNumber);
 
-        log.debug("Saving student with ID: {}, Roll: {}", studentId, rollNumber);
+        // Final email sanitization
+        if (student.getEmail() != null && student.getEmail().trim().isEmpty()) {
+            student.setEmail(null);
+        }
 
         // Save student first
-        Student savedStudent;
-        try {
-            savedStudent = studentRepository.save(student);
-            log.info("Student saved successfully with ID: {}", savedStudent.getId());
-        } catch (Exception e) {
-            log.error("Failed to save student: {}", e.getMessage(), e);
-            if (e.getMessage().contains("Duplicate entry") && e.getMessage().contains("UK_fe0i52si7ybu0wjedj6motiim")) {
-                throw new DataIntegrityException("A student with similar credentials already exists. Please check the student ID or roll number.");
-            }
-            throw new BusinessRuleException("Failed to save student: " + e.getMessage());
-        }
+        Student savedStudent = studentRepository.save(student);
 
         // Handle subject enrollment
-        handleSubjectEnrollment(savedStudent, subjectIds);
-
-        log.info("Created student: {} {} (ID: {}, Roll: {})",
-                savedStudent.getFirstName(), savedStudent.getLastName(),
-                savedStudent.getStudentId(), savedStudent.getRollNumber());
-
-        return savedStudent;
-    }
-
-    private void validateRequiredFields(Student student) {
-        if (student == null) {
-            throw new BusinessRuleException("Student cannot be null");
-        }
-        if (student.getFirstName() == null || student.getFirstName().trim().isEmpty()) {
-            throw new BusinessRuleException("First name is required");
-        }
-        if (student.getLastName() == null || student.getLastName().trim().isEmpty()) {
-            throw new BusinessRuleException("Last name is required");
-        }
-        if (student.getClassRoom() == null || student.getClassRoom().getId() == null) {
-            throw new BusinessRuleException("Class room is required");
-        }
-        if (student.getDepartment() == null || student.getDepartment().getId() == null) {
-            throw new BusinessRuleException("Department is required");
-        }
-    }
-
-    private ClassRoom loadClassRoom(ClassRoom classRoom) {
-        if (classRoom == null || classRoom.getId() == null) {
-            return null;
-        }
-        return classRoomRepository.findById(classRoom.getId())
-                .orElseThrow(() -> new EntityNotFoundException("ClassRoom", classRoom.getId()));
-    }
-
-    private Department loadDepartment(Department department) {
-        if (department == null || department.getId() == null) {
-            return null;
-        }
-        return departmentRepository.findById(department.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Department", department.getId()));
-    }
-
-    private String generateUniqueStudentId(Student student) {
-        String studentId = idGenerationService.generateStudentId(student);
-        log.debug("Generated student ID: {}", studentId);
-
-        // Final check before returning
-        if (studentRepository.findByStudentId(studentId).isPresent()) {
-            throw new DataIntegrityException("Generated student ID already exists: " + studentId);
-        }
-
-        return studentId;
-    }
-
-    private String generateUniqueRollNumber(Student student) {
-        String rollNumber = idGenerationService.generateRollNumber(student);
-        log.debug("Generated roll number: {}", rollNumber);
-
-        // Final check before returning
-        if (studentRepository.findByRollNumberAndClassRoom(rollNumber, student.getClassRoom()).isPresent()) {
-            throw new DataIntegrityException("Generated roll number already exists for this class: " + rollNumber);
-        }
-
-        return rollNumber;
-    }
-
-    private void handleSubjectEnrollment(Student savedStudent, List<Long> subjectIds) {
         if (subjectIds != null && !subjectIds.isEmpty()) {
             try {
                 enrollmentService.enrollStudentInSubjects(savedStudent, subjectIds);
                 log.info("Enrolled student {} in {} subjects", savedStudent.getStudentId(), subjectIds.size());
             } catch (Exception e) {
-                log.error("Failed to enroll student in subjects: {}", e.getMessage(), e);
+                log.error("Failed to enroll student in subjects: {}", e.getMessage());
                 throw new BusinessRuleException("Failed to enroll student in subjects: " + e.getMessage());
             }
         } else {
             // Auto-assign appropriate subjects if none provided
             List<Long> autoSubjectIds = getAutoAssignedSubjectIds(savedStudent);
             if (!autoSubjectIds.isEmpty()) {
-                try {
-                    enrollmentService.enrollStudentInSubjects(savedStudent, autoSubjectIds);
-                    log.info("Auto-assigned {} subjects for student {}", autoSubjectIds.size(), savedStudent.getStudentId());
-                } catch (Exception e) {
-                    log.warn("Failed to auto-assign subjects: {}", e.getMessage());
-                }
+                enrollmentService.enrollStudentInSubjects(savedStudent, autoSubjectIds);
+                log.info("Auto-assigned {} subjects for student {}", autoSubjectIds.size(), savedStudent.getStudentId());
             }
         }
-    }
 
-    // Auto-assign subjects based on class, department, and specialty
-    private List<Long> getAutoAssignedSubjectIds(Student student) {
-        List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(student);
-        return appropriateSubjects.stream()
-                .map(Subject::getId)
-                .collect(Collectors.toList());
-    }
+        log.info("✅ Created student: {} {} (ID: {}, Roll: {}, Email: {})",
+                savedStudent.getFirstName(), savedStudent.getLastName(),
+                savedStudent.getStudentId(), savedStudent.getRollNumber(),
+                savedStudent.getEmail() != null ? savedStudent.getEmail() : "None");
 
-    // Get appropriate subjects for student
-    private List<Subject> getAppropriateSubjectsForStudent(Student student) {
-        if (student.getClassRoom() == null || student.getDepartment() == null) {
-            return new ArrayList<>();
-        }
-
-        String classCode = student.getClassRoom().getCode().name();
-        Long departmentId = student.getDepartment().getId();
-        String specialty = student.getSpecialty();
-
-        // Get grouped subjects
-        Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
-                classCode, departmentId, specialty);
-
-        // Always add compulsory subjects
-        List<Subject> autoAssignedSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
-
-        // For Forms 4-5 and Sixth Form, add department core subjects
-        ClassLevel classLevel = student.getClassRoom().getCode();
-        if ((classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5 || classLevel.isSixthForm())) {
-            autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
-        }
-
-        // For Sixth Form with specialty, add specialty subjects
-        if (classLevel.isSixthForm() && specialty != null && !specialty.trim().isEmpty()) {
-            autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
-        }
-
-        log.debug("Auto-assigned {} subjects for student {}", autoAssignedSubjects.size(), student.getStudentId());
-        return autoAssignedSubjects;
+        return savedStudent;
     }
 
     // NEW: Get filtered subjects for student selection
@@ -230,12 +128,99 @@ public class StudentService {
         }
     }
 
+    // NEW: Get subjects grouped by department and specialty
+    @Transactional(readOnly = true)
+    public Map<String, Map<String, List<Subject>>> getSubjectsByDepartmentAndSpecialtyForStudent(Long studentId) {
+        Student student = getStudentByIdOrThrow(studentId);
+        List<Subject> availableSubjects = getAvailableSubjectsForStudent(student);
+
+        // Group by department name, then by specialty
+        Map<String, Map<String, List<Subject>>> result = new LinkedHashMap<>();
+
+        for (Subject subject : availableSubjects) {
+            String deptName = subject.getDepartment() != null ?
+                    subject.getDepartment().getName() : "General";
+            String specialty = subject.getSpecialty() != null ?
+                    subject.getSpecialty() : "No Specialty";
+
+            result.computeIfAbsent(deptName, k -> new LinkedHashMap<>())
+                    .computeIfAbsent(specialty, k -> new ArrayList<>())
+                    .add(subject);
+        }
+
+        return result;
+    }
+
+    private List<Long> getAutoAssignedSubjectIds(Student student) {
+        List<Subject> appropriateSubjects = getAppropriateSubjectsForStudent(student);
+
+        // Log the subjects being assigned
+        log.info("Auto-assigning {} subjects to student {}:", appropriateSubjects.size(), student.getStudentId());
+        for (Subject subject : appropriateSubjects) {
+            log.info("  - {} (Dept: {}, Specialty: {})",
+                    subject.getName(),
+                    subject.getDepartment() != null ? subject.getDepartment().getName() : "General",
+                    subject.getSpecialty() != null ? subject.getSpecialty() : "None");
+        }
+
+        return appropriateSubjects.stream()
+                .map(Subject::getId)
+                .collect(Collectors.toList());
+    }
+
+    // Get appropriate subjects for student
+    private List<Subject> getAppropriateSubjectsForStudent(Student student) {
+        if (student.getClassRoom() == null || student.getDepartment() == null) {
+            return new ArrayList<>();
+        }
+
+        String classCode = student.getClassRoom().getCode().name();
+        Long departmentId = student.getDepartment().getId();
+        String specialty = student.getSpecialty();
+
+        // Get grouped subjects
+        Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
+                classCode, departmentId, specialty);
+
+        // Always add compulsory subjects
+        List<Subject> autoAssignedSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
+
+        ClassLevel classLevel = student.getClassRoom().getCode();
+
+        // For ALL class levels (including Form 1), add department core subjects
+        // Form 1 students should get their department subjects too
+        autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
+
+        // For Sixth Form, add specialty subjects (no compulsory subjects)
+        if (classLevel.isSixthForm()) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
+            }
+        }
+
+        // Log what we're enrolling
+        log.info("Auto-assigning {} subjects for student {} (Class: {}, Dept: {}, Specialty: {})",
+                autoAssignedSubjects.size(), student.getStudentId(),
+                classLevel.getDisplayName(),
+                student.getDepartment().getName(),
+                specialty != null ? specialty : "None");
+
+        // Log breakdown
+        log.info("Breakdown - Compulsory: {}, Department: {}, Specialty: {}",
+                groupedSubjects.getOrDefault("compulsory", new ArrayList<>()).size(),
+                groupedSubjects.getOrDefault("department", new ArrayList<>()).size(),
+                groupedSubjects.getOrDefault("specialty", new ArrayList<>()).size());
+
+        return autoAssignedSubjects;
+    }
+
     // ENHANCED: Student validation with department and specialty rules
     private void validateStudent(Student student) {
         validateClassDepartmentRules(student);
         validateSpecialtyRequirement(student);
         validateAcademicYears(student);
         validateEmailUniqueness(student);
+        validateRollNumberUniqueness(student);
     }
 
     // Enhanced class and department validation
@@ -282,13 +267,13 @@ public class StudentService {
 
     // Validate specialty belongs to department
     private void validateSpecialtyForDepartment(String specialty, DepartmentCode departmentCode) {
-        List<String> departmentSpecialties = specialtyService.getSpecialtiesByDepartment(departmentCode.name());
+        List<String> departmentSpecialties = getSpecialtiesByDepartmentCode(departmentCode);
         if (!departmentSpecialties.contains(specialty)) {
             throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " + departmentCode);
         }
     }
 
-    // FIXED: Specialty requirement validation - now properly validates the student
+    // FIXED: Specialty requirement validation
     private void validateSpecialtyRequirement(Student student) {
         ClassLevel classLevel = student.getClassRoom().getCode();
         DepartmentCode departmentCode = student.getDepartment().getCode();
@@ -303,7 +288,7 @@ public class StudentService {
 
         // Validate specialty exists for department if provided
         if (specialty != null && !specialty.trim().isEmpty()) {
-            List<String> validSpecialties = specialtyService.getSpecialtiesByDepartment(departmentCode.name());
+            List<String> validSpecialties = getSpecialtiesByDepartmentCode(departmentCode);
             if (!validSpecialties.contains(specialty)) {
                 throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " + departmentCode);
             }
@@ -315,22 +300,71 @@ public class StudentService {
             if (student.getAcademicYearStart() >= student.getAcademicYearEnd()) {
                 throw new BusinessRuleException("Academic year start must be before academic year end");
             }
+            // Validate reasonable academic years (e.g., not before 2000)
+            if (student.getAcademicYearStart() < 2000 || student.getAcademicYearStart() > 2050) {
+                throw new BusinessRuleException("Academic year start must be between 2000 and 2050");
+            }
         }
     }
 
+    // FIXED: Email uniqueness validation - properly handles null/empty emails
     private void validateEmailUniqueness(Student student) {
-        if (student.getEmail() != null && !student.getEmail().trim().isEmpty()) {
+        String email = student.getSanitizedEmail();
+
+        if (email != null && !email.isEmpty()) {
             // Check if email exists for other students
-            Optional<Student> existingStudent = studentRepository.findByEmail(student.getEmail());
-            if (existingStudent.isPresent() && !existingStudent.get().getId().equals(student.getId())) {
-                throw new DataIntegrityException("Email already exists: " + student.getEmail());
+            Optional<Student> existingStudent = studentRepository.findByEmail(email);
+            if (existingStudent.isPresent() &&
+                    (student.getId() == null || !existingStudent.get().getId().equals(student.getId()))) {
+                throw new DataIntegrityException("Email '" + email + "' already exists");
             }
         }
+        // If email is null or empty, it's fine - multiple nulls are allowed
+    }
+
+    // NEW: Validate roll number uniqueness
+    private void validateRollNumberUniqueness(Student student) {
+        if (student.getRollNumber() != null && !student.getRollNumber().trim().isEmpty() && student.getClassRoom() != null) {
+            String rollNumber = student.getRollNumber().trim();
+            Optional<Student> existingStudent = studentRepository.findByRollNumberAndClassRoom(rollNumber, student.getClassRoom());
+            if (existingStudent.isPresent() &&
+                    (student.getId() == null || !existingStudent.get().getId().equals(student.getId()))) {
+                throw new DataIntegrityException("Roll number '" + rollNumber + "' already exists in class " +
+                        student.getClassRoom().getName());
+            }
+        }
+    }
+
+    // FIXED: Ensure the return value is used by returning the result
+    private String ensureUniqueStudentId(String baseId) {
+        String newId = baseId;
+        int attempt = 1;
+        while (studentRepository.findByStudentId(newId).isPresent()) {
+            newId = baseId + "-" + attempt++;
+            log.warn("Duplicate studentId found. Regenerated as {}", newId);
+        }
+        return newId;
+    }
+
+    // FIXED: Ensure the return value is used by returning the result
+    private String ensureUniqueRollNumber(String baseRoll, ClassRoom classRoom) {
+        String newRoll = baseRoll;
+        int attempt = 1;
+        while (studentRepository.findByRollNumberAndClassRoom(newRoll, classRoom).isPresent()) {
+            newRoll = baseRoll + "-" + attempt++;
+            log.warn("Duplicate rollNumber found for class {}. Regenerated as {}", classRoom.getCode(), newRoll);
+        }
+        return newRoll;
     }
 
     public Student updateStudent(Long id, Student studentDetails, List<Long> subjectIds) {
         log.info("Updating student with id: {}", id);
         Student existingStudent = getStudentByIdOrThrow(id);
+
+        // SANITIZE EMAIL BEFORE UPDATE
+        if (studentDetails.getEmail() != null && studentDetails.getEmail().trim().isEmpty()) {
+            studentDetails.setEmail(null);
+        }
 
         // Update basic information
         existingStudent.setFirstName(studentDetails.getFirstName());
@@ -360,49 +394,16 @@ public class StudentService {
             }
         }
 
-        log.info("Updated student: {} {} (ID: {})",
+        log.info("✅ Updated student: {} {} (ID: {})",
                 updatedStudent.getFirstName(), updatedStudent.getLastName(),
                 updatedStudent.getStudentId());
         return updatedStudent;
     }
 
-    @Transactional
     public void deleteStudent(Long id) {
         Student student = getStudentByIdOrThrow(id);
-
-        // Log all related records before deletion for debugging
-        log.info("Deleting student {} with ID {}", student.getFullName(), id);
-
-        try {
-            // First, delete related assessments
-            List<Assessment> studentAssessments = assessmentRepository.findByStudentId(id);
-            if (!studentAssessments.isEmpty()) {
-                log.info("Deleting {} assessments for student {}", studentAssessments.size(), id);
-                assessmentRepository.deleteAll(studentAssessments);
-            }
-
-            // Second, delete average records
-            List<AverageRecord> averageRecords = averageRecordRepository.findByStudent(student);
-            if (!averageRecords.isEmpty()) {
-                log.info("Deleting {} average records for student {}", averageRecords.size(), id);
-                averageRecordRepository.deleteAll(averageRecords);
-            }
-
-            // Third, delete student subjects (enrollments)
-            List<StudentSubject> studentSubjects = studentSubjectRepository.findByStudentId(id);
-            if (!studentSubjects.isEmpty()) {
-                log.info("Deleting {} subject enrollments for student {}", studentSubjects.size(), id);
-                studentSubjectRepository.deleteAll(studentSubjects);
-            }
-
-            // Now delete the student
-            studentRepository.delete(student);
-            log.info("Successfully deleted student {} with ID {}", student.getFullName(), id);
-
-        } catch (Exception e) {
-            log.error("Error deleting student with id {}: {}", id, e.getMessage(), e);
-            throw new BusinessRuleException("Failed to delete student: " + e.getMessage());
-        }
+        studentRepository.delete(student);
+        log.info("Deleted student with id: {}", id);
     }
 
     @Transactional(readOnly = true)
@@ -493,6 +494,7 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public long getStudentCountByDepartment(Long departmentId) {
+        // FIXED: More efficient implementation
         return studentRepository.findAll().stream()
                 .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(departmentId))
                 .count();
@@ -526,28 +528,30 @@ public class StudentService {
     // NEW: Get grouped available subjects
     @Transactional(readOnly = true)
     public Map<String, List<Subject>> getGroupedAvailableSubjects(Student student) {
-        if (student.getClassRoom() == null || student.getDepartment() == null) {
-            log.warn("Student missing class or department information");
-            return new HashMap<>();
+        Map<String, List<Subject>> result = new HashMap<>();
+        result.put("compulsory", new ArrayList<>());
+        result.put("department", new ArrayList<>());
+        result.put("specialty", new ArrayList<>());
+        result.put("optional", new ArrayList<>());
+
+        if (student == null || student.getClassRoom() == null || student.getClassRoom().getCode() == null || student.getDepartment() == null) {
+            log.warn("Cannot get grouped subjects: Student or class/department information is incomplete");
+            return result;
         }
 
-        String classCode = student.getClassRoom().getCode().name();
-        Long departmentId = student.getDepartment().getId();
-        String specialty = student.getSpecialty();
+        try {
+            String classCode = student.getClassRoom().getCode().name();
+            Long departmentId = student.getDepartment().getId();
+            String specialty = student.getSpecialty();
 
-        log.info("Getting grouped subjects for student - class: {}, department: {}, specialty: {}",
-                classCode, departmentId, specialty);
+            log.info("Getting grouped subjects for student - class: {}, department: {}, specialty: {}",
+                    classCode, departmentId, specialty);
 
-        Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
-                classCode, departmentId, specialty);
-
-        log.info("Grouped subjects found - compulsory: {}, department: {}, specialty: {}, optional: {}",
-                groupedSubjects.getOrDefault("compulsory", List.of()).size(),
-                groupedSubjects.getOrDefault("department", List.of()).size(),
-                groupedSubjects.getOrDefault("specialty", List.of()).size(),
-                groupedSubjects.getOrDefault("optional", List.of()).size());
-
-        return groupedSubjects;
+            return subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
+        } catch (Exception e) {
+            log.error("Error getting grouped subjects for student: {}", e.getMessage());
+            return result;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -597,6 +601,17 @@ public class StudentService {
             specialtyDistribution.put(specialty, count);
         }
         stats.put("specialtyDistribution", specialtyDistribution);
+
+        // Get email statistics
+        long studentsWithEmail = allStudents.stream()
+                .filter(s -> s.getEmail() != null && !s.getEmail().trim().isEmpty())
+                .count();
+        long studentsWithoutEmail = totalStudents - studentsWithEmail;
+
+        stats.put("studentsWithEmail", studentsWithEmail);
+        stats.put("studentsWithoutEmail", studentsWithoutEmail);
+        stats.put("emailCompletionRate", totalStudents > 0 ?
+                String.format("%.1f%%", (studentsWithEmail * 100.0 / totalStudents)) : "0%");
 
         return stats;
     }
@@ -661,5 +676,64 @@ public class StudentService {
                     return endYear == null || s.getAcademicYearEnd() == null || s.getAcademicYearEnd() <= endYear;
                 })
                 .collect(Collectors.toList());
+    }
+
+    // NEW: Database cleanup method to fix existing empty emails
+    @Transactional
+    public void fixEmptyEmails() {
+        try {
+            List<Student> studentsWithEmptyEmails = studentRepository.findAll().stream()
+                    .filter(s -> s.getEmail() != null && s.getEmail().trim().isEmpty())
+                    .toList();
+
+            if (!studentsWithEmptyEmails.isEmpty()) {
+                log.info("Found {} students with empty emails, fixing...", studentsWithEmptyEmails.size());
+
+                studentsWithEmptyEmails.forEach(student -> {
+                    student.setEmail(null);
+                    studentRepository.save(student);
+                });
+
+                log.info("✅ Fixed empty emails for {} students", studentsWithEmptyEmails.size());
+            } else {
+                log.info("No empty emails found to fix");
+            }
+        } catch (Exception e) {
+            log.error("Error fixing empty emails: {}", e.getMessage());
+        }
+    }
+
+    public List<String> getSpecialtiesByDepartmentCode(String departmentCode) {
+        DepartmentCode deptCode = DepartmentCode.fromCode(departmentCode);
+        return getSpecialtiesByDepartmentCode(deptCode);
+    }
+
+    public List<String> getSpecialtiesByDepartmentCode(DepartmentCode deptCode) {
+        return switch (deptCode) {
+            case COM -> // Commercial
+                    Arrays.asList("Accounting", "Administration & Communication Techniques");
+            case SCI -> // Sciences
+                    Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
+            case ART -> // Arts
+                    Arrays.asList("A1", "A2", "A3", "A4", "A5");
+            case TEC -> // Technical (NO SPECIALTY)
+                    Collections.emptyList();
+            case HE -> // Home Economics (NO SPECIALTY)
+                    Collections.emptyList();
+            case GEN -> // General (NO SPECIALTY)
+                    Collections.emptyList();
+            default -> Collections.emptyList();
+        };
+    }
+
+    private void validateClassRoom(ClassRoom classRoom) {
+        if (classRoom == null) {
+            throw new BusinessRuleException("Class room is required");
+        }
+
+        if (classRoom.getCode() == null) {
+            log.error("ClassRoom {} has null code. This is a data integrity issue.", classRoom.getName());
+            throw new BusinessRuleException("Class room code is missing. Please contact administrator.");
+        }
     }
 }

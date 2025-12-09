@@ -19,21 +19,29 @@ public class SpecialtyService {
 
     private Map<String, List<String>> createDepartmentSpecialties() {
         Map<String, List<String>> specialties = new HashMap<>();
-        specialties.put("COM", Arrays.asList("C1", "C2", "C3", "C4"));
-        specialties.put("TEC", Arrays.asList("T1", "T2", "T3", "T4", "T5"));
+        specialties.put("COM", Arrays.asList("Accounting", "Administration & Communication Techniques"));
+        specialties.put("TEC", new ArrayList<>()); // No specialties
         specialties.put("SCI", Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"));
         specialties.put("ART", Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"));
-        specialties.put("HE", Arrays.asList("H1", "H2", "H3"));
+        specialties.put("HE", new ArrayList<>()); // No specialty
         specialties.put("GEN", new ArrayList<>());
         return specialties;
     }
 
+    // Check if department has specialties
+    public boolean hasSpecialties(String departmentCode) {
+        if (departmentCode == null) return false;
+
+        List<String> specialties = getSpecialtiesByDepartment(departmentCode);
+        return specialties != null && !specialties.isEmpty();
+    }
+
     public List<String> getCommercialSpecialties() {
-        return List.of("C1", "C2", "C3", "C4");
+        return List.of("Accounting", "Administration & Communication Techniques");
     }
 
     public List<String> getTechnicalSpecialties() {
-        return List.of("T1", "T2", "T3", "T4", "T5");
+        return List.of(); // No specialties
     }
 
     public List<String> getScienceSpecialties() {
@@ -45,7 +53,7 @@ public class SpecialtyService {
     }
 
     public List<String> getHomeEconomicsSpecialties() {
-        return List.of("H1", "H2", "H3");
+        return List.of(); // No specialty
     }
 
     public List<String> getAllSpecialties() {
@@ -72,12 +80,13 @@ public class SpecialtyService {
 
         boolean required = isSpecialtyRequired(classCode, departmentCode);
         boolean allowed = isSpecialtyAllowed(classCode, departmentCode);
+        boolean hasSpecialties = hasSpecialties(departmentCode);
         List<String> specialties = getSpecialtiesByDepartment(departmentCode);
 
-        log.info("Specialty requirement - required: {}, allowed: {}, specialties: {}",
-                required, allowed, specialties.size());
+        log.info("Specialty requirement - required: {}, allowed: {}, hasSpecialties: {}, specialties: {}",
+                required, allowed, hasSpecialties, specialties.size());
 
-        return new SpecialtyRequirement(required, allowed, specialties);
+        return new SpecialtyRequirement(required, allowed, hasSpecialties, specialties);
     }
 
     public boolean isSpecialtyRequired(String classCode, String departmentCode) {
@@ -101,8 +110,13 @@ public class SpecialtyService {
             return false;
         }
 
-        // Specialty allowed for Forms 4-5 and Sixth Form in all departments except General
-        return !departmentCode.equals("GEN");
+        // Specialty allowed for Forms 4-5 and Sixth Form in departments with specialties
+        if (classCode.equals("FORM_4") || classCode.equals("FORM_5") ||
+                classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH")) {
+            return hasSpecialties(departmentCode);
+        }
+
+        return false;
     }
 
     @Getter
@@ -111,11 +125,13 @@ public class SpecialtyService {
     public static class SpecialtyRequirement {
         private boolean required;
         private boolean allowed;
+        private boolean hasSpecialties;
         private List<String> specialties;
 
-        // NEW: Added getMessage() method
         public String getMessage() {
-            if (required) {
+            if (!hasSpecialties) {
+                return "This department does not have specialties";
+            } else if (required) {
                 return "Specialty is required for this class and department combination";
             } else if (allowed) {
                 return "Specialty is optional for this class and department combination";

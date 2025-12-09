@@ -20,7 +20,7 @@ public class StudentSubject {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
-    @JsonProperty("student")  // Explicitly allow serialization of student
+    @JsonProperty("student")
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,15 +29,36 @@ public class StudentSubject {
 
     private Double score;
 
-    // UPDATED: Use enum instead of String
     @Enumerated(EnumType.STRING)
     @Column(name = "performance")
     private PerformanceLevel performance;
 
     @Builder.Default
-    private Boolean isCompulsory = false;
+    @Column(name = "is_compulsory")
+    private Boolean isCompulsory = true;
 
-    // Add helper method to avoid circular reference issues
+    // FIX 1: Add performanceString property
+    @Transient
+    public String getPerformanceString() {
+        return performance != null ? performance.getDisplayName() : null;
+    }
+
+    // FIX 2: Add helper method for template compatibility
+    @Transient
+    public String getFormattedScore() {
+        return score != null ? String.format("%.2f", score) : "N/A";
+    }
+
+    @Transient
+    public Boolean getCompulsory() {
+        return this.isCompulsory;
+    }
+
+    @Transient
+    public void setCompulsory(Boolean compulsory) {
+        this.isCompulsory = compulsory;
+    }
+
     @Transient
     public Long getStudentId() {
         return student != null ? student.getId() : null;
@@ -52,5 +73,4 @@ public class StudentSubject {
     public String getSubjectName() {
         return subject != null ? subject.getName() : null;
     }
-
 }
