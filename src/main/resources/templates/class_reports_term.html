@@ -74,7 +74,10 @@
                     <div class="h-6 w-px bg-gray-300"></div>
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900" th:text="${classRoom.name + ' - Term ' + term + ' Reports'}"></h1>
-                        <p class="text-gray-600 text-sm mt-1" th:text="${classRoom.academicYear + ' • Class Teacher: ' + classRoom.classTeacher}"></p>
+                        <p class="text-gray-600 text-sm mt-1">
+                            <span th:text="${classRoom.academicYear}"></span>
+                            • Class Teacher: <span th:text="${classRoom.classTeacher != null ? classRoom.classTeacher : 'Not Assigned'}"></span>
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -103,23 +106,23 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="stats-card bg-blue-50 p-5 rounded-xl text-center border border-blue-200">
-                        <div id="totalStudents" class="text-3xl font-bold text-blue-600" th:text="${reports != null ? reports.size() : 0}">0</div>
+                        <div id="totalStudents" class="text-3xl font-bold text-blue-600" th:text="${totalStudents}">0</div>
                         <div class="text-sm font-semibold text-blue-800 mt-1">Total Students</div>
                         <div class="text-xs text-blue-600 mt-1">In Class</div>
                     </div>
                     <div class="stats-card bg-green-50 p-5 rounded-xl text-center border border-green-200">
                         <div id="classAverage" class="text-3xl font-bold text-green-600"
-                             th:text="${classAverage != null ? #numbers.formatDecimal(classAverage, 1, 2) : '0.0'}">0.0</div>
+                             th:text="${classAverage != null ? classAverage : '0.00'}">0.00</div>
                         <div class="text-sm font-semibold text-green-800 mt-1">Class Average</div>
                         <div class="text-xs text-green-600 mt-1">Term Performance</div>
                     </div>
                     <div class="stats-card bg-purple-50 p-5 rounded-xl text-center border border-purple-200">
-                        <div id="top3Count" class="text-3xl font-bold text-purple-600">0</div>
+                        <div id="top3Count" class="text-3xl font-bold text-purple-600" th:text="${top3Count}">0</div>
                         <div class="text-sm font-semibold text-purple-800 mt-1">Top 3 Students</div>
                         <div class="text-xs text-purple-600 mt-1">Excellent Performance</div>
                     </div>
                     <div class="stats-card bg-orange-50 p-5 rounded-xl text-center border border-orange-200">
-                        <div id="positiveRemarksCount" class="text-3xl font-bold text-orange-600">0</div>
+                        <div id="positiveRemarksCount" class="text-3xl font-bold text-orange-600" th:text="${positiveRemarksCount}">0</div>
                         <div class="text-sm font-semibold text-orange-800 mt-1">Positive Remarks</div>
                         <div class="text-xs text-orange-600 mt-1">Excellent/Very Good</div>
                     </div>
@@ -138,37 +141,41 @@
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Excellent (≥18)</span>
-                                <span id="excellentCount" class="text-lg font-bold text-green-600">0</span>
+                                <span id="excellentCount" class="text-lg font-bold text-green-600" th:text="${excellentCount}">0</span>
                             </div>
                             <div class="progress-bar">
-                                <div id="excellentBar" class="progress-fill bg-green-500" style="width:0%"></div>
+                                <div id="excellentBar" class="progress-fill bg-green-500"
+                                     th:style="'width:' + ${totalStudents > 0 ? (excellentCount / totalStudents * 100) : 0} + '%'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Very Good (15-17.9)</span>
-                                <span id="veryGoodCount" class="text-lg font-bold text-blue-600">0</span>
+                                <span id="veryGoodCount" class="text-lg font-bold text-blue-600" th:text="${veryGoodCount}">0</span>
                             </div>
                             <div class="progress-bar">
-                                <div id="veryGoodBar" class="progress-fill bg-blue-500" style="width:0%"></div>
+                                <div id="veryGoodBar" class="progress-fill bg-blue-500"
+                                     th:style="'width:' + ${totalStudents > 0 ? (veryGoodCount / totalStudents * 100) : 0} + '%'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Good (10-14.9)</span>
-                                <span id="goodCount" class="text-lg font-bold text-yellow-600">0</span>
+                                <span id="goodCount" class="text-lg font-bold text-yellow-600" th:text="${goodCount}">0</span>
                             </div>
                             <div class="progress-bar">
-                                <div id="goodBar" class="progress-fill bg-yellow-500" style="width:0%"></div>
+                                <div id="goodBar" class="progress-fill bg-yellow-500"
+                                     th:style="'width:' + ${totalStudents > 0 ? (goodCount / totalStudents * 100) : 0} + '%'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Needs Improvement (&lt;10)</span>
-                                <span id="needsImprovementCount" class="text-lg font-bold text-red-600">0</span>
+                                <span id="needsImprovementCount" class="text-lg font-bold text-red-600" th:text="${needsImprovementCount}">0</span>
                             </div>
                             <div class="progress-bar">
-                                <div id="needsImprovementBar" class="progress-fill bg-red-500" style="width:0%"></div>
+                                <div id="needsImprovementBar" class="progress-fill bg-red-500"
+                                     th:style="'width:' + ${totalStudents > 0 ? (needsImprovementCount / totalStudents * 100) : 0} + '%'"></div>
                             </div>
                         </div>
                     </div>
@@ -194,6 +201,42 @@
             </div>
 
             <div class="p-6">
+                <!-- Pagination Controls -->
+                <div class="pagination-controls mb-4">
+                    <nav aria-label="Report navigation">
+                        <ul class="pagination flex items-center space-x-2">
+                            <li th:classappend="${currentPage == 0} ? 'disabled opacity-50' : ''">
+                                <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term} + '&page=' + ${currentPage - 1} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:if="${currentPage > 0}">Previous</a>
+                            </li>
+
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                th:classappend="${i == currentPage} ? 'active bg-blue-600 text-white' : ''">
+                                <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term} + '&page=' + ${i} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:text="${i + 1}"></a>
+                            </li>
+
+                            <li th:classappend="${currentPage >= totalPages - 1} ? 'disabled opacity-50' : ''">
+                                <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term} + '&page=' + ${currentPage + 1} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:if="${currentPage < totalPages - 1}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <div class="page-size-selector mt-2">
+                        <label class="text-sm text-gray-600">Items per page:</label>
+                        <select onchange="changePageSize(this)" class="ml-2 border border-gray-300 rounded px-2 py-1">
+                            <option value="10" th:selected="${pageSize == 10}">10</option>
+                            <option value="20" th:selected="${pageSize == 20}">20</option>
+                            <option value="50" th:selected="${pageSize == 50}">50</option>
+                            <option value="100" th:selected="${pageSize == 100}">100</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
                     <table class="w-full text-sm" id="rankingTable">
                         <thead class="bg-gray-50">
@@ -208,7 +251,7 @@
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                        <tr th:each="report, stat : ${reports}"
+                        <tr th:each="report : ${reports}"
                             th:id="${'student-' + report.student.id}"
                             th:attr="data-rank=${report.rankInClass},data-term-average=${report.termAverage},data-remarks=${report.remarks},data-subjects-count=${report.subjectReports != null ? report.subjectReports.size() : 0}"
                             class="hover:bg-gray-50 transition-colors duration-150 student-row">
@@ -220,8 +263,7 @@
                                 <div th:unless="${report.rankInClass <= 3}"
                                      th:classappend="${(report.rankInClass <= 10)
                         ? 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-green-100 text-green-800'
-                        : ((reports != null && reports.size() > 0 &&
-                            report.rankInClass <= reports.size() / 2)
+                        : ((report.rankInClass <= reports.size() / 2)
                                 ? 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-blue-100 text-blue-800'
                                 : 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-red-100 text-red-800')}">
 
@@ -231,11 +273,11 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
-                                <div class="text-xs text-gray-500" th:text="${report.student.studentId}"></div>
+                                <div class="text-xs text-gray-500" th:text="${report.rollNumber}"></div>
                             </td>
                             <td class="px-6 py-4">
                                 <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
-                                      th:text="${report.student.rollNumber}"></code>
+                                      th:text="${report.rollNumber}"></code>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center space-x-2">
@@ -247,30 +289,27 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-    <span th:classappend="${'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' +
-               ((report.remarks != null && report.remarks.contains('Excellent')) ? 'bg-green-100 text-green-800' :
-               ((report.remarks != null && report.remarks.contains('Very Good')) ? 'bg-blue-100 text-blue-800' :
-               ((report.remarks != null && report.remarks.contains('Good')) ? 'bg-yellow-100 text-yellow-800'
+                                <span th:classappend="${'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' +
+                                               ((report.remarks != null && report.remarks.contains('Excellent')) ? 'bg-green-100 text-green-800' :
+                                               ((report.remarks != null && report.remarks.contains('Very Good')) ? 'bg-blue-100 text-blue-800' :
+                                               ((report.remarks != null && report.remarks.contains('Good')) ? 'bg-yellow-100 text-yellow-800'
                                                                             : 'bg-red-100 text-red-800')))}">
-
-        <i th:classappend="${'mr-1 ' +
-                   ((report.remarks != null && report.remarks.contains('Excellent')) ? 'fas fa-star' :
-                   ((report.remarks != null && report.remarks.contains('Very Good')) ? 'fas fa-thumbs-up' :
-                   ((report.remarks != null && report.remarks.contains('Good')) ? 'fas fa-check'
+                                    <i th:classappend="${'mr-1 ' +
+                                                   ((report.remarks != null && report.remarks.contains('Excellent')) ? 'fas fa-star' :
+                                                   ((report.remarks != null && report.remarks.contains('Very Good')) ? 'fas fa-thumbs-up' :
+                                                   ((report.remarks != null && report.remarks.contains('Good')) ? 'fas fa-check'
                                                                                   : 'fas fa-exclamation-triangle')))}">
-        </i>
-
-        <span th:text="${report.remarks}"></span>
-    </span>
+                                    </i>
+                                    <span th:text="${report.remarks}"></span>
+                                </span>
                             </td>
 
                             <td class="px-6 py-4">
                                 <div class="text-xs text-gray-600">
                                     <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> subjects
                                     <div class="mt-1 flex space-x-1">
-                                        <!-- Simplified: show total subjects. If you need passed-count, compute in backend and add as field -->
                                         <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-                                            <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> shown
+                                            <span th:text="${report.subjectReports != null ? #lists.size(report.subjectReports.?[passed]) : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> passed
                                         </span>
                                     </div>
                                 </div>
@@ -290,6 +329,12 @@
                         </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Summary -->
+                <div class="mt-4 text-sm text-gray-600">
+                    Showing <span th:text="${reports.size()}"></span> of <span th:text="${totalItems}"></span> students
+                    (Page <span th:text="${currentPage + 1}"></span> of <span th:text="${totalPages}"></span>)
                 </div>
 
                 <!-- Legend -->
@@ -350,8 +395,9 @@
                                              th:text="${report.rankInClass}">
                                         </div>
 
-                                        <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
-                                            <div class="text-xs text-gray-500" th:text="${report.student.rollNumber}"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
+                                            <div class="text-xs text-gray-500" th:text="${report.rollNumber}"></div>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -384,12 +430,12 @@
                                     <div class="text-right">
                                         <div class="font-bold text-lg text-red-600" th:text="${report.formattedAverage}"></div>
                                         <div class="text-xs text-red-600">
-                                            <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> subjects shown
+                                            Passed: <span th:text="${report.subjectReports != null ? #lists.size(report.subjectReports.?[passed]) : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> subjects
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div th:if="${reports == null or reports?.?[termAverage ne null and termAverage lt 10].size() == 0}"
+                            <div th:if="${#lists.size(reports.?[termAverage != null and termAverage lt 10]) == 0}"
                                  class="text-center py-4 text-gray-500">
                                 <i class="fas fa-check-circle text-2xl text-green-500 mb-2"></i>
                                 <p>All students are performing well! No one scored below 10.</p>
@@ -440,7 +486,7 @@
                 Report Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span> |
                 Class: <span th:text="${classRoom.name}"></span> |
                 Term: <span th:text="${term}"></span> |
-                Students: <span th:text="${reports != null ? reports.size() : 0}"></span>
+                Students: <span th:text="${totalStudents}"></span>
             </div>
             <div class="flex space-x-3">
                 <a th:href="@{/reports/select}"
@@ -453,7 +499,7 @@
                     <i class="fas fa-print"></i>
                     <span>Print Reports</span>
                 </button>
-                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id}}"
+                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&page=0&size=20'}"
                    class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
                     <i class="fas fa-calendar-alt"></i>
                     <span>View Yearly Reports</span>
@@ -470,7 +516,7 @@
         .bg-gray-50 { background: white !important; }
         .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
         .border, .border-b, .border-t { border: 1px solid #ddd !important; }
-        button, .flex.justify-between.items-center.pt-6 { display: none !important; }
+        button, .flex.justify-between.items-center.pt-6, .pagination-controls { display: none !important; }
         .bg-gradient-to-r { background: #333 !important; color: white !important; }
         .grade-a, .grade-b, .grade-c, .grade-d, .grade-f, .grade-o, .grade-e, .grade-u {
             color: white !important;
@@ -503,82 +549,14 @@
         });
     }
 
-    // Compute summary counts and progress bars from data- attributes
-    function computeSummary() {
-        const rows = Array.from(document.querySelectorAll('.student-row'));
-        const total = rows.length;
-        document.getElementById('totalStudents').textContent = total;
-
-        let top3 = 0;
-        let positiveRemarks = 0;
-        let counts = { excellent: 0, veryGood: 0, good: 0, needsImprovement: 0 };
-        let sumAverages = 0;
-        let averagesCount = 0;
-
-        rows.forEach(r => {
-            const rank = parseInt(r.getAttribute('data-rank')) || 0;
-            const termAvgRaw = r.getAttribute('data-term-average');
-            const termAvg = termAvgRaw !== 'null' && termAvgRaw !== null && termAvgRaw !== '' ? Number(termAvgRaw) : null;
-            const remarks = (r.getAttribute('data-remarks') || '').toLowerCase();
-
-            if (!isNaN(rank) && rank > 0 && rank <= 3) top3++;
-
-            if (remarks.includes('excellent') || remarks.includes('very good')) positiveRemarks++;
-
-            if (termAvg !== null) {
-                sumAverages += termAvg;
-                averagesCount++;
-                if (termAvg >= 18) counts.excellent++;
-                else if (termAvg >= 15) counts.veryGood++;
-                else if (termAvg >= 10) counts.good++;
-                else counts.needsImprovement++;
-            }
-        });
-
-        // Class average
-        const classAvgElem = document.getElementById('classAverage');
-        if (averagesCount > 0) {
-            const avg = (sumAverages / averagesCount);
-            classAvgElem.textContent = avg.toFixed(1);
-        }
-
-        document.getElementById('top3Count').textContent = top3;
-        document.getElementById('positiveRemarksCount').textContent = positiveRemarks;
-
-        // Distribution counts and bars
-        const setCountAndBar = (countId, barId, value) => {
-            const el = document.getElementById(countId);
-            const bar = document.getElementById(barId);
-            el.textContent = value;
-            if (total > 0) {
-                bar.style.width = Math.round((value / total) * 100) + '%';
-            } else {
-                bar.style.width = '0%';
-            }
-        };
-
-        setCountAndBar('excellentCount', 'excellentBar', counts.excellent);
-        setCountAndBar('veryGoodCount', 'veryGoodBar', counts.veryGood);
-        setCountAndBar('goodCount', 'goodBar', counts.good);
-        setCountAndBar('needsImprovementCount', 'needsImprovementBar', counts.needsImprovement);
+    // Change page size
+    function changePageSize(select) {
+        const size = select.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('size', size);
+        url.searchParams.set('page', '0'); // Reset to first page
+        window.location.href = url.toString();
     }
-
-    // Initialize search input and compute summary on DOM ready
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('keyup', filterTable);
-        }
-
-        // Add animation to stats cards
-        const statsCards = document.querySelectorAll('.stats-card');
-        statsCards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.classList.add('fade-in');
-        });
-
-        computeSummary();
-    });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
@@ -597,6 +575,21 @@
         if (e.key === 'Escape') {
             window.history.back();
         }
+    });
+
+    // Initialize search input
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', filterTable);
+        }
+
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
     });
 </script>
 </body>

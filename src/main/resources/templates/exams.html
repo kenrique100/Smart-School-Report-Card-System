@@ -3,216 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exams - Student Management</title>
+    <title>Exams Management - School Report System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
 </head>
 <body class="bg-gray-50">
-<div class="flex">
-    <!-- Sidebar -->
-    <div class="w-64 bg-blue-800 text-white min-h-screen">
-        <div class="p-4">
-            <h1 class="text-xl font-bold">School Management</h1>
-            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/dashboard}" class="text-white hover:text-gray-200 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <h1 class="text-2xl font-bold text-white">Exam Management</h1>
+                </div>
+                <div class="text-white text-sm">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    <span>Academic Year: 2024-2025</span>
+                </div>
+            </div>
         </div>
-        <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-            </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
-            </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
-            </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
-            </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
-            </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-file-alt mr-2"></i>Exams
-            </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
-            </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
-            </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
-            </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
-            </a>
-        </nav>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1">
-        <!-- Header -->
-        <div class="bg-white shadow">
-            <div class="px-6 py-4">
-                <h1 class="text-2xl font-bold text-gray-800">Exam Management</h1>
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        <!-- New Exam Form -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-plus-circle mr-2"></i>Create New Exam
+                </h2>
+                <p class="text-blue-100 text-sm mt-1">All exams are on a 20 marks scale</p>
+            </div>
+
+            <div class="p-6">
+                <form th:action="@{/exams/add}" th:object="${exam}" method="post" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Exam Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-file-alt mr-1"></i>Exam Name
+                            </label>
+                            <input type="text" th:field="*{name}" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., Mathematics Final Exam">
+                        </div>
+
+                        <!-- Exam Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-day mr-1"></i>Exam Date
+                            </label>
+                            <input type="date" th:field="*{examDate}" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- Subject -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-book mr-1"></i>Subject
+                            </label>
+                            <select th:field="*{subject}" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Subject</option>
+                                <option th:each="subject : ${subjects}"
+                                        th:value="${subject.id}"
+                                        th:text="${subject.name}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Class Room -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-school mr-1"></i>Class Room
+                            </label>
+                            <select th:field="*{classRoom}" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Class Room</option>
+                                <option th:each="classRoom : ${classRooms}"
+                                        th:value="${classRoom.id}"
+                                        th:text="${classRoom.name}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Total Marks -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-chart-line mr-1"></i>Total Marks
+                            </label>
+                            <input type="number" th:field="*{totalMarks}" required min="1" max="20" step="0.01"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter marks (1-20)">
+                            <p class="text-xs text-gray-500 mt-1">Must be between 1 and 20 (20 marks scale)</p>
+                        </div>
+
+                        <!-- Term -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar mr-1"></i>Term
+                            </label>
+                            <select th:field="*{term}" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                                <option value="3">Term 3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Information Note -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 mt-1 mr-2"></i>
+                            <div>
+                                <h4 class="font-medium text-blue-800 mb-1">Important Information</h4>
+                                <ul class="text-sm text-blue-700 space-y-1">
+                                    <li>• All exams are graded on a 20 marks scale</li>
+                                    <li>• Total marks must be between 0 and 20</li>
+                                    <li>• Exam results will be automatically calculated based on 20 marks</li>
+                                    <li>• Term 3 exams are typically final examinations</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-4">
+                        <button type="submit"
+                                class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2">
+                            <i class="fas fa-save"></i>
+                            <span>Create Exam</span>
+                        </button>
+                        <button type="reset"
+                                class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center space-x-2">
+                            <i class="fas fa-redo"></i>
+                            <span>Reset Form</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <main class="p-6">
-            <!-- New Exam Form -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">New Exam</h2>
-                <form th:action="@{/exams/add}" th:object="${exam}" method="post" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Exam Name</label>
-                        <input type="text" th:field="*{name}" required
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Enter exam name">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea th:field="*{description}"
-                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter exam description" rows="3"></textarea>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Exam Date</label>
-                            <input type="date" th:field="*{examDate}"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Marks</label>
-                            <input type="number" th:field="*{totalMarks}"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter total marks" min="1" step="1">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                            <select th:field="*{subject}"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Subject</option>
-                                <option th:each="subject : ${subjects}" th:value="${subject.id}" th:text="${subject.name}"></option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Class Room</label>
-                            <select th:field="*{classRoom}"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Class Room</option>
-                                <option th:each="classRoom : ${classRooms}" th:value="${classRoom.id}" th:text="${classRoom.name}"></option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
-                        <select th:field="*{term}" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="1">Term 1</option>
-                            <option value="2">Term 2</option>
-                            <option value="3">Term 3</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                        Create Exam
-                    </button>
-                </form>
+        <!-- All Exams Table -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-list-alt mr-2"></i>All Exams
+                    </h2>
+                    <span class="text-green-100 text-sm" th:text="${exams != null ? exams.size() : 0} + ' Exams'"></span>
+                </div>
             </div>
 
-            <!-- All Exams Table -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="p-6">
-                    <h2 class="text-lg font-bold text-gray-800 mb-4">All Exams</h2>
-
-                    <div class="flex justify-between items-center mb-4">
+            <div class="p-6">
+                <!-- Search and Filters -->
+                <div class="mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                         <div class="flex items-center space-x-4">
-                            <span>Show</span>
-                            <select class="border border-gray-300 rounded px-2 py-1">
-                                <option>10</option>
-                                <option>25</option>
-                                <option>50</option>
+                            <div class="relative">
+                                <input type="text" id="searchExams" placeholder="Search exams..."
+                                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 w-64">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                            <select id="filterTerm" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">All Terms</option>
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                                <option value="3">Term 3</option>
                             </select>
-                            <span>entries</span>
                         </div>
-                        <div>
-                            <input type="text" placeholder="Search:" class="border border-gray-300 rounded px-3 py-1">
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Exam Name</th>
-                                <th class="px-4 py-2 font-medium">Subject</th>
-                                <th class="px-4 py-2 font-medium">Class</th>
-                                <th class="px-4 py-2 font-medium">Term</th>
-                                <th class="px-4 py-2 font-medium">Date</th>
-                                <th class="px-4 py-2 font-medium">Total Marks</th>
-                                <th class="px-4 py-2 font-medium">Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody class="divide-y">
-                            <tr th:each="exam : ${exams}" class="hover:bg-gray-50">
-                                <td class="px-4 py-2" th:text="${exam.name}">Mathematics Final</td>
-                                <td class="px-4 py-2" th:text="${exam.subject != null ? exam.subject.name : 'N/A'}">Mathematics</td>
-                                <td class="px-4 py-2" th:text="${exam.classRoom != null ? exam.classRoom.name : 'All'}">4-B</td>
-                                <td class="px-4 py-2" th:text="${exam.term}">3</td>
-                                <td class="px-4 py-2" th:text="${exam.examDate}">2024-10-15</td>
-                                <td class="px-4 py-2" th:text="${exam.totalMarks}">100</td>
-                                <td class="px-4 py-2">
-                                    <a th:href="@{'/exams/delete/' + ${exam.id}}"
-                                       th:attr="data-name=${exam.name}"
-                                       class="text-red-600 hover:text-red-800 delete-link">Delete</a>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="flex justify-between items-center mt-4">
                         <div class="text-sm text-gray-600">
-                            Showing 1 to <span th:text="${exams != null ? exams.size() : 0}">0</span> of <span th:text="${exams != null ? exams.size() : 0}">0</span> entries
-                        </div>
-                        <div class="space-x-2">
-                            <button class="px-3 py-1 border rounded disabled:opacity-50" disabled>Previous</button>
-                            <button class="px-3 py-1 border rounded hover:bg-gray-100">Next</button>
+                            Showing <span id="showingCount">0</span> of <span th:text="${exams != null ? exams.size() : 0}"></span> exams
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="bg-white border-t mt-8">
-            <div class="px-6 py-4 text-center text-gray-600">
-                <p>Copyright © 2024. All rights reserved.</p>
+                <!-- Exams Table -->
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                    <table class="w-full text-sm" id="examsTable">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Exam Name</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Class</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Date</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Total Marks</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:each="exam : ${exams}"
+                            th:data-term="${exam.term}"
+                            class="hover:bg-gray-50 transition-colors duration-150 exam-row">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900" th:text="${exam.name}"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div th:if="${exam.subject != null}">
+                                    <span class="font-medium" th:text="${exam.subject.name}"></span>
+                                </div>
+                                <div th:unless="${exam.subject != null}">
+                                    <span class="text-gray-400 text-sm">N/A</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div th:if="${exam.classRoom != null}">
+                                    <span class="font-medium" th:text="${exam.classRoom.name}"></span>
+                                </div>
+                                <div th:unless="${exam.classRoom != null}">
+                                    <span class="text-gray-400 text-sm">All</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span th:class="${'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' +
+                                               (exam.term == 1 ? 'bg-blue-100 text-blue-800' :
+                                                exam.term == 2 ? 'bg-green-100 text-green-800' :
+                                                                'bg-purple-100 text-purple-800')}">
+                                    Term <span th:text="${exam.term}"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span th:text="${#temporals.format(exam.examDate, 'dd/MM/yyyy')}"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold" th:text="${exam.totalMarks}"></span>/20
+                                    <div class="w-16 h-2 bg-gray-200 rounded-full">
+                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                             th:style="'width: ' + (exam.totalMarks * 5) + '%;'"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <a th:href="@{'/exams/' + ${exam.id} + '/results'}"
+                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center">
+                                        <i class="fas fa-eye mr-1"></i>View Results
+                                    </a>
+                                    <a th:href="@{'/exams/delete/' + ${exam.id}}"
+                                       th:attr="data-name=${exam.name}"
+                                       class="text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 flex items-center delete-exam">
+                                        <i class="fas fa-trash mr-1"></i>Delete
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${exams == null || exams.isEmpty()}" class="text-center py-12">
+                    <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No Exams Found</h3>
+                    <p class="text-gray-500">Create your first exam using the form above.</p>
+                </div>
+
+                <!-- Term Legend -->
+                <div class="mt-6 flex flex-wrap gap-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-100 border border-blue-300 rounded mr-2"></div>
+                        <span class="text-gray-600">Term 1 Exams</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-100 border border-green-300 rounded mr-2"></div>
+                        <span class="text-gray-600">Term 2 Exams</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-purple-100 border border-purple-300 rounded mr-2"></div>
+                        <span class="text-gray-600">Term 3 Exams</span>
+                    </div>
+                </div>
             </div>
-        </footer>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Exams</p>
+                        <p class="text-2xl font-bold text-gray-900" th:text="${exams != null ? exams.size() : 0}"></p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Term 3 Exams</p>
+                        <p class="text-2xl font-bold text-gray-900"
+                           th:text="${#lists.size(exams.?[term == 3])}"></p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-graduation-cap text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Active Subjects</p>
+                        <p class="text-2xl font-bold text-gray-900"
+                           th:text="${#lists.size(subjects)}"></p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-book text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Confirm deletion links
-        const deleteLinks = document.querySelectorAll("a.delete-link");
+    // Search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchExams');
+        const filterTerm = document.getElementById('filterTerm');
+        const showingCount = document.getElementById('showingCount');
+        const examRows = document.querySelectorAll('.exam-row');
+
+        function filterExams() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedTerm = filterTerm.value;
+            let visibleCount = 0;
+
+            examRows.forEach(row => {
+                const examName = row.querySelector('.font-medium').textContent.toLowerCase();
+                const rowTerm = row.getAttribute('data-term');
+                const subject = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+
+                const matchesSearch = examName.includes(searchTerm) || subject.includes(searchTerm);
+                const matchesTerm = !selectedTerm || rowTerm === selectedTerm;
+
+                if (matchesSearch && matchesTerm) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            showingCount.textContent = visibleCount;
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', filterExams);
+        }
+        if (filterTerm) {
+            filterTerm.addEventListener('change', filterExams);
+        }
+
+        // Initial filter
+        filterExams();
+
+        // Delete confirmation
+        const deleteLinks = document.querySelectorAll('.delete-exam');
         deleteLinks.forEach(link => {
-            link.addEventListener("click", function (e) {
-                const name = this.getAttribute("data-name");
-                if (!confirm("Are you sure you want to delete " + name + "?")) {
+            link.addEventListener('click', function(e) {
+                const examName = this.getAttribute('data-name');
+                if (!confirm(`Are you sure you want to delete "${examName}"? This action cannot be undone.`)) {
                     e.preventDefault();
                 }
             });
         });
+
+        // Form validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const totalMarks = this.querySelector('input[name="totalMarks"]');
+                if (totalMarks) {
+                    const marks = parseFloat(totalMarks.value);
+                    if (marks < 1 || marks > 20) {
+                        e.preventDefault();
+                        alert('Total marks must be between 1 and 20');
+                        totalMarks.focus();
+                        return false;
+                    }
+                }
+            });
+        }
     });
 </script>
 </body>

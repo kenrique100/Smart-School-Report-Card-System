@@ -155,13 +155,9 @@ public class StudentController {
             student.setClassRoom(defaultClass);
         } else if (!classRooms.isEmpty()) {
             // Find first class with valid code
-            ClassRoom firstValidClass = classRooms.stream()
+            classRooms.stream()
                     .filter(cr -> cr.getCode() != null)
-                    .findFirst()
-                    .orElse(null);
-            if (firstValidClass != null) {
-                student.setClassRoom(firstValidClass);
-            }
+                    .findFirst().ifPresent(student::setClassRoom);
         }
 
         if (defaultDepartment != null) {
@@ -470,10 +466,9 @@ public class StudentController {
             // Check if sixth form
             boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
 
-            // Determine requirements
+            // Determine requirements - ONLY enable specialty if the department has specialties
+            boolean allowed = hasSpecialties;
             boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
-            boolean allowed = !classCode.equals("FORM_1") && !classCode.equals("FORM_2") &&
-                    !classCode.equals("FORM_3") && hasSpecialties;
 
             Map<String, Object> response = new HashMap<>();
             response.put("required", required);
@@ -487,10 +482,8 @@ public class StudentController {
                 message = "This department does not have specialties";
             } else if (required) {
                 message = "Specialty is required for " + classCode + " " + departmentCode;
-            } else if (allowed) {
-                message = "Specialty is optional";
             } else {
-                message = "Specialty is not allowed for this class";
+                message = "Specialty is optional";
             }
             response.put("message", message);
 

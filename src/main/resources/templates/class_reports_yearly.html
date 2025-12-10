@@ -64,11 +64,14 @@
                     <div class="h-6 w-px bg-gray-300"></div>
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900" th:text="${classRoom.name} + ' - Yearly Academic Reports'"></h1>
-                        <p class="text-gray-600 text-sm mt-1" th:text="${classRoom.academicYear} + ' • Class Teacher: ' + ${classRoom.classTeacher}"></p>
+                        <p class="text-gray-600 text-sm mt-1">
+                            <span th:text="${classRoom.academicYear}"></span>
+                            • Class Teacher: <span th:text="${classRoom.classTeacher != null ? classRoom.classTeacher : 'Not Assigned'}"></span>
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-sm text-gray-500">Total Students: <span class="font-semibold" th:text="${reports[0].totalStudentsInClass}"></span></span>
+                    <span class="text-sm text-gray-500">Total Students: <span class="font-semibold" th:text="${totalStudents}"></span></span>
                     <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
                         <i class="fas fa-print mr-1"></i>Print
                     </button>
@@ -90,22 +93,24 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="stats-card bg-blue-50 p-5 rounded-xl text-center border border-blue-200">
-                        <div class="text-3xl font-bold text-blue-600" th:text="${reports[0].totalStudentsInClass}">0</div>
+                        <div class="text-3xl font-bold text-blue-600" th:text="${totalStudents}">0</div>
                         <div class="text-sm font-semibold text-blue-800 mt-1">Total Students</div>
                         <div class="text-xs text-blue-600 mt-1">In Class</div>
                     </div>
                     <div class="stats-card bg-green-50 p-5 rounded-xl text-center border border-green-200">
-                        <div class="text-3xl font-bold text-green-600" th:text="${reports[0].totalPassed}">0</div>
+                        <div class="text-3xl font-bold text-green-600" th:text="${totalPassed}">0</div>
                         <div class="text-sm font-semibold text-green-800 mt-1">Promoted</div>
-                        <div class="text-xs text-green-600 mt-1" th:text="${#numbers.formatDecimal((reports[0].totalPassed/reports[0].totalStudentsInClass)*100, 1, 2)} + '%'"></div>
+                        <div class="text-xs text-green-600 mt-1"
+                             th:text="${totalStudents > 0 ? #numbers.formatDecimal((totalPassed/totalStudents)*100, 1, 2) : '0.00'} + '%'"></div>
                     </div>
                     <div class="stats-card bg-red-50 p-5 rounded-xl text-center border border-red-200">
-                        <div class="text-3xl font-bold text-red-600" th:text="${reports[0].totalFailed}">0</div>
+                        <div class="text-3xl font-bold text-red-600" th:text="${totalFailed}">0</div>
                         <div class="text-sm font-semibold text-red-800 mt-1">Not Promoted</div>
-                        <div class="text-xs text-red-600 mt-1" th:text="${#numbers.formatDecimal((reports[0].totalFailed/reports[0].totalStudentsInClass)*100, 1, 2)} + '%'"></div>
+                        <div class="text-xs text-red-600 mt-1"
+                             th:text="${totalStudents > 0 ? #numbers.formatDecimal((totalFailed/totalStudents)*100, 1, 2) : '0.00'} + '%'"></div>
                     </div>
                     <div class="stats-card bg-purple-50 p-5 rounded-xl text-center border border-purple-200">
-                        <div class="text-3xl font-bold text-purple-600" th:text="${#numbers.formatDecimal(reports.?[passed == true].![yearlyAverage].?[#this != null].![#this].?[average], 1, 2)}">0.0</div>
+                        <div class="text-3xl font-bold text-purple-600" th:text="${classYearlyAverage != null ? classYearlyAverage : '0.00'}">0.00</div>
                         <div class="text-sm font-semibold text-purple-800 mt-1">Class Average</div>
                         <div class="text-xs text-purple-600 mt-1">Yearly Performance</div>
                     </div>
@@ -121,44 +126,44 @@
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Excellent (A)</span>
                                 <span class="text-lg font-bold text-green-600"
-                                      th:text="${#lists.size(reports.?[overallGrade == 'A'])}">0</span>
+                                      th:text="${aGradeCount}">0</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill bg-green-500"
-                                     th:style="'width: ' + ${#lists.size(reports.?[overallGrade == 'A'])*100/reports[0].totalStudentsInClass} + '%;'"></div>
+                                     th:style="'width: ' + ${totalStudents > 0 ? (aGradeCount/totalStudents*100) : 0} + '%;'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Good (B)</span>
                                 <span class="text-lg font-bold text-blue-600"
-                                      th:text="${#lists.size(reports.?[overallGrade == 'B'])}">0</span>
+                                      th:text="${bGradeCount}">0</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill bg-blue-500"
-                                     th:style="'width: ' + ${#lists.size(reports.?[overallGrade == 'B'])*100/reports[0].totalStudentsInClass} + '%;'"></div>
+                                     th:style="'width: ' + ${totalStudents > 0 ? (bGradeCount/totalStudents*100) : 0} + '%;'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Average (C)</span>
                                 <span class="text-lg font-bold text-yellow-600"
-                                      th:text="${#lists.size(reports.?[overallGrade == 'C'])}">0</span>
+                                      th:text="${cGradeCount}">0</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill bg-yellow-500"
-                                     th:style="'width: ' + ${#lists.size(reports.?[overallGrade == 'C'])*100/reports[0].totalStudentsInClass} + '%;'"></div>
+                                     th:style="'width: ' + ${totalStudents > 0 ? (cGradeCount/totalStudents*100) : 0} + '%;'"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-sm font-medium text-gray-700">Below Average (D-F)</span>
                                 <span class="text-lg font-bold text-red-600"
-                                      th:text="${#lists.size(reports.?[#strings.containsIgnoreCase('DEFU', overallGrade)])}">0</span>
+                                      th:text="${belowAvgCount}">0</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill bg-red-500"
-                                     th:style="'width: ' + ${#lists.size(reports.?[#strings.containsIgnoreCase('DEFU', overallGrade)])*100/reports[0].totalStudentsInClass} + '%;'"></div>
+                                     th:style="'width: ' + ${totalStudents > 0 ? (belowAvgCount/totalStudents*100) : 0} + '%;'"></div>
                             </div>
                         </div>
                     </div>
@@ -184,6 +189,42 @@
             </div>
 
             <div class="p-6">
+                <!-- Pagination Controls -->
+                <div class="pagination-controls mb-4">
+                    <nav aria-label="Report navigation">
+                        <ul class="pagination flex items-center space-x-2">
+                            <li th:classappend="${currentPage == 0} ? 'disabled opacity-50' : ''">
+                                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&page=' + ${currentPage - 1} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:if="${currentPage > 0}">Previous</a>
+                            </li>
+
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                th:classappend="${i == currentPage} ? 'active bg-blue-600 text-white' : ''">
+                                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&page=' + ${i} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:text="${i + 1}"></a>
+                            </li>
+
+                            <li th:classappend="${currentPage >= totalPages - 1} ? 'disabled opacity-50' : ''">
+                                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&page=' + ${currentPage + 1} + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir}}"
+                                   class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                                   th:if="${currentPage < totalPages - 1}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <div class="page-size-selector mt-2">
+                        <label class="text-sm text-gray-600">Items per page:</label>
+                        <select onchange="changePageSize(this)" class="ml-2 border border-gray-300 rounded px-2 py-1">
+                            <option value="10" th:selected="${pageSize == 10}">10</option>
+                            <option value="20" th:selected="${pageSize == 20}">20</option>
+                            <option value="50" th:selected="${pageSize == 50}">50</option>
+                            <option value="100" th:selected="${pageSize == 100}">100</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
                     <table class="w-full text-sm" id="rankingTable">
                         <thead class="bg-gray-50">
@@ -199,7 +240,7 @@
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                        <tr th:each="report, stat : ${reports}"
+                        <tr th:each="report : ${reports}"
                             th:id="${'student-' + report.student.id}"
                             class="hover:bg-gray-50 transition-colors duration-150 student-row">
                             <td class="px-6 py-4">
@@ -210,25 +251,25 @@
                                 <div th:unless="${report.yearlyRank <= 3}"
                                      th:class="${'w-8 h-8 rounded-full flex items-center justify-center font-bold ' +
                                                (report.yearlyRank <= 10 ? 'bg-green-100 text-green-800' :
-                                               report.yearlyRank <= reports[0].totalStudentsInClass/2 ? 'bg-blue-100 text-blue-800' :
+                                               report.yearlyRank <= totalStudents/2 ? 'bg-blue-100 text-blue-800' :
                                                'bg-red-100 text-red-800')}">
                                     <span th:text="${report.yearlyRank}"></span>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
-                                <div class="text-xs text-gray-500" th:text="${report.student.studentId}"></div>
+                                <div class="text-xs text-gray-500" th:text="${report.rollNumber}"></div>
                             </td>
                             <td class="px-6 py-4">
                                 <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
-                                      th:text="${report.student.rollNumber}"></code>
+                                      th:text="${report.rollNumber}"></code>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center space-x-2">
                                     <span class="font-bold text-lg" th:text="${report.formattedYearlyAverage}"></span>
                                     <div class="w-24 h-2 bg-gray-200 rounded-full">
                                         <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                             th:style="'width: ' + ${report.yearlyAverage * 5} + '%;'"></div>
+                                             th:style="${report.yearlyAverage != null} ? 'width: ' + (report.yearlyAverage * 5) + '%;' : 'width: 0%'"></div>
                                     </div>
                                 </div>
                             </td>
@@ -281,6 +322,12 @@
                         </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Summary -->
+                <div class="mt-4 text-sm text-gray-600">
+                    Showing <span th:text="${reports.size()}"></span> of <span th:text="${totalItems}"></span> students
+                    (Page <span th:text="${currentPage + 1}"></span> of <span th:text="${totalPages}"></span>)
                 </div>
 
                 <!-- Legend -->
@@ -336,7 +383,7 @@
                                              th:text="${report.yearlyRank}"></div>
                                         <div>
                                             <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
-                                            <div class="text-xs text-gray-500" th:text="${report.student.rollNumber}"></div>
+                                            <div class="text-xs text-gray-500" th:text="${report.rollNumber}"></div>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -389,16 +436,16 @@
                         <div class="bg-white p-4 rounded-lg shadow-sm">
                             <h5 class="font-semibold text-gray-700 mb-2">Strengths</h5>
                             <ul class="text-gray-600 space-y-1">
-                                <li>• High class average: <span th:text="${#numbers.formatDecimal(reports.?[passed == true].![yearlyAverage].?[#this != null].![#this].?[average], 1, 2)}"></span>/20</li>
-                                <li>• <span th:text="${#lists.size(reports.?[overallGrade == 'A' || overallGrade == 'B'])}"></span> students with A/B grades</li>
+                                <li>• High class average: <span th:text="${classYearlyAverage != null ? classYearlyAverage : '0.00'}"></span>/20</li>
+                                <li>• <span th:text="${aGradeCount + bGradeCount}"></span> students with A/B grades</li>
                                 <li>• Strong performance in core subjects</li>
                             </ul>
                         </div>
                         <div class="bg-white p-4 rounded-lg shadow-sm">
                             <h5 class="font-semibold text-gray-700 mb-2">Areas for Improvement</h5>
                             <ul class="text-gray-600 space-y-1">
-                                <li th:if="${#lists.size(reports.?[passed == false]) > 0}">
-                                    • <span th:text="${#lists.size(reports.?[passed == false])}"></span> students need additional support
+                                <li th:if="${totalFailed > 0}">
+                                    • <span th:text="${totalFailed}"></span> students need additional support
                                 </li>
                                 <li>• Focus on consistent term-to-term performance</li>
                                 <li>• Address weaknesses in specific subjects</li>
@@ -422,7 +469,7 @@
             <div class="text-sm text-gray-500">
                 Report Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span> |
                 Class: <span th:text="${classRoom.name}"></span> |
-                Students: <span th:text="${reports[0].totalStudentsInClass}"></span>
+                Students: <span th:text="${totalStudents}"></span>
             </div>
             <div class="flex space-x-3">
                 <a th:href="@{/reports/select}"
@@ -452,7 +499,7 @@
         .bg-gray-50 { background: white !important; }
         .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
         .border, .border-b, .border-t { border: 1px solid #ddd !important; }
-        button, .flex.justify-between.items-center.pt-6 { display: none !important; }
+        button, .flex.justify-between.items-center.pt-6, .pagination-controls { display: none !important; }
         .bg-gradient-to-r { background: #333 !important; color: white !important; }
         .grade-a, .grade-b, .grade-c, .grade-d, .grade-f, .grade-o, .grade-e, .grade-u {
             color: white !important;
@@ -482,18 +529,13 @@
         });
     }
 
-    // Collapse/Expand functionality
-    function toggleCollapse(studentId) {
-        const content = document.getElementById('collapse-' + studentId);
-        const button = document.querySelector('[onclick="toggleCollapse(' + studentId + ')"] i');
-
-        if (content.classList.contains('expanded')) {
-            content.classList.remove('expanded');
-            button.className = 'fas fa-chevron-down';
-        } else {
-            content.classList.add('expanded');
-            button.className = 'fas fa-chevron-up';
-        }
+    // Change page size
+    function changePageSize(select) {
+        const size = select.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('size', size);
+        url.searchParams.set('page', '0'); // Reset to first page
+        window.location.href = url.toString();
     }
 
     // Export to Excel
@@ -537,7 +579,9 @@
     // Initialize search input
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('keyup', filterTable);
+        if (searchInput) {
+            searchInput.addEventListener('keyup', filterTable);
+        }
 
         // Add animation to stats cards
         const statsCards = document.querySelectorAll('.stats-card');
@@ -557,7 +601,8 @@
         // Ctrl + F for search
         if (e.ctrlKey && e.key === 'f') {
             e.preventDefault();
-            document.getElementById('searchInput').focus();
+            const si = document.getElementById('searchInput');
+            if (si) si.focus();
         }
         // Escape key to go back
         if (e.key === 'Escape') {

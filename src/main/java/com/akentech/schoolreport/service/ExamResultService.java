@@ -5,8 +5,8 @@ import com.akentech.schoolreport.repository.ExamResultRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +16,7 @@ import java.util.Optional;
 public class ExamResultService {
 
     private final ExamResultRepository examResultRepository;
+    private final GradeService gradeService; // Added to use centralized grading
 
     public List<ExamResult> getAllExamResults() {
         return examResultRepository.findAll();
@@ -35,9 +36,14 @@ public class ExamResultService {
 
     @Transactional
     public ExamResult saveExamResult(ExamResult examResult) {
-        // Calculate grade if not provided
-        if (examResult.getGrade() == null && examResult.getMarks() != null && examResult.getExam() != null) {
-            String grade = calculateGrade(examResult.getMarks(), examResult.getExam().getTotalMarks());
+        // Validate marks are on 20 marks scale
+        validateMarksOn20Scale(examResult);
+
+        // Calculate grade using centralized GradeService
+        if (examResult.getGrade() == null && examResult.getMarks() != null) {
+            String className = examResult.getStudent().getClassRoom() != null ?
+                    examResult.getStudent().getClassRoom().getName() : "";
+            String grade = gradeService.calculateLetterGrade(examResult.getMarks(), className);
             examResult.setGrade(grade);
         }
 
@@ -55,19 +61,10 @@ public class ExamResultService {
         log.info("Deleted exam result id: {}", id);
     }
 
-    private String calculateGrade(Double marksObtained, Double totalMarks) {
-        if (marksObtained == null || totalMarks == null || totalMarks == 0) {
-            return "N/A";
+    private void validateMarksOn20Scale(ExamResult examResult) {
+        if (examResult.getMarks() != null &&
+                (examResult.getMarks() < 0 || examResult.getMarks() > 20)) {
+            throw new IllegalArgumentException("Exam marks must be between 0 and 20 (out of 20 marks)");
         }
-
-        double percentage = (marksObtained / totalMarks) * 100;
-
-        if (percentage >= 90) return "A+";
-        if (percentage >= 80) return "A";
-        if (percentage >= 70) return "B+";
-        if (percentage >= 60) return "B";
-        if (percentage >= 50) return "C+";
-        if (percentage >= 40) return "C";
-        return "F";
     }
 }

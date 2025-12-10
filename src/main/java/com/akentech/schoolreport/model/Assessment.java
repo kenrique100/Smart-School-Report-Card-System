@@ -18,21 +18,12 @@ public class Assessment {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * 1,2,3 -> term number
-     */
     @Column(nullable = false)
     private Integer term;
 
-    /**
-     * Assessment type: "Assessment1", "Assessment2", "Assessment3", "Assessment4", "Exam"
-     */
     @Column(nullable = false)
     private String type;
 
-    /**
-     * Score in the assessment. Convention: all scores out of 20.
-     */
     @Column(nullable = false)
     private Double score;
 

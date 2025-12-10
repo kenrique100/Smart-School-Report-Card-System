@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,6 +60,9 @@ public class StudentService {
 
         validateStudent(student);
 
+        // Check specialty requirements based on department and class
+        checkAndValidateSpecialty(student);
+
         // Generate IDs safely
         String studentId = idGenerationService.generateStudentId(student);
         String rollNumber = idGenerationService.generateRollNumber(student);
@@ -73,6 +77,11 @@ public class StudentService {
         // Final email sanitization
         if (student.getEmail() != null && student.getEmail().trim().isEmpty()) {
             student.setEmail(null);
+        }
+
+        // Set academic year if not provided
+        if (student.getAcademicYearStart() == null || student.getAcademicYearEnd() == null) {
+            setDefaultAcademicYear(student);
         }
 
         // Save student first
@@ -104,6 +113,84 @@ public class StudentService {
         return savedStudent;
     }
 
+    // NEW: Check and validate specialty based on department and class
+    private void checkAndValidateSpecialty(Student student) {
+        if (student.getClassRoom() == null || student.getClassRoom().getCode() == null) {
+            return;
+        }
+
+        if (student.getDepartment() == null || student.getDepartment().getCode() == null) {
+            return;
+        }
+
+        String classCode = student.getClassRoom().getCode().name();
+        String departmentCode = student.getDepartment().getCode().name();
+        String specialty = student.getSpecialty();
+
+        // Check if department has specialties
+        boolean hasSpecialties = specialtyService.hasSpecialties(departmentCode);
+        List<String> availableSpecialties = specialtyService.getSpecialtiesByDepartment(departmentCode);
+
+        log.info("Checking specialty for class: {}, department: {}, hasSpecialties: {}, specialty: {}",
+                classCode, departmentCode, hasSpecialties, specialty);
+
+        // If department doesn't have specialties, clear any specialty value
+        if (!hasSpecialties) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                log.warn("Department {} doesn't have specialties, but student has specialty: {}. Clearing specialty.",
+                        departmentCode, specialty);
+                student.setSpecialty(null);
+            }
+            return;
+        }
+
+        // Department has specialties - validate based on class level
+        boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+        boolean isFormLevel = classCode.startsWith("FORM_");
+
+        // For Forms 1-3: No specialties allowed
+        if (isFormLevel && (classCode.equals("FORM_1") || classCode.equals("FORM_2") || classCode.equals("FORM_3"))) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                throw new BusinessRuleException("Specialty is not allowed for Forms 1-3");
+            }
+            student.setSpecialty(null);
+        }
+        // For Forms 4-5: Specialty is optional
+        else if (isFormLevel && (classCode.equals("FORM_4") || classCode.equals("FORM_5"))) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                // Validate specialty exists for department
+                if (!availableSpecialties.contains(specialty)) {
+                    throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " +
+                            student.getDepartment().getName());
+                }
+            }
+        }
+        // For Sixth Form: Specialty is required for Science and Arts, optional for others
+        else if (isSixthForm) {
+            boolean requiresSpecialty = departmentCode.equals("SCI") || departmentCode.equals("ART");
+
+            if (requiresSpecialty) {
+                if (specialty == null || specialty.trim().isEmpty()) {
+                    throw new BusinessRuleException("Specialty is required for Sixth Form " +
+                            student.getDepartment().getName() + " students");
+                }
+                // Validate specialty exists for department
+                if (!availableSpecialties.contains(specialty)) {
+                    throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " +
+                            student.getDepartment().getName());
+                }
+            } else {
+                // Other sixth form departments - specialty is optional but must be valid if provided
+                if (specialty != null && !specialty.trim().isEmpty()) {
+                    if (!availableSpecialties.contains(specialty)) {
+                        throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " +
+                                student.getDepartment().getName());
+                    }
+                }
+            }
+        }
+    }
+
     // NEW: Get filtered subjects for student selection
     @Transactional(readOnly = true)
     public List<Subject> getFilteredSubjectsForStudent(String classCode, Long departmentId, String specialty) {
@@ -126,29 +213,6 @@ public class StudentService {
                     classCode, departmentId, specialty, e.getMessage());
             return new ArrayList<>();
         }
-    }
-
-    // NEW: Get subjects grouped by department and specialty
-    @Transactional(readOnly = true)
-    public Map<String, Map<String, List<Subject>>> getSubjectsByDepartmentAndSpecialtyForStudent(Long studentId) {
-        Student student = getStudentByIdOrThrow(studentId);
-        List<Subject> availableSubjects = getAvailableSubjectsForStudent(student);
-
-        // Group by department name, then by specialty
-        Map<String, Map<String, List<Subject>>> result = new LinkedHashMap<>();
-
-        for (Subject subject : availableSubjects) {
-            String deptName = subject.getDepartment() != null ?
-                    subject.getDepartment().getName() : "General";
-            String specialty = subject.getSpecialty() != null ?
-                    subject.getSpecialty() : "No Specialty";
-
-            result.computeIfAbsent(deptName, k -> new LinkedHashMap<>())
-                    .computeIfAbsent(specialty, k -> new ArrayList<>())
-                    .add(subject);
-        }
-
-        return result;
     }
 
     private List<Long> getAutoAssignedSubjectIds(Student student) {
@@ -191,11 +255,9 @@ public class StudentService {
         // Form 1 students should get their department subjects too
         autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
 
-        // For Sixth Form, add specialty subjects (no compulsory subjects)
-        if (classLevel.isSixthForm()) {
-            if (specialty != null && !specialty.trim().isEmpty()) {
-                autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
-            }
+        // For Sixth Form, add specialty subjects
+        if (classLevel.isSixthForm() && specialty != null && !specialty.trim().isEmpty()) {
+            autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
         }
 
         // Log what we're enrolling
@@ -217,7 +279,6 @@ public class StudentService {
     // ENHANCED: Student validation with department and specialty rules
     private void validateStudent(Student student) {
         validateClassDepartmentRules(student);
-        validateSpecialtyRequirement(student);
         validateAcademicYears(student);
         validateEmailUniqueness(student);
         validateRollNumberUniqueness(student);
@@ -236,62 +297,9 @@ public class StudentService {
         ClassLevel classLevel = student.getClassRoom().getCode();
         DepartmentCode departmentCode = student.getDepartment().getCode();
 
-        // Forms 1-3: All departments allowed
-        if (classLevel == ClassLevel.FORM_1 || classLevel == ClassLevel.FORM_2 || classLevel == ClassLevel.FORM_3) {
-            // No specialty allowed for Forms 1-3
-            if (student.getSpecialty() != null && !student.getSpecialty().trim().isEmpty()) {
-                throw new BusinessRuleException("Specialty is not allowed for Forms 1-3");
-            }
-        }
-        // Forms 4-5: All departments allowed, specialties optional
-        else if (classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5) {
-            // Specialty is optional but must be valid if provided
-            if (student.getSpecialty() != null && !student.getSpecialty().trim().isEmpty()) {
-                validateSpecialtyForDepartment(student.getSpecialty(), departmentCode);
-            }
-        }
-        // Sixth Form: Strict department and specialty rules
-        else if (classLevel.isSixthForm()) {
-            // Science and Arts departments require specialties
-            if ((departmentCode == DepartmentCode.SCI || departmentCode == DepartmentCode.ART) &&
-                    (student.getSpecialty() == null || student.getSpecialty().trim().isEmpty())) {
-                throw new BusinessRuleException("Specialty is required for Sixth Form Science/Arts students");
-            }
-
-            // Validate specialty for department
-            if (student.getSpecialty() != null && !student.getSpecialty().trim().isEmpty()) {
-                validateSpecialtyForDepartment(student.getSpecialty(), departmentCode);
-            }
-        }
-    }
-
-    // Validate specialty belongs to department
-    private void validateSpecialtyForDepartment(String specialty, DepartmentCode departmentCode) {
-        List<String> departmentSpecialties = getSpecialtiesByDepartmentCode(departmentCode);
-        if (!departmentSpecialties.contains(specialty)) {
-            throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " + departmentCode);
-        }
-    }
-
-    // FIXED: Specialty requirement validation
-    private void validateSpecialtyRequirement(Student student) {
-        ClassLevel classLevel = student.getClassRoom().getCode();
-        DepartmentCode departmentCode = student.getDepartment().getCode();
-        String specialty = student.getSpecialty();
-
-        // Sixth Form Science/Arts require specialties
-        if (classLevel.isSixthForm() &&
-                (departmentCode == DepartmentCode.SCI || departmentCode == DepartmentCode.ART) &&
-                (specialty == null || specialty.trim().isEmpty())) {
-            throw new BusinessRuleException("Specialty is required for Sixth Form " + departmentCode + " students");
-        }
-
-        // Validate specialty exists for department if provided
-        if (specialty != null && !specialty.trim().isEmpty()) {
-            List<String> validSpecialties = getSpecialtiesByDepartmentCode(departmentCode);
-            if (!validSpecialties.contains(specialty)) {
-                throw new BusinessRuleException("Specialty '" + specialty + "' is not valid for department " + departmentCode);
-            }
+        // Validate date of birth
+        if (student.getDateOfBirth() != null && student.getDateOfBirth().isAfter(LocalDate.now().minusYears(5))) {
+            throw new BusinessRuleException("Student must be at least 5 years old");
         }
     }
 
@@ -309,11 +317,11 @@ public class StudentService {
 
     // FIXED: Email uniqueness validation - properly handles null/empty emails
     private void validateEmailUniqueness(Student student) {
-        String email = student.getSanitizedEmail();
+        String email = student.getEmail();
 
-        if (email != null && !email.isEmpty()) {
+        if (email != null && !email.trim().isEmpty()) {
             // Check if email exists for other students
-            Optional<Student> existingStudent = studentRepository.findByEmail(email);
+            Optional<Student> existingStudent = studentRepository.findByEmail(email.trim());
             if (existingStudent.isPresent() &&
                     (student.getId() == null || !existingStudent.get().getId().equals(student.getId()))) {
                 throw new DataIntegrityException("Email '" + email + "' already exists");
@@ -332,6 +340,21 @@ public class StudentService {
                 throw new DataIntegrityException("Roll number '" + rollNumber + "' already exists in class " +
                         student.getClassRoom().getName());
             }
+        }
+    }
+
+    // Set default academic year based on current year
+    private void setDefaultAcademicYear(Student student) {
+        int currentYear = LocalDate.now().getYear();
+        int currentMonth = LocalDate.now().getMonthValue();
+
+        // If it's after July, assume next academic year
+        if (currentMonth >= 7) {
+            student.setAcademicYearStart(currentYear);
+            student.setAcademicYearEnd(currentYear + 1);
+        } else {
+            student.setAcademicYearStart(currentYear - 1);
+            student.setAcademicYearEnd(currentYear);
         }
     }
 
@@ -379,6 +402,8 @@ public class StudentService {
         existingStudent.setAcademicYearStart(studentDetails.getAcademicYearStart());
         existingStudent.setAcademicYearEnd(studentDetails.getAcademicYearEnd());
 
+        // Check specialty requirements
+        checkAndValidateSpecialty(existingStudent);
         validateStudent(existingStudent);
         Student updatedStudent = studentRepository.save(existingStudent);
 
@@ -442,13 +467,24 @@ public class StudentService {
     @Transactional(readOnly = true)
     public SpecialtyService.SpecialtyRequirement checkSpecialtyRequirement(String classCode, String departmentCode) {
         log.debug("Checking specialty requirement for class: {}, department: {}", classCode, departmentCode);
-        SpecialtyService.SpecialtyRequirement requirement = specialtyService.checkSpecialtyRequirement(classCode, departmentCode);
 
-        log.debug("Specialty requirement result: required={}, allowed={}, message='{}', specialties count={}",
-                requirement.isRequired(),
-                requirement.isAllowed(),
-                requirement.getMessage(),
-                requirement.getSpecialties().size());
+        // Get specialties for department
+        List<String> specialties = getSpecialtiesByDepartmentCode(departmentCode);
+        boolean hasSpecialties = !specialties.isEmpty();
+
+        // Check if sixth form
+        boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+
+        // Determine requirements
+        boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
+        boolean allowed = hasSpecialties && !classCode.equals("FORM_1") && !classCode.equals("FORM_2") && !classCode.equals("FORM_3");
+
+        log.debug("Specialty requirement result: required={}, allowed={}, hasSpecialties={}, specialties count={}",
+                required, allowed, hasSpecialties, specialties.size());
+
+        SpecialtyService.SpecialtyRequirement requirement = new SpecialtyService.SpecialtyRequirement(
+                required, allowed, hasSpecialties, specialties
+        );
 
         return requirement;
     }
@@ -494,10 +530,7 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public long getStudentCountByDepartment(Long departmentId) {
-        // FIXED: More efficient implementation
-        return studentRepository.findAll().stream()
-                .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(departmentId))
-                .count();
+        return studentRepository.countByDepartmentId(departmentId);
     }
 
     @Transactional(readOnly = true)
@@ -713,27 +746,29 @@ public class StudentService {
     }
 
     public List<String> getSpecialtiesByDepartmentCode(String departmentCode) {
-        DepartmentCode deptCode = DepartmentCode.fromCode(departmentCode);
-        return getSpecialtiesByDepartmentCode(deptCode);
+        try {
+            DepartmentCode deptCode = DepartmentCode.fromCode(departmentCode);
+            return getSpecialtiesByDepartmentCode(deptCode);
+        } catch (Exception e) {
+            log.warn("Invalid department code: {}", departmentCode);
+            return Collections.emptyList();
+        }
     }
 
     public List<String> getSpecialtiesByDepartmentCode(DepartmentCode deptCode) {
+        if (deptCode == null) {
+            return Collections.emptyList();
+        }
+
         return switch (deptCode) {
             case COM -> // Commercial
                     Arrays.asList("Accounting", "Administration & Communication Techniques");
-            case SCI -> // Sciences
+            case SCI -> // Sciences (8 specialties as per DataInitializer)
                     Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
-            case ART -> // Arts
-                    Arrays.asList("A1", "A2", "A3", "A4", "A5");
-            case BC -> // Building and Construction (NO SPECIALTY)
+            case ART -> // Arts (8 specialties as per DataInitializer)
+                    Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8");
+            case BC, EPS, HE, GEN, CI -> // Departments with no specialties
                     Collections.emptyList();
-            case EPS -> // Electrical Power System (NO SPECIALTY)
-                    Collections.emptyList();
-            case HE -> // Home Economics (NO SPECIALTY)
-                    Collections.emptyList();
-            case GEN -> // General (NO SPECIALTY)
-                    Collections.emptyList();
-            default -> Collections.emptyList();
         };
     }
 
