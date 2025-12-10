@@ -544,12 +544,21 @@ public class StudentService {
             Long departmentId = student.getDepartment().getId();
             String specialty = student.getSpecialty();
 
-            log.info("Getting grouped subjects for student - class: {}, department: {}, specialty: {}",
+            log.info("📚 Getting grouped subjects for student - class: {}, department: {}, specialty: {}",
                     classCode, departmentId, specialty);
 
-            return subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
+            Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
+
+            // Log the grouping results
+            log.info("📊 Grouped subjects result - Compulsory: {}, Department: {}, Specialty: {}, Optional: {}",
+                    groupedSubjects.getOrDefault("compulsory", new ArrayList<>()).size(),
+                    groupedSubjects.getOrDefault("department", new ArrayList<>()).size(),
+                    groupedSubjects.getOrDefault("specialty", new ArrayList<>()).size(),
+                    groupedSubjects.getOrDefault("optional", new ArrayList<>()).size());
+
+            return groupedSubjects;
         } catch (Exception e) {
-            log.error("Error getting grouped subjects for student: {}", e.getMessage());
+            log.error("❌ Error getting grouped subjects for student: {}", e.getMessage(), e);
             return result;
         }
     }
@@ -716,7 +725,9 @@ public class StudentService {
                     Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
             case ART -> // Arts
                     Arrays.asList("A1", "A2", "A3", "A4", "A5");
-            case TEC -> // Technical (NO SPECIALTY)
+            case BC -> // Building and Construction (NO SPECIALTY)
+                    Collections.emptyList();
+            case EPS -> // Electrical Power System (NO SPECIALTY)
                     Collections.emptyList();
             case HE -> // Home Economics (NO SPECIALTY)
                     Collections.emptyList();

@@ -161,7 +161,8 @@ public class Student {
             case SCI -> "bg-green-100 text-green-800";
             case ART -> "bg-yellow-100 text-yellow-800";
             case COM -> "bg-blue-100 text-blue-800";
-            case TEC -> "bg-purple-100 text-purple-800";
+            case BC -> "bg-purple-100 text-purple-800";
+            case EPS -> "bg-gray-100 text-orange-800";
             case HE -> "bg-pink-100 text-pink-800";
             default -> "bg-gray-100 text-gray-800";
         };

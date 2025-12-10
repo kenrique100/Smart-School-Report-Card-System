@@ -31,7 +31,7 @@ public class DepartmentUtil {
             case "COM" -> "Commercial";
             case "SCI" -> "Sciences";
             case "ART" -> "Arts";
-            case "TEC" -> "Technical";
+            case "BC" -> "Building And Construction";
             case "HE" -> "Home Economics";
             case "EPS" -> "Electrical Power System";
             case "CI" -> "Clothing Industry";

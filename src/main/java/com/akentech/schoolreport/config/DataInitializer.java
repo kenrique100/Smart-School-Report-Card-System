@@ -1,9 +1,13 @@
 package com.akentech.schoolreport.config;
 
-import com.akentech.schoolreport.model.*;
+import com.akentech.schoolreport.model.ClassRoom;
+import com.akentech.schoolreport.model.Department;
+import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
-import com.akentech.schoolreport.repository.*;
+import com.akentech.schoolreport.repository.ClassRoomRepository;
+import com.akentech.schoolreport.repository.DepartmentRepository;
+import com.akentech.schoolreport.repository.SubjectRepository;
 import com.akentech.schoolreport.service.SubjectService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +54,7 @@ public class DataInitializer implements CommandLineRunner {
                     Department.builder().name("Sciences").code(DepartmentCode.SCI).description("Science Department").build(),
                     Department.builder().name("Arts").code(DepartmentCode.ART).description("Arts Department").build(),
                     Department.builder().name("Commercial").code(DepartmentCode.COM).description("Commercial Department").build(),
-                    Department.builder().name("Technical").code(DepartmentCode.TEC).description("Technical Department").build(),
+                    Department.builder().name("Building and Construction").code(DepartmentCode.BC).description("Building and Construction").build(),
                     Department.builder().name("Home Economics").code(DepartmentCode.HE).description("Home Economics Department").build(),
                     Department.builder().name("Electrical Power System").code(DepartmentCode.EPS).description("Electrical Power System Department").build(),
                     Department.builder().name("Clothing Industry").code(DepartmentCode.CI).description("Clothing Industry Department").build()
@@ -111,11 +115,21 @@ public class DataInitializer implements CommandLineRunner {
 
             Map<DepartmentCode, Department> deptMap = new HashMap<>();
             for (Department dept : allDepartments) {
-                deptMap.put(dept.getCode(), dept);
-                log.info("Department mapped: {} -> {}", dept.getCode(), dept.getName());
+                if (dept.getCode() != null) {
+                    deptMap.put(dept.getCode(), dept);
+                    log.info("Department mapped: {} -> {}", dept.getCode(), dept.getName());
+                } else {
+                    log.warn("Skipping department {}: null code", dept.getName());
+                }
             }
 
             List<Subject> subjects = new ArrayList<>();
+
+            // Get all classrooms for reference
+            List<ClassRoom> allClassRooms = classRoomRepository.findAll();
+            Map<ClassLevel, ClassRoom> classRoomMap = allClassRooms.stream()
+                    .filter(cr -> cr.getCode() != null)
+                    .collect(Collectors.toMap(ClassRoom::getCode, cr -> cr));
 
             // ============================================================
             // 1️⃣ GENERAL DEPARTMENT - FORMS 1-3 (ALL COMPULSORY)
@@ -123,1370 +137,547 @@ public class DataInitializer implements CommandLineRunner {
             if (deptMap.containsKey(DepartmentCode.GEN)) {
                 log.info("Creating General department subjects for Forms 1-3...");
 
-                // FORM 1 SUBJECTS (All Compulsory)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("English Language").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ENG-F1").description("English Language - Form 1").build(),
+                // FORM 1 SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_1)) {
+                    subjects.addAll(Arrays.asList(
 
-                        Subject.builder().name("French").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-FREN-F1").description("French - Form 1").build(),
+                            Subject.builder().name("Biology").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-BIO").description("Biology - Form 1").build(),
 
-                        Subject.builder().name("Mathematics").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-MATH-F1").description("Mathematics - Form 1").build(),
+                            Subject.builder().name("Chemistry").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-CHEM").description("Chemistry - Form 1").build(),
 
-                        Subject.builder().name("History").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-HIST-F1").description("History - Form 1").build(),
+                            Subject.builder().name("Physics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-PHY").description("Physics - Form 1").build(),
 
-                        Subject.builder().name("Geography").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-GEO-F1").description("Geography - Form 1").build(),
+                            Subject.builder().name("History").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-HIST").description("History - Form 1").build(),
 
-                        Subject.builder().name("Literature in English").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-LIT-F1").description("Literature in English - Form 1").build(),
+                            Subject.builder().name("Geography").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-GEO").description("Geography - Form 1").build(),
 
-                        Subject.builder().name("Integrated Science").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-INTSCI-F1").description("Integrated Science - Form 1").build(),
+                            Subject.builder().name("Literature in English").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-LIT").description("Literature in English - Form 1").build(),
 
-                        Subject.builder().name("Computer Studies / ICT").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-COMP-F1").description("Computer Studies - Form 1").build(),
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-MATH").description("Mathematics - Form 1").build(),
 
-                        Subject.builder().name("Citizenship Education").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-CIT-F1").description("Citizenship Education - Form 1").build(),
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-ENG").description("English - Form 1").build(),
 
-                        Subject.builder().name("Religious Studies").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-REL-F1").description("Religious Studies - Form 1").build(),
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-FREN").description("French - Form 1").build()
 
-                        Subject.builder().name("Physical Education").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-PE-F1").description("Physical Education - Form 1").build()
-                ));
+                    ));
+                }
 
-                // FORM 2 SUBJECTS (All Compulsory)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("English Language").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ENG-F2").description("English Language - Form 2").build(),
+                // FORM 2 SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_2)) {
+                    subjects.addAll(Arrays.asList(
 
-                        Subject.builder().name("French").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-FREN-F2").description("French - Form 2").build(),
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-MATH").description("Mathematics - Form 2").build(),
 
-                        Subject.builder().name("Mathematics").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-MATH-F2").description("Mathematics - Form 2").build(),
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-ENG").description("English - Form 2").build(),
 
-                        Subject.builder().name("History").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-HIST-F2").description("History - Form 2").build(),
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-FREN").description("French - Form 2").build(),
 
-                        Subject.builder().name("Geography").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-GEO-F2").description("Geography - Form 2").build(),
+                            Subject.builder().name("Geography").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-GEO").description("Geography - Form 2").build(),
 
-                        Subject.builder().name("Literature in English").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-LIT-F2").description("Literature in English - Form 2").build(),
 
-                        Subject.builder().name("Integrated Science").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-INTSCI-F2").description("Integrated Science - Form 2").build(),
+                            Subject.builder().name("Biology").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-BIO").description("Biology - Form 2").build(),
 
-                        Subject.builder().name("ICT").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ICT-F2").description("ICT - Form 2").build(),
+                            Subject.builder().name("Chemistry").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-CHEM").description("Chemistry - Form 2").build(),
 
-                        Subject.builder().name("Citizenship").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-CIT-F2").description("Citizenship - Form 2").build(),
+                            Subject.builder().name("Physics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-PHY").description("Physics - Form 2").build(),
 
-                        Subject.builder().name("Religious Studies").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-REL-F2").description("Religious Studies - Form 2").build(),
+                            Subject.builder().name("History").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-HIST").description("History - Form 2").build(),
 
-                        Subject.builder().name("Physical Education").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-PE-F2").description("Physical Education - Form 2").build()
-                ));
+                            Subject.builder().name("Literature in English").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-LIT").description("Literature in English - Form 2").build()
 
-                // FORM 3 SUBJECTS (All Compulsory)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("English Language").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ENG-F3").description("English Language - Form 3").build(),
+                    ));
+                }
 
-                        Subject.builder().name("French").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-FREN-F3").description("French - Form 3").build(),
+                // FORM 3 SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_3)) {
+                    subjects.addAll(Arrays.asList(
 
-                        Subject.builder().name("Mathematics").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-MATH-F3").description("Mathematics - Form 3").build(),
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-MATH").description("Mathematics - Form 3").build(),
 
-                        Subject.builder().name("Biology").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-BIO-F3").description("Biology - Form 3").build(),
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-ENG").description("English - Form 3").build(),
 
-                        Subject.builder().name("Chemistry").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-CHEM-F3").description("Chemistry - Form 3").build(),
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-FREN").description("French - Form 3").build(),
 
-                        Subject.builder().name("Physics").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-PHY-F3").description("Physics - Form 3").build(),
+                            Subject.builder().name("Biology").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-BIO").description("Biology - Form 3").build(),
 
-                        Subject.builder().name("History").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-HIST-F3").description("History - Form 3").build(),
+                            Subject.builder().name("Chemistry").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-CHEM").description("Chemistry - Form 3").build(),
 
-                        Subject.builder().name("Geography").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-GEO-F3").description("Geography - Form 3").build(),
+                            Subject.builder().name("Physics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-PHY").description("Physics - Form 3").build(),
 
-                        Subject.builder().name("Literature in English").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-LIT-F3").description("Literature in English - Form 3").build(),
+                            Subject.builder().name("History").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-HIST").description("History - Form 3").build(),
 
-                        Subject.builder().name("Citizenship / Social Studies").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-CIT-F3").description("Citizenship - Form 3").build(),
+                            Subject.builder().name("Geography").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-GEO").description("Geography - Form 3").build(),
 
-                        Subject.builder().name("ICT").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ICT-F3").description("ICT - Form 3").build(),
+                            Subject.builder().name("Literature in English").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-LIT").description("Literature in English - Form 3").build()
 
-                        Subject.builder().name("Religious Studies").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-REL-F3").description("Religious Studies - Form 3").build(),
-
-                        Subject.builder().name("Physical Education").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-PE-F3").description("Physical Education - Form 3").build()
-                ));
+                    ));
+                }
 
                 // OPTIONAL SUBJECTS FOR GENERAL DEPARTMENT (Forms 1-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Religious Studies (Optional)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-REL-OPT")
-                                .description("Optional Religious Studies")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Citizenship Education (Optional)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-CIT-OPT")
-                                .description("Optional Citizenship Education")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Computer Science (Optional)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-COMP-OPT")
-                                .description("Optional Computer Science")
-                                .optional(true).build(),
-
-                        Subject.builder().name("ICT (Optional)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("GEN-ICT-OPT")
-                                .description("Optional ICT")
-                                .optional(true).build()
-                ));
-
-                // COMPLEMENTARY EDUCATION SUBJECTS (Forms 1-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Sports").coefficient(1)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("COMP-SPORTS").description("Sports and Physical Activities").build(),
-
-                        Subject.builder().name("Physical Education").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("COMP-PE").description("Physical Education and Health").build(),
-
-                        Subject.builder().name("Manual Labour").coefficient(1)
-                                .department(deptMap.get(DepartmentCode.GEN))
-                                .subjectCode("COMP-ML").description("Manual Labour and Practical Skills").build()
-                ));
+                subjects.addAll(createOptionalSubjects(deptMap.get(DepartmentCode.GEN), classRoomMap));
             }
 
             // ============================================================
             // 2️⃣ SCIENCE DEPARTMENT - FORMS 4-5 (O-LEVEL)
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.SCI)) {
-                log.info("Creating Science department subjects for Forms 4-5 (O-Level)...");
+                log.info("Creating Science department subjects for Forms 4-5...");
 
-                // CORE SCIENCE SUBJECTS (Forms 4-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("English Language (Science)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-ENG-F4-5").description("English Language for Science - Form 4-5").build(),
+                // FORM 4 SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_4)) {
+                    subjects.addAll(Arrays.asList(
 
-                        Subject.builder().name("French (Science)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-FREN-F4-5").description("French for Science - Form 4-5").build(),
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-MATH").description("Mathematics - Form 4 Science").build(),
 
-                        Subject.builder().name("Mathematics (Science)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-MATH-F4-5").description("Mathematics for Science - Form 4-5").build(),
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-ENG").description("English - Form 4 Science").build(),
 
-                        Subject.builder().name("Biology").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-BIO-F4-5").description("Biology - Form 4-5").build(),
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-FREN").description("French - Form 4 Science").build(),
 
-                        Subject.builder().name("Chemistry").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-CHEM-F4-5").description("Chemistry - Form 4-5").build(),
+                            Subject.builder().name("Biology").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-BIO").description("Biology - Form 4 Science").build(),
 
-                        Subject.builder().name("Physics").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-PHY-F4-5").description("Physics - Form 4-5").build(),
+                            Subject.builder().name("Chemistry").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-CHEM").description("Chemistry - Form 4 Science").build(),
 
-                        Subject.builder().name("Additional Mathematics").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-ADD-MATH-F4-5").description("Additional Mathematics - Form 4-5").build()
-                ));
+                            Subject.builder().name("Physics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-PHY").description("Physics - Form 4 Science").build(),
 
-                // OPTIONAL SUBJECTS FOR SCIENCE (Forms 4-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Geography (Science)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-GEO-F4-5")
-                                .description("Optional Geography for Science - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Additional Mathematics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-ADDMATH")
+                                    .description("Additional Mathematics - Form 4 Science")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Computer Science (Science)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-COMP-F4-5")
-                                .description("Optional Computer Science for Science - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Human Biology").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-HBIO")
+                                    .description("Human Biology - Form 4 Science (Optional)")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Economics (Science)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-ECO-F4-5")
-                                .description("Optional Economics for Science - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Geography").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-GEOGRAPHY")
+                                    .description("Geography - Form 4 Science (Optional)")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Literature in English (Science)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-LIT-F4-5")
-                                .description("Optional Literature for Science - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Economics").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-ECONS")
+                                    .description("Economics -Form 4 Science (Optional")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Religious Studies (Science)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-REL-F4-5")
-                                .description("Optional Religious Studies for Science - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Computer Science").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-COMP")
+                                    .description("Computer Science -Form 4 Science (Optional")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Human Biology").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("SCI-HUM-BIO-F4-5")
-                                .description("Optional Human Biology - Form 4-5")
-                                .optional(true).build()
-                ));
+                            Subject.builder().name("ICT").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-ICT")
+                                    .description("ICT -Form 4 Science (Optional")
+                                    .optional(true)
+                                    .build()
+                    ));
+                }
+
+                // FORM 5 SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_5)) {
+                    subjects.addAll(Arrays.asList(
+
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-MATH").description("Mathematics - Form 5 Science").build(),
+
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-ENG").description("English - Form 5 Science").build(),
+
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-FREN").description("French - Form 5 Science").build(),
+
+                            Subject.builder().name("Biology").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-BIO").description("Biology - Form 5 Science").build(),
+
+                            Subject.builder().name("Chemistry").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-CHEM").description("Chemistry - Form 5 Science").build(),
+
+                            Subject.builder().name("Physics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-PHY").description("Physics - Form 5 Science").build(),
+
+                            Subject.builder().name("Additional Mathematics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-ADDMATH")
+                                    .description("Additional Mathematics - Form 5 Science")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Human Biology").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-HBIO")
+                                    .description("Human Biology - Form 5 Science (Optional)")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Geography").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-GEOGRAPHY")
+                                    .description("Geography - Form 5 Science (Optional)")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Economics").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-ECONOMICS")
+                                    .description("Economics - Form 5 Science (Optional)")
+                                    .optional(true)
+                                    .build(),
+
+
+                            Subject.builder().name("Computer Science").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-COMP")
+                                    .description("Computer Science -Form 5 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("ICT").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-ICT")
+                                    .description("ICT -Form 5 Science (Optional")
+                                    .optional(true)
+                                    .build()
+
+                    ));
+                }
+
+                // ============================================================
+                // SCIENCE SIXTH FORM SUBJECTS BY SPECIALTY
+                // ============================================================
+                createScienceSixthFormSubjects(subjects, deptMap.get(DepartmentCode.SCI), classRoomMap);
             }
 
             // ============================================================
-            // 3️⃣ SCIENCE DEPARTMENT - SIXTH FORM (A-LEVEL WITH SPECIALTIES S1-S8)
-            // ============================================================
-            if (deptMap.containsKey(DepartmentCode.SCI)) {
-                log.info("Creating Science department subjects for Sixth Form (A-Level)...");
-
-                // S1: Chemistry, Physics, Pure Mathematics with Mechanics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Chemistry (S1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S1")
-                                .description("Chemistry for S1 specialty")
-                                .specialty("S1").build(),
-
-                        Subject.builder().name("Physics (S1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PHY-S1")
-                                .description("Physics for S1 specialty")
-                                .specialty("S1").build(),
-
-                        Subject.builder().name("Pure Mathematics with Mechanics (S1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PMATH-MECH-S1")
-                                .description("Pure Mathematics with Mechanics for S1")
-                                .specialty("S1").build()
-                ));
-
-                // S2: Chemistry, Physics, Biology
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Chemistry (S2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S2")
-                                .description("Chemistry for S2 specialty")
-                                .specialty("S2").build(),
-
-                        Subject.builder().name("Physics (S2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PHY-S2")
-                                .description("Physics for S2 specialty")
-                                .specialty("S2").build(),
-
-                        Subject.builder().name("Biology (S2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S2")
-                                .description("Biology for S2 specialty")
-                                .specialty("S2").build()
-                ));
-
-                // S3: Biology, Chemistry, Pure Mathematics with Statistics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Biology (S3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S3")
-                                .description("Biology for S3 specialty")
-                                .specialty("S3").build(),
-
-                        Subject.builder().name("Chemistry (S3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S3")
-                                .description("Chemistry for S3 specialty")
-                                .specialty("S3").build(),
-
-                        Subject.builder().name("Pure Mathematics with Statistics (S3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PMATH-STAT-S3")
-                                .description("Pure Mathematics with Statistics for S3")
-                                .specialty("S3").build()
-                ));
-
-                // S4: Biology, Chemistry, Geology
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Biology (S4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S4")
-                                .description("Biology for S4 specialty")
-                                .specialty("S4").build(),
-
-                        Subject.builder().name("Chemistry (S4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S4")
-                                .description("Chemistry for S4 specialty")
-                                .specialty("S4").build(),
-
-                        Subject.builder().name("Geology (S4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-GEOL-S4")
-                                .description("Geology for S4 specialty")
-                                .specialty("S4").build()
-                ));
-
-                // S5: Chemistry, Biology, Mathematics with Mechanics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Chemistry (S5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S5")
-                                .description("Chemistry for S5 specialty")
-                                .specialty("S5").build(),
-
-                        Subject.builder().name("Biology (S5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S5")
-                                .description("Biology for S5 specialty")
-                                .specialty("S5").build(),
-
-                        Subject.builder().name("Mathematics with Mechanics (S5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-MATH-MECH-S5")
-                                .description("Mathematics with Mechanics for S5")
-                                .specialty("S5").build()
-                ));
-
-                // S6: Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Chemistry (S6)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S6")
-                                .description("Chemistry for S6 specialty")
-                                .specialty("S6").build(),
-
-                        Subject.builder().name("Physics (S6)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PHY-S6")
-                                .description("Physics for S6 specialty")
-                                .specialty("S6").build(),
-
-                        Subject.builder().name("Mathematics with Mechanics (S6)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-MATH-MECH-S6")
-                                .description("Mathematics with Mechanics for S6")
-                                .specialty("S6").build(),
-
-                        Subject.builder().name("Further Mathematics (S6)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-FMATH-S6")
-                                .description("Further Mathematics for S6")
-                                .specialty("S6").build()
-                ));
-
-                // S7: Chemistry, Biology, Physics, Mathematics with Mechanics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Chemistry (S7)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S7")
-                                .description("Chemistry for S7 specialty")
-                                .specialty("S7").build(),
-
-                        Subject.builder().name("Biology (S7)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S7")
-                                .description("Biology for S7 specialty")
-                                .specialty("S7").build(),
-
-                        Subject.builder().name("Physics (S7)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PHY-S7")
-                                .description("Physics for S7 specialty")
-                                .specialty("S7").build(),
-
-                        Subject.builder().name("Mathematics with Mechanics (S7)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-MATH-MECH-S7")
-                                .description("Mathematics with Mechanics for S7")
-                                .specialty("S7").build()
-                ));
-
-                // S8: Biology, Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Biology (S8)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-BIO-S8")
-                                .description("Biology for S8 specialty")
-                                .specialty("S8").build(),
-
-                        Subject.builder().name("Chemistry (S8)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-CHEM-S8")
-                                .description("Chemistry for S8 specialty")
-                                .specialty("S8").build(),
-
-                        Subject.builder().name("Physics (S8)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-PHY-S8")
-                                .description("Physics for S8 specialty")
-                                .specialty("S8").build(),
-
-                        Subject.builder().name("Mathematics with Mechanics (S8)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-MATH-MECH-S8")
-                                .description("Mathematics with Mechanics for S8")
-                                .specialty("S8").build(),
-
-                        Subject.builder().name("Further Mathematics (S8)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-FMATH-S8")
-                                .description("Further Mathematics for S8")
-                                .specialty("S8").build()
-                ));
-
-                // OPTIONAL SUBJECTS FOR SCIENCE SIXTH FORM (Available to all specialties)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Computer Science (Science Advanced)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-COMP-SCI")
-                                .description("Optional Computer Science for Science - A-Level")
-                                .optional(true).build(),
-
-                        Subject.builder().name("ICT (Science Advanced)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-ICT-SCI")
-                                .description("Optional ICT for Science - A-Level")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Food Science").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.SCI))
-                                .subjectCode("A-FOOD-SCI")
-                                .description("Optional Food Science for Science - A-Level")
-                                .optional(true).build()
-                ));
-            }
-
-            // ============================================================
-            // 4️⃣ ARTS DEPARTMENT - FORMS 4-5 (O-LEVEL)
+            // 3️⃣ ARTS DEPARTMENT - FORMS 4-5 (O-LEVEL)
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.ART)) {
-                log.info("Creating Arts department subjects for Forms 4-5 (O-Level)...");
+                log.info("Creating Arts department subjects for Forms 4-5...");
 
-                // CORE ARTS SUBJECTS (Forms 4-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("English Language (Arts)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-ENG-F4-5").description("English Language for Arts - Form 4-5").build(),
+                // FORM 4 ARTS SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_4)) {
+                    subjects.addAll(Arrays.asList(
 
-                        Subject.builder().name("Mathematics (General)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-MATH-F4-5").description("General Mathematics for Arts - Form 4-5").build()
-                ));
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-MATH").description("Mathematics - Form 4 Arts").build(),
 
-                // OPTIONAL ARTS SUBJECTS (Forms 4-5)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("French (Arts)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-FREN-F4-5")
-                                .description("Optional French for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-ENG").description("English - Form 4 Arts").build(),
 
-                        Subject.builder().name("Literature in English (Arts)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-LIT-F4-5")
-                                .description("Literature in English for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-FREN").description("French - Form 4 Arts").build(),
 
-                        Subject.builder().name("History (Arts)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-HIST-F4-5")
-                                .description("History for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Literature in English").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-LIT").description("Literature in English - Form 4 Arts").build(),
 
-                        Subject.builder().name("Geography (Arts)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-GEO-F4-5")
-                                .description("Geography for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("History").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-HIST").description("History - Form 4 Arts").build(),
 
-                        Subject.builder().name("Economics (Arts)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-ECO-F4-5")
-                                .description("Economics for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Geography").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-GEO").description("Geography - Form 4 Arts").build(),
 
-                        Subject.builder().name("Religious Studies (Arts)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-REL-F4-5")
-                                .description("Religious Studies for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Economics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-ECONS").description("Economics - Form 4 Arts").build(),
 
-                        Subject.builder().name("Commerce (Arts)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-COM-F4-5")
-                                .description("Optional Commerce for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("Computer Science").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-COMP")
+                                    .description("Computer Science -Form 4 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Food & Nutrition (Arts)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-FOOD-F4-5")
-                                .description("Optional Food & Nutrition for Arts - Form 4-5")
-                                .optional(true).build(),
+                            Subject.builder().name("ICT").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-ICT")
+                                    .description("ICT -Form 4 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
 
-                        Subject.builder().name("Clothing & Textiles (Arts)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("ART-CLOTH-F4-5")
-                                .description("Optional Clothing & Textiles for Arts - Form 4-5")
-                                .optional(true).build()
-                ));
+                            Subject.builder().name("Biology").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-BIO")
+                                    .description("Biology -Form 4 Arts (Optional")
+                                    .optional(true)
+                                    .build()
+                    ));
+                }
+
+                // FORM 5 ARTS SUBJECTS
+                if (classRoomMap.containsKey(ClassLevel.FORM_5)) {
+                    subjects.addAll(Arrays.asList(
+
+                            Subject.builder().name("Mathematics").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-MATH").description("Mathematics - Form 5 Arts").build(),
+
+                            Subject.builder().name("English").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-ENG").description("English - Form 5 Arts").build(),
+
+                            Subject.builder().name("French").coefficient(5)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-FREN").description("French - Form 5 Arts").build(),
+
+                            Subject.builder().name("Literature in English").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-LIT").description("Literature in English - Form 5 Arts").build(),
+
+                            Subject.builder().name("History").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-HIST").description("History - Form 5 Arts").build(),
+
+                            Subject.builder().name("Geography").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-GEO").description("Geography - Form 5 Arts").build(),
+
+
+                            Subject.builder().name("Economics").coefficient(4)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-ECONS").description("Economics - Form 5 Arts").build(),
+
+                            Subject.builder().name("Computer Science").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-COMP")
+                                    .description("Computer Science -Form 5 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("ICT").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-ICT")
+                                    .description("ICT -Form 5 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Biology").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-BIO")
+                                    .description("Biology -Form 5 Arts (Optional")
+                                    .optional(true)
+                                    .build()
+                    ));
+                }
+
+                // ============================================================
+                // ARTS SIXTH FORM SUBJECTS BY SPECIALTY
+                // ============================================================
+                createArtsSixthFormSubjects(subjects, deptMap.get(DepartmentCode.ART), classRoomMap);
             }
 
             // ============================================================
-            // 5️⃣ ARTS DEPARTMENT - SIXTH FORM (A-LEVEL WITH SPECIALTIES A1-A5)
-            // ============================================================
-            if (deptMap.containsKey(DepartmentCode.ART)) {
-                log.info("Creating Arts department subjects for Sixth Form (A-Level)...");
-
-                // A1: Literature, History, French
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Literature (A1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-LIT-A1")
-                                .description("Literature for A1 specialty")
-                                .specialty("A1").build(),
-
-                        Subject.builder().name("History (A1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-HIST-A1")
-                                .description("History for A1 specialty")
-                                .specialty("A1").build(),
-
-                        Subject.builder().name("French (A1)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-FREN-A1")
-                                .description("French for A1 specialty")
-                                .specialty("A1").build()
-                ));
-
-                // A2: History, Geography, Economics
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("History (A2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-HIST-A2")
-                                .description("History for A2 specialty")
-                                .specialty("A2").build(),
-
-                        Subject.builder().name("Geography (A2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-GEO-A2")
-                                .description("Geography for A2 specialty")
-                                .specialty("A2").build(),
-
-                        Subject.builder().name("Economics (A2)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-ECO-A2")
-                                .description("Economics for A2 specialty")
-                                .specialty("A2").build()
-                ));
-
-                // A3: Literature, Economics, History
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Literature (A3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-LIT-A3")
-                                .description("Literature for A3 specialty")
-                                .specialty("A3").build(),
-
-                        Subject.builder().name("Economics (A3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-ECO-A3")
-                                .description("Economics for A3 specialty")
-                                .specialty("A3").build(),
-
-                        Subject.builder().name("History (A3)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-HIST-A3")
-                                .description("History for A3 specialty")
-                                .specialty("A3").build()
-                ));
-
-                // A4: Economics, Geography, Pure Mathematics (Mechanics or Statistics)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Economics (A4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-ECO-A4")
-                                .description("Economics for A4 specialty")
-                                .specialty("A4").build(),
-
-                        Subject.builder().name("Geography (A4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-GEO-A4")
-                                .description("Geography for A4 specialty")
-                                .specialty("A4").build(),
-
-                        Subject.builder().name("Pure Mathematics (Mechanics) (A4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-PMATH-MECH-A4")
-                                .description("Pure Mathematics (Mechanics) for A4")
-                                .specialty("A4").build(),
-
-                        Subject.builder().name("Pure Mathematics (Statistics) (A4)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-PMATH-STAT-A4")
-                                .description("Pure Mathematics (Statistics) for A4")
-                                .specialty("A4").build()
-                ));
-
-                // A5: Literature, History, Philosophy
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Literature (A5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-LIT-A5")
-                                .description("Literature for A5 specialty")
-                                .specialty("A5").build(),
-
-                        Subject.builder().name("History (A5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-HIST-A5")
-                                .description("History for A5 specialty")
-                                .specialty("A5").build(),
-
-                        Subject.builder().name("Philosophy (A5)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-PHIL-A5")
-                                .description("Philosophy for A5 specialty")
-                                .specialty("A5").build()
-                ));
-
-                // OPTIONAL SUBJECTS FOR ARTS SIXTH FORM (Available to all specialties)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Computer Science (Arts Advanced)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-COMP-ART")
-                                .description("Optional Computer Science for Arts - A-Level")
-                                .optional(true).build(),
-
-                        Subject.builder().name("ICT (Arts Advanced)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.ART))
-                                .subjectCode("A-ICT-ART")
-                                .description("Optional ICT for Arts - A-Level")
-                                .optional(true).build()
-                ));
-            }
-
-            // ============================================================
-            // 6️⃣ COMMERCIAL DEPARTMENT
+            // 4️⃣ COMMERCIAL DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.COM)) {
-                log.info("Creating Commercial subjects...");
-
-                // FORM 1-2 SUBJECTS (NO SPECIALTY)
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Mathematics (Commercial)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-MATH-F1-2").description("Mathematics for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("English (Commercial)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ENG-F1-2").description("English for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("French (Commercial)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-FREN-F1-2").description("French for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("Accounting (Form 1-2)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ACC-F1-2").description("Accounting for Forms 1-2").build(),
-
-                        Subject.builder().name("Commerce (Form 1-2)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COM-F1-2").description("Commerce for Forms 1-2").build(),
-
-                        Subject.builder().name("Office and Administrative Management (Form 1-2)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OAM-F1-2").description("Office and Administrative Management - Form 1-2").build(),
-
-                        Subject.builder().name("Computer Science (Commercial)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COMP-F1-2").description("Computer Science for Commercial - Form 1-2").build(),
-
-                        Subject.builder().name("Marketing (Form 1-2)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-MKT-F1-2").description("Marketing for Forms 1-2").build(),
-
-                        Subject.builder().name("History (Commercial)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-HIST-F1-2").description("History for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("Geography (Commercial)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-GEO-F1-2").description("Geography for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("Citizenship (Commercial)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-CIT-F1-2").description("Citizenship for Commercial Studies - Form 1-2").build(),
-
-                        Subject.builder().name("Religious Studies (Commercial)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-REL-F1-2")
-                                .description("Optional Religious Studies - Form 1-2")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Office Practice (Form 1-2)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OP-F1-2")
-                                .description("Optional Office Practice - Form 1-2")
-                                .optional(true).build()
-                ));
-
-                // FORM 3-5 ACCOUNTING SPECIALTY
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("OHADA Financial Accounting").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OHADA-FA")
-                                .description("OHADA Financial Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("OHADA Financial Reporting").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OHADA-FR")
-                                .description("OHADA Financial Reporting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("International Financial Accounting").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-IFA")
-                                .description("International Financial Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Business Mathematics (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-BMATH-ACC")
-                                .description("Business Mathematics for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Commerce (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COM-ACC")
-                                .description("Commerce for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Professional Communication Technique (Accounting)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-PCT-ACC")
-                                .description("Professional Communication Technique for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Entrepreneurship (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ENT-ACC")
-                                .description("Entrepreneurship for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Economics (Accounting)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ECO-ACC")
-                                .description("Economics for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Law and Government (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-LG-ACC")
-                                .description("Law and Government for Accounting")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("ICT (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ICT-ACC")
-                                .description("Optional ICT for Accounting")
-                                .specialty("Accounting")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Computer Science (Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COMP-ACC")
-                                .description("Optional Computer Science for Accounting")
-                                .specialty("Accounting")
-                                .optional(true).build()
-                ));
-
-                // FORM 3-5 ADMINISTRATION & COMMUNICATION TECHNIQUES SPECIALTY
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Office and Administration Management (ACT)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OAM-ACT")
-                                .description("Office and Administration Management for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Information Processing").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-IP")
-                                .description("Information Processing for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Professional Communication Technique (ACT)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-PCT-ACT")
-                                .description("Professional Communication Technique for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Graphic Designing").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-GD")
-                                .description("Graphic Designing for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Commerce (ACT)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COM-ACT")
-                                .description("Commerce for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Business Mathematics (ACT)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-BMATH-ACT")
-                                .description("Business Mathematics for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Law and Government (ACT)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-LG-ACT")
-                                .description("Law and Government for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Economics (ACT)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ECO-ACT")
-                                .description("Economics for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("OHADA Financial Accounting (ACT)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OHADA-ACT")
-                                .description("OHADA Financial Accounting for ACT")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("ICT (ACT)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ICT-ACT")
-                                .description("Optional ICT for ACT")
-                                .specialty("Administration & Communication Techniques")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Computer Science (ACT)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-COMP-ACT")
-                                .description("Optional Computer Science for ACT")
-                                .specialty("Administration & Communication Techniques")
-                                .optional(true).build()
-                ));
-
-                // LOWER/UPPER SIXTH ADMINISTRATION & COMMUNICATION TECHNIQUES
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Automated Clerical Management").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ACM-L6-U6")
-                                .description("Automated Clerical Management - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Professional English (ACT)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-PENG-ACT-L6-U6")
-                                .description("Professional English for ACT - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Applied Work").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-AW-L6-U6")
-                                .description("Applied Work - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Graphic Designing (Advanced)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-GD-ADV-L6-U6")
-                                .description("Advanced Graphic Designing - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Office Technology").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-OT-L6-U6")
-                                .description("Office Technology - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Information Processing (Advanced)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-IP-ADV-L6-U6")
-                                .description("Advanced Information Processing - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Professional Communication Technique (Advanced)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-PCT-ADV-L6-U6")
-                                .description("Advanced Professional Communication - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build(),
-
-                        Subject.builder().name("Commerce and Finance (ACT)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-CF-ACT-L6-U6")
-                                .description("Commerce and Finance for ACT - Lower/Upper Sixth")
-                                .specialty("Administration & Communication Techniques").build()
-                ));
-
-                // LOWER/UPPER SIXTH ACCOUNTING SPECIALTY
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Cost and Management Accounting").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-CMA-L6-U6")
-                                .description("Cost and Management Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Financial Accounting (Advanced)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-FA-ADV-L6-U6")
-                                .description("Advanced Financial Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Corporate Accounting").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-CA-L6-U6")
-                                .description("Corporate Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Business Mathematics (Advanced Accounting)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-BMATH-ADV-ACC-L6-U6")
-                                .description("Advanced Business Mathematics for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Entrepreneurship (Advanced Accounting)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ENT-ADV-ACC-L6-U6")
-                                .description("Advanced Entrepreneurship for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Economics (Advanced Accounting)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ECO-ADV-ACC-L6-U6")
-                                .description("Advanced Economics for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Commerce and Finance (Accounting)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-CF-ACC-L6-U6")
-                                .description("Commerce and Finance for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("Business Management (Accounting)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-BM-ACC-L6-U6")
-                                .description("Business Management for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting").build(),
-
-                        Subject.builder().name("ICT (Advanced Accounting)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.COM))
-                                .subjectCode("COM-ICT-ADV-ACC-L6-U6")
-                                .description("Optional Advanced ICT for Accounting - Lower/Upper Sixth")
-                                .specialty("Accounting")
-                                .optional(true).build()
-                ));
+                log.info("Creating Commercial department subjects...");
+                createCommercialSubjects(subjects, deptMap.get(DepartmentCode.COM), classRoomMap);
             }
 
             // ============================================================
-            // 7️⃣ TECHNICAL DEPARTMENT (NO SPECIALTY)
+            // 5️⃣ TECHNICAL DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
-            if (deptMap.containsKey(DepartmentCode.TEC)) {
-                log.info("Creating Technical (Building and Construction) subjects...");
-
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Quantities and Estimate").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-QE").description("Quantities and Estimate").build(),
-
-                        Subject.builder().name("Soils and Survey").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-SS").description("Soils and Survey").build(),
-
-                        Subject.builder().name("Practicals (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-PR").description("Building and Construction Practicals").build(),
-
-                        Subject.builder().name("Technical Drawing").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-TD").description("Technical Drawing").build(),
-
-                        Subject.builder().name("Applied Mechanics").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-AM").description("Applied Mechanics").build(),
-
-                        Subject.builder().name("Construction Processes").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-CP").description("Construction Processes").build(),
-
-                        Subject.builder().name("Project Management").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-PM").description("Project Management").build(),
-
-                        Subject.builder().name("Trade and Training").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-TT").description("Trade and Training").build(),
-
-                        Subject.builder().name("English (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-ENG").description("English for Technical Studies").build(),
-
-                        Subject.builder().name("French (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-FREN").description("French for Technical Studies").build(),
-
-                        Subject.builder().name("Mathematics (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-MATH").description("Mathematics for Technical Studies").build(),
-
-                        Subject.builder().name("Physics (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-PHY").description("Physics for Technical Studies").build(),
-
-                        Subject.builder().name("Chemistry (Technical)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-CHEM").description("Chemistry for Technical Studies").build(),
-
-                        Subject.builder().name("Citizenship (Technical)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-CIT").description("Citizenship for Technical Studies").build(),
-
-                        Subject.builder().name("Law and Government (Technical)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-LG").description("Law and Government for Technical Studies").build(),
-
-                        Subject.builder().name("History (Technical)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-HIST").description("History for Technical Studies").build(),
-
-                        Subject.builder().name("Geography (Technical)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-GEO").description("Geography for Technical Studies").build(),
-
-                        Subject.builder().name("Engineering Science").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-ES").description("Engineering Science").build(),
-
-                        Subject.builder().name("Computer Science (Technical)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.TEC))
-                                .subjectCode("TEC-COMP").description("Computer Science for Technical Studies").build()
-                ));
+            if (deptMap.containsKey(DepartmentCode.BC)) {
+                log.info("Creating Technical department subjects...");
+                createBuildingConstructionSubjects(subjects, deptMap.get(DepartmentCode.BC), classRoomMap);
             }
 
             // ============================================================
-            // 8️⃣ HOME ECONOMICS DEPARTMENT (NO SPECIALTY)
+            // 6️⃣ HOME ECONOMICS DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.HE)) {
-                log.info("Creating Home Economics subjects...");
 
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("Food Nutrition and Health (FNH)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FNH-F1-5").description("Food Nutrition and Health - Form 1-5").build(),
+                Department heDepartment = deptMap.get(DepartmentCode.HE);
 
-                        Subject.builder().name("Practicals on Food Nutrition and Health").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FNH-PR-F1-5").description("Practicals on Food Nutrition and Health - Form 1-5").build(),
+                log.info("Creating Home Economics department subjects...");
 
-                        Subject.builder().name("Resource Management on Home Studies (RMHS)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-RMHS-F1-5").description("Resource Management on Home Studies - Form 1-5").build(),
+                // 1st Cycle (Forms 1–5)
+                createHomeEconomicsSubjects(
+                        subjects,
+                        heDepartment,
+                        classRoomMap
+                );
 
-                        Subject.builder().name("Practicals on RMHS").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-RMHS-PR-F1-5").description("Practicals on Resource Management - Form 1-5").build(),
-
-                        Subject.builder().name("Family Life Education and Gerontology (FLEG)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FLEG-F1-5").description("Family Life Education and Gerontology - Form 1-5").build(),
-
-                        Subject.builder().name("Natural Science (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-NS-F1-5").description("Natural Science for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Business Mathematics (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-BMATH-F1-5").description("Business Mathematics for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Entrepreneurship (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-ENT-F1-5").description("Entrepreneurship for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Economic Geography (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-EGEO-F1-5").description("Economic Geography for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Law and Government (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-LG-F1-5").description("Law and Government for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Citizenship (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-CIT-F1-5").description("Citizenship for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Management Aided in Computer (HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-MAC-F1-5").description("Management Aided in Computer for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("French (HE)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FREN-F1-5").description("French for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("English (HE)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-ENG-F1-5").description("English for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Mathematics (HE)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-MATH-F1-5").description("Mathematics for Home Economics - Form 1-5").build(),
-
-                        Subject.builder().name("Catering Management and Dietetics").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-CATERING-L6-U6").description("Catering Management and Dietetics - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Culinary Practice on Catering Management and Dietetics").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-CULINARY-L6-U6").description("Culinary Practice - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Family Life Education and Gerontology (Theory)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FLEG-T-L6-U6").description("FLEG Theory - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Family Life Education and Gerontology (Practicals)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-FLEG-P-L6-U6").description("FLEG Practicals - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Resource Management on Home Studies (RMHS)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-RMHS-L6-U6").description("Resource Management - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Practicals on RMHS").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-RMHS-P-L6-U6").description("RMHS Practicals - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Social Life").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-SL-L6-U6").description("Social Life Studies - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Entrepreneurship (Advanced HE)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-ENT-ADV-L6-U6").description("Advanced Entrepreneurship for Home Economics - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Natural Science (Advanced HE)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-NS-ADV-L6-U6").description("Advanced Natural Science for Home Economics - Lower/Upper Sixth").build(),
-
-                        Subject.builder().name("Economics (HE Advanced)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-ECO-ADV")
-                                .description("Optional Economics for Home Economics - Lower/Upper Sixth")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Management Aided in Computer (Advanced HE)").coefficient(1)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-MAC-ADV")
-                                .description("Optional Advanced Management Aided in Computer - Lower/Upper Sixth")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Professional English (HE)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.HE))
-                                .subjectCode("HE-PENG-ADV")
-                                .description("Optional Professional English for Home Economics - Lower/Upper Sixth")
-                                .optional(true).build()
-                ));
+                // 2nd Cycle (Lower & Upper Sixth)
+                createHomeEconomicsSixthFormSubjects(
+                        subjects,
+                        heDepartment,
+                        classRoomMap
+                );
             }
 
+
             // ============================================================
-            // 9️⃣ EPS DEPARTMENT (NO SPECIALTY)
+            // 7️⃣ EPS DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.EPS)) {
-                log.info("Creating EPS subjects...");
-
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("French (EPS)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-FREN-F1-5").description("French for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("English (EPS)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ENG-F1-5").description("English for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Mathematics (EPS)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-MATH-F1-5").description("Mathematics for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Human and Economic Geography (EPS)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-Geo-F1-5").description("Human and Economic Geography for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Citizenship (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-CITI-F1-5").description("Citizenship for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Entrepreneurship (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ENTRE-F1-5").description("Entrepreneurship for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Engineering Science (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ENG-SCI-F1-5").description("Engineering Science for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Computer Science (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-Computer-SCI-F1-5").description("Computer Science for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Electrical Technology (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ELEC-TECH-F1-5").description("Electrical Technology for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Electrical Diagram (EPS)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ELEC-DIA-F1-5").description("Electrical Diagram for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("EPS Practicals (EPS)").coefficient(6)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-PRAC-F1-5").description("Practicals EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Engineering Drawing (EPS)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ENG-DRA-F1-5").description("Engineering Drawing for EPS - Form 1-5").build(),
-
-                        Subject.builder().name("Electrical Circuit (Form 2-5)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-OP-F2-5")
-                                .description("Optional Electrical Circuit - Form 2-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Law and Government (Form 3-5)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-LAW-F3-5")
-                                .description("Optional Law and Government - Form 3-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Electrical Technology (Form 3-5)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ELEC-TECH-F3-5")
-                                .description("Optional Electrical Technology - Form 3-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Electrical Machine (Form 3-5)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-ELEC-MACH-F3-5")
-                                .description("Optional Electrical Machine - Form 3-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Test and Measurement (Form 3-5)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.EPS))
-                                .subjectCode("EPS-TEST-MEA-F3-5")
-                                .description("Optional Test and Measurement - Form 3-5")
-                                .optional(true).build()
-                ));
+                log.info("Creating EPS department subjects...");
+                createEPSSubjects(subjects, deptMap.get(DepartmentCode.EPS), classRoomMap);
             }
 
             // ============================================================
-            // 🔟 CI DEPARTMENT (NO SPECIALTY)
+            // 8️⃣ CI DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.CI)) {
-                log.info("Creating Clothing Industry subjects...");
-
-                subjects.addAll(Arrays.asList(
-                        Subject.builder().name("French (CI)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-FREN-F1-5").description("French for CI - Form 1-5").build(),
-
-                        Subject.builder().name("English (CI)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-ENG-F1-5").description("English for CI - Form 1-5").build(),
-
-                        Subject.builder().name("Mathematics (CI)").coefficient(5)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-MATH-F1-5").description("Mathematics for CI - Form 1-5").build(),
-
-                        Subject.builder().name("Technology (CI)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-TECH-F1-5").description("Technology for CI - Form 1-5").build(),
-
-                        Subject.builder().name("Practical (CI)").coefficient(4)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-PRAC-F1-5").description("Practical for CI - Form 1-5").build(),
-
-                        Subject.builder().name("Technical Drawing (CI)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-TECH-DRAW-F1-5").description("Technical Drawing for CI - Form 1-5").build(),
-
-                        Subject.builder().name("Computer Science (CI)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-COMP-F1-5")
-                                .description("Optional Computer Science - Form 1-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Trade and mining (CI)").coefficient(3)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-TRADE-MIN-F1-5")
-                                .description("Optional Trade and Mining - Form 1-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Materials (CI)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-MATERIALS-F2-5")
-                                .description("Optional Materials - Form 2-5")
-                                .optional(true).build(),
-
-                        Subject.builder().name("Survey (CI)").coefficient(2)
-                                .department(deptMap.get(DepartmentCode.CI))
-                                .subjectCode("CI-SURVEY-F1-5")
-                                .description("Optional Survey - Form 2-5")
-                                .optional(true).build()
-                ));
+                log.info("Creating CI department subjects...");
+                createCISubjects(subjects, deptMap.get(DepartmentCode.CI), classRoomMap);
             }
 
             log.info("Total subjects to create: {}", subjects.size());
@@ -1498,17 +689,27 @@ public class DataInitializer implements CommandLineRunner {
                 List<Subject> savedSubjects = subjectService.createSubjects(subjects);
                 log.info("✅ All subjects initialized successfully - {} subjects processed", savedSubjects.size());
 
-                Map<String, Long> subjectCountByDept = savedSubjects.stream()
+                // Log subject distribution by department and class
+                Map<String, Map<String, Long>> distribution = savedSubjects.stream()
                         .collect(Collectors.groupingBy(
-                                s -> s.getDepartment() != null ? s.getDepartment().getName() : "General",
-                                Collectors.counting()
+                                s -> s.getDepartment() != null ? s.getDepartment().getName() : "Unknown",
+                                Collectors.groupingBy(
+                                        s -> s.getClassRoom() != null ? s.getClassRoom().getName() : "No Class",
+                                        Collectors.counting()
+                                )
                         ));
 
-                log.info("Subject distribution by department: {}", subjectCountByDept);
+                log.info("Subject distribution by department and class:");
+                distribution.forEach((dept, classMap) -> {
+                    log.info("  {}:", dept);
+                    classMap.forEach((className, count) -> log.info("    {}: {} subjects", className, count));
+                });
 
-                for (Map.Entry<String, Long> entry : subjectCountByDept.entrySet()) {
-                    log.info("  {}: {} subjects", entry.getKey(), entry.getValue());
-                }
+                // Count subjects with specialties
+                long specialtySubjects = savedSubjects.stream()
+                        .filter(s -> s.getSpecialty() != null && !s.getSpecialty().isEmpty())
+                        .count();
+                log.info("Subjects with specialties: {}", specialtySubjects);
 
             } catch (Exception e) {
                 log.error("Critical error during subject initialization", e);
@@ -1516,6 +717,999 @@ public class DataInitializer implements CommandLineRunner {
             }
         } else {
             log.info("Subjects already initialized, skipping subject creation");
+        }
+    }
+
+    // ============================================================
+    // HELPER METHODS FOR SUBJECT CREATION
+    // ============================================================
+
+    private List<Subject> createOptionalSubjects(Department department, Map<ClassLevel, ClassRoom> classRoomMap) {
+        List<Subject> optionalSubjects = new ArrayList<>();
+
+        for (ClassLevel level : Arrays.asList(ClassLevel.FORM_1, ClassLevel.FORM_2, ClassLevel.FORM_3,
+                ClassLevel.FORM_4, ClassLevel.FORM_5)) {
+            if (classRoomMap.containsKey(level)) {
+                String formCode = level.name().replace("FORM_", "F");
+                optionalSubjects.addAll(Arrays.asList(
+                        Subject.builder().name("Religious Studies (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-REL-OPT")
+                                .description("Optional Religious Studies - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Citizenship Education (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-CIT-OPT")
+                                .description("Optional Citizenship Education - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Computer Science (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-COMP-OPT")
+                                .description("Optional Computer Science - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("ICT (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-ICT-OPT")
+                                .description("Optional ICT - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Integrated Science (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-INT-OPT")
+                                .description("Optional Integrated Science - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Economics (Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-ECONS-OPT")
+                                .description("Optional Economics - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Food And Nutrition(Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-FN-OPT")
+                                .description("Optional Food And Nutrition - " + classRoomMap.get(level).getName())
+                                .optional(true).build()
+                ));
+            }
+        }
+
+        return optionalSubjects;
+    }
+
+    private void createScienceSixthFormSubjects(List<Subject> subjects, Department department,
+                                                Map<ClassLevel, ClassRoom> classRoomMap) {
+        if (!classRoomMap.containsKey(ClassLevel.LOWER_SIXTH) ||
+                !classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+            return;
+        }
+
+        ClassRoom lowerSixth = classRoomMap.get(ClassLevel.LOWER_SIXTH);
+        ClassRoom upperSixth = classRoomMap.get(ClassLevel.UPPER_SIXTH);
+
+        // S1: Chemistry, Physics, Pure Mathematics with Mechanics
+        createScienceSpecialty(subjects, department, lowerSixth, "S1", "Chemistry, Physics, Pure Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S1-CHEM"),
+                        new SubjectSpec("Physics", 5, "L6-SCI-S1-PHY"),
+                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "L6-SCI-S1-MATH-MECH")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S1", "Chemistry, Physics, Pure Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S1-CHEM"),
+                        new SubjectSpec("Physics", 5, "U6-SCI-S1-PHY"),
+                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "U6-SCI-S1-MATH-MECH")
+                ));
+
+        // S2: Chemistry, Physics, Biology
+        createScienceSpecialty(subjects, department, lowerSixth, "S2", "Chemistry, Physics, Biology",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S2-CHEM"),
+                        new SubjectSpec("Physics", 5, "L6-SCI-S2-PHY"),
+                        new SubjectSpec("Biology", 5, "L6-SCI-S2-BIO")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S2", "Chemistry, Physics, Biology",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S2-CHEM"),
+                        new SubjectSpec("Physics", 5, "U6-SCI-S2-PHY"),
+                        new SubjectSpec("Biology", 5, "U6-SCI-S2-BIO")
+                ));
+
+        // S3: Biology, Chemistry, Pure Mathematics with Statistics
+        createScienceSpecialty(subjects, department, lowerSixth, "S3", "Biology, Chemistry, Pure Mathematics with Statistics",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "L6-SCI-S3-BIO"),
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S3-CHEM"),
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "L6-SCI-S3-MATH-STAT")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S3", "Biology, Chemistry, Pure Mathematics with Statistics",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "U6-SCI-S3-BIO"),
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S3-CHEM"),
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "U6-SCI-S3-MATH-STAT")
+                ));
+
+        // S4: Biology, Chemistry, Geology
+        createScienceSpecialty(subjects, department, lowerSixth, "S4", "Biology, Chemistry, Geology",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "L6-SCI-S4-BIO"),
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S4-CHEM"),
+                        new SubjectSpec("Geology", 5, "L6-SCI-S4-GEOL")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S4", "Biology, Chemistry, Geology",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "U6-SCI-S4-BIO"),
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S4-CHEM"),
+                        new SubjectSpec("Geology", 5, "U6-SCI-S4-GEOL")
+                ));
+
+        // S5: Chemistry, Biology, Mathematics with Mechanics
+        createScienceSpecialty(subjects, department, lowerSixth, "S5", "Chemistry, Biology, Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S5-CHEM"),
+                        new SubjectSpec("Biology", 5, "L6-SCI-S5-BIO"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S5-MATH-MECH")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S5", "Chemistry, Biology, Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S5-CHEM"),
+                        new SubjectSpec("Biology", 5, "U6-SCI-S5-BIO"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S5-MATH-MECH")
+                ));
+
+        // S6: Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
+        createScienceSpecialty(subjects, department, lowerSixth, "S6", "Chemistry, Physics, Mathematics with Mechanics, Further Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S6-CHEM"),
+                        new SubjectSpec("Physics", 5, "L6-SCI-S6-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S6-MATH-MECH"),
+                        new SubjectSpec("Further Mathematics", 4, "L6-SCI-S6-FMATH")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S6", "Chemistry, Physics, Mathematics with Mechanics, Further Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S6-CHEM"),
+                        new SubjectSpec("Physics", 5, "U6-SCI-S6-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S6-MATH-MECH"),
+                        new SubjectSpec("Further Mathematics", 4, "U6-SCI-S6-FMATH")
+                ));
+
+        // S7: Chemistry, Biology, Physics, Mathematics with Mechanics
+        createScienceSpecialty(subjects, department, lowerSixth, "S7", "Chemistry, Biology, Physics, Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S7-CHEM"),
+                        new SubjectSpec("Biology", 5, "L6-SCI-S7-BIO"),
+                        new SubjectSpec("Physics", 5, "L6-SCI-S7-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S7-MATH-MECH")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S7", "Chemistry, Biology, Physics, Mathematics with Mechanics",
+                Arrays.asList(
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S7-CHEM"),
+                        new SubjectSpec("Biology", 5, "U6-SCI-S7-BIO"),
+                        new SubjectSpec("Physics", 5, "U6-SCI-S7-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S7-MATH-MECH")
+                ));
+
+        // S8: Biology, Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
+        createScienceSpecialty(subjects, department, lowerSixth, "S8", "Biology, Chemistry, Physics, Mathematics with Mechanics, Further Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "L6-SCI-S8-BIO"),
+                        new SubjectSpec("Chemistry", 5, "L6-SCI-S8-CHEM"),
+                        new SubjectSpec("Physics", 5, "L6-SCI-S8-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S8-MATH-MECH"),
+                        new SubjectSpec("Further Mathematics", 4, "L6-SCI-S8-FMATH")
+                ));
+
+        createScienceSpecialty(subjects, department, upperSixth, "S8", "Biology, Chemistry, Physics, Mathematics with Mechanics, Further Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Biology", 5, "U6-SCI-S8-BIO"),
+                        new SubjectSpec("Chemistry", 5, "U6-SCI-S8-CHEM"),
+                        new SubjectSpec("Physics", 5, "U6-SCI-S8-PHY"),
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S8-MATH-MECH"),
+                        new SubjectSpec("Further Mathematics", 4, "U6-SCI-S8-FMATH")
+                ));
+    }
+
+    private void createScienceSpecialty(List<Subject> subjects, Department department, ClassRoom classRoom,
+                                        String specialtyCode, String specialtyDesc, List<SubjectSpec> subjectSpecs) {
+        for (SubjectSpec spec : subjectSpecs) {
+            subjects.add(
+                    Subject.builder()
+                            .name(spec.name + " (" + specialtyCode + ")")
+                            .coefficient(spec.coefficient)
+                            .department(department)
+                            .classRoom(classRoom)
+                            .subjectCode(spec.code)
+                            .specialty(specialtyCode)
+                            .description(spec.name + " for " + specialtyCode + " specialty - " +
+                                    classRoom.getName() + " - " + specialtyDesc)
+                            .build()
+            );
+        }
+    }
+
+    private void createArtsSixthFormSubjects(List<Subject> subjects, Department department,
+                                             Map<ClassLevel, ClassRoom> classRoomMap) {
+        if (!classRoomMap.containsKey(ClassLevel.LOWER_SIXTH) ||
+                !classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+            return;
+        }
+
+        ClassRoom lowerSixth = classRoomMap.get(ClassLevel.LOWER_SIXTH);
+        ClassRoom upperSixth = classRoomMap.get(ClassLevel.UPPER_SIXTH);
+
+        // A1: Literature, History, French
+        createArtsSpecialty(subjects, department, lowerSixth, "A1", "Literature, History, French",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "L6-ART-A1-LIT"),
+                        new SubjectSpec("History", 5, "L6-ART-A1-HIST"),
+                        new SubjectSpec("French", 5, "L6-ART-A1-FREN")
+                ));
+
+        createArtsSpecialty(subjects, department, upperSixth, "A1", "Literature, History, French",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "U6-ART-A1-LIT"),
+                        new SubjectSpec("History", 5, "U6-ART-A1-HIST"),
+                        new SubjectSpec("French", 5, "U6-ART-A1-FREN")
+                ));
+
+        // A2: History, Geography, Economics
+        createArtsSpecialty(subjects, department, lowerSixth, "A2", "History, Geography, Economics",
+                Arrays.asList(
+                        new SubjectSpec("History", 5, "L6-ART-A2-HIST"),
+                        new SubjectSpec("Geography", 5, "L6-ART-A2-GEO"),
+                        new SubjectSpec("Economics", 5, "L6-ART-A2-ECO")
+                ));
+
+        createArtsSpecialty(subjects, department, upperSixth, "A2", "History, Geography, Economics",
+                Arrays.asList(
+                        new SubjectSpec("History", 5, "U6-ART-A2-HIST"),
+                        new SubjectSpec("Geography", 5, "U6-ART-A2-GEO"),
+                        new SubjectSpec("Economics", 5, "U6-ART-A2-ECO")
+                ));
+
+        // A3: Literature, Economics, History
+        createArtsSpecialty(subjects, department, lowerSixth, "A3", "Literature, Economics, History",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "L6-ART-A3-LIT"),
+                        new SubjectSpec("Economics", 5, "L6-ART-A3-ECO"),
+                        new SubjectSpec("History", 5, "L6-ART-A3-HIST")
+                ));
+
+        createArtsSpecialty(subjects, department, upperSixth, "A3", "Literature, Economics, History",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "U6-ART-A3-LIT"),
+                        new SubjectSpec("Economics", 5, "U6-ART-A3-ECO"),
+                        new SubjectSpec("History", 5, "U6-ART-A3-HIST")
+                ));
+
+        // A4: Economics, Geography, Pure Mathematics
+        createArtsSpecialty(subjects, department, lowerSixth, "A4", "Economics, Geography, Pure Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Economics", 5, "L6-ART-A4-ECO"),
+                        new SubjectSpec("Geography", 5, "L6-ART-A4-GEO"),
+                        new SubjectSpec("Pure Mathematics (Mechanics)", 5, "L6-ART-A4-MATH-MECH"),
+                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "L6-ART-A4-MATH-STAT")
+                ));
+
+        createArtsSpecialty(subjects, department, upperSixth, "A4", "Economics, Geography, Pure Mathematics",
+                Arrays.asList(
+                        new SubjectSpec("Economics", 5, "U6-ART-A4-ECO"),
+                        new SubjectSpec("Geography", 5, "U6-ART-A4-GEO"),
+                        new SubjectSpec("Pure Mathematics (Mechanics)", 5, "U6-ART-A4-MATH-MECH"),
+                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "U6-ART-A4-MATH-STAT")
+                ));
+
+        // A5: Literature, History, Philosophy
+        createArtsSpecialty(subjects, department, lowerSixth, "A5", "Literature, History, Philosophy",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "L6-ART-A5-LIT"),
+                        new SubjectSpec("History", 5, "L6-ART-A5-HIST"),
+                        new SubjectSpec("Philosophy", 5, "L6-ART-A5-PHIL")
+                ));
+
+        createArtsSpecialty(subjects, department, upperSixth, "A5", "Literature, History, Philosophy",
+                Arrays.asList(
+                        new SubjectSpec("Literature", 5, "U6-ART-A5-LIT"),
+                        new SubjectSpec("History", 5, "U6-ART-A5-HIST"),
+                        new SubjectSpec("Philosophy", 5, "U6-ART-A5-PHIL")
+                ));
+    }
+
+    private void createArtsSpecialty(List<Subject> subjects, Department department, ClassRoom classRoom,
+                                     String specialtyCode, String specialtyDesc, List<SubjectSpec> subjectSpecs) {
+        for (SubjectSpec spec : subjectSpecs) {
+            subjects.add(
+                    Subject.builder()
+                            .name(spec.name + " (" + specialtyCode + ")")
+                            .coefficient(spec.coefficient)
+                            .department(department)
+                            .classRoom(classRoom)
+                            .subjectCode(spec.code)
+                            .specialty(specialtyCode)
+                            .description(spec.name + " for " + specialtyCode + " specialty - " +
+                                    classRoom.getName() + " - " + specialtyDesc) // Now using specialtyDesc
+                            .build()
+            );
+        }
+    }
+
+    private void createCommercialSubjects(List<Subject> subjects, Department department,
+                                          Map<ClassLevel, ClassRoom> classRoomMap) {
+        // Forms 1-2 Commercial Subjects
+        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_1, "F1-COM", Arrays.asList(
+                // Core / Compulsory Subjects
+                new SubjectSpec("Mathematics", 5, "F1-COM-MATH"),
+                new SubjectSpec("English", 5, "F1-COM-ENG"),
+                new SubjectSpec("French", 5, "F1-COM-FREN"),
+                new SubjectSpec("Physics", 4, "F1-COM-PHY"),
+                new SubjectSpec("Chemistry", 4, "F1-COM-CHEM"),
+                new SubjectSpec("Biology", 3, "F1-COM-BIO"),
+                new SubjectSpec("Geography", 3, "F1-COM-GEO"),
+                new SubjectSpec("History", 3, "F1-COM-HIS"),
+                new SubjectSpec("Citizenship Education", 2, "F1-COM-CIT"),
+                new SubjectSpec("Physical Education", 2, "F1-COM-PE"),
+
+                // Trade / Commercial Subjects
+                new SubjectSpec("Accounting", 3, "F1-COM-ACC"),
+                new SubjectSpec("Commerce", 3, "F1-COM-COM"),
+                new SubjectSpec("Office and Administrative Management", 3, "F1-COM-OAM"),
+                new SubjectSpec("Information Technology", 2, "F1-COM-IT")
+        ));
+
+        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_2, "F2-COM", Arrays.asList(
+                // Core / Compulsory Subjects
+                new SubjectSpec("Mathematics", 5, "F2-COM-MATH"),
+                new SubjectSpec("English", 5, "F2-COM-ENG"),
+                new SubjectSpec("French", 5, "F2-COM-FREN"),
+                new SubjectSpec("Physics", 4, "F2-COM-PHY"),
+                new SubjectSpec("Chemistry", 4, "F2-COM-CHEM"),
+                new SubjectSpec("Biology", 3, "F2-COM-BIO"),
+                new SubjectSpec("Geography", 3, "F2-COM-GEO"),
+                new SubjectSpec("History", 3, "F2-COM-HIS"),
+                new SubjectSpec("Citizenship Education", 2, "F2-COM-CIT"),
+                new SubjectSpec("Physical Education", 2, "F2-COM-PE"),
+
+                // Trade / Commercial Subjects
+                new SubjectSpec("Accounting", 3, "F2-COM-ACC"),
+                new SubjectSpec("Commerce", 3, "F2-COM-COM"),
+                new SubjectSpec("Office and Administrative Management", 3, "F2-COM-OAM"),
+                new SubjectSpec("Information Technology", 2, "F2-COM-IT")
+        ));
+
+        // ============================================================
+        // ACCOUNTING SPECIALTY (Forms 3-5)
+        // ============================================================
+
+        // Form 3 Accounting - Compulsory Subjects
+        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACC-COMP", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F3-COM-ACC-MATH"),
+                new SubjectSpec("English", 5, "F3-COM-ACC-ENG"),
+                new SubjectSpec("French", 5, "F3-COM-ACC-FREN"),
+                new SubjectSpec("Economics", 3, "F3-COM-ACC-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F3-COM-ACC-LAW"),
+                new SubjectSpec("Physical Education", 2, "F3-COM-ACC-PE")
+        ));
+
+        // Specialty Subjects – Accounting
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACC", "Accounting", Arrays.asList(
+                new SubjectSpec("OHADA Financial Accounting", 3, "F3-COM-ACC-FA"),
+                new SubjectSpec("OHADA Financial Reporting", 3, "F3-COM-ACC-RE"),
+                new SubjectSpec("International Financial Accounting", 3, "F3-COM-ACC-INT-FA"),
+                new SubjectSpec("Business Mathematics", 2, "F3-COM-ACC-BUSMATH"),
+                new SubjectSpec("Commerce", 2, "F3-COM-ACC-COM"),
+                new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACC-PCT"),
+                new SubjectSpec("Entrepreneurship", 2, "F3-COM-ACC-ENT")
+        ));
+
+        // Form 4 Accounting - Compulsory Subjects
+        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACC-COMP", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F4-COM-ACC-MATH"),
+                new SubjectSpec("English", 5, "F4-COM-ACC-ENG"),
+                new SubjectSpec("French", 5, "F4-COM-ACC-FREN"),
+                new SubjectSpec("Economics", 3, "F4-COM-ACC-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F4-COM-ACC-LAW"),
+                new SubjectSpec("Physical Education", 2, "F4-COM-ACC-PE")
+        ));
+
+        // Specialty Subjects – Accounting
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACC", "Accounting", Arrays.asList(
+                new SubjectSpec("OHADA Financial Accounting", 3, "F4-COM-ACC-FA"),
+                new SubjectSpec("OHADA Financial Reporting", 3, "F4-COM-ACC-RE"),
+                new SubjectSpec("International Financial Accounting", 3, "F4-COM-ACC-INT-FA"),
+                new SubjectSpec("Business Mathematics", 2, "F4-COM-ACC-BUSMATH"),
+                new SubjectSpec("Commerce", 2, "F4-COM-ACC-COM"),
+                new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACC-PCT"),
+                new SubjectSpec("Entrepreneurship", 2, "F4-COM-ACC-ENT")
+        ));
+
+        // Form 5 Accounting - Compulsory Subjects
+        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACC-COMP", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F5-COM-ACC-MATH"),
+                new SubjectSpec("English", 5, "F5-COM-ACC-ENG"),
+                new SubjectSpec("French", 5, "F5-COM-ACC-FREN"),
+                new SubjectSpec("Economics", 3, "F5-COM-ACC-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F5-COM-ACC-LAW"),
+                new SubjectSpec("Physical Education", 2, "F5-COM-ACC-PE")
+        ));
+
+        // Specialty Subjects – Accounting
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACC", "Accounting", Arrays.asList(
+                new SubjectSpec("OHADA Financial Accounting", 3, "F5-COM-ACC-FA"),
+                new SubjectSpec("OHADA Financial Reporting", 3, "F5-COM-ACC-RE"),
+                new SubjectSpec("International Financial Accounting", 3, "F5-COM-ACC-INT-FA"),
+                new SubjectSpec("Business Mathematics", 2, "F5-COM-ACC-BUSMATH"),
+                new SubjectSpec("Commerce", 2, "F5-COM-ACC-COM"),
+                new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACC-PCT"),
+                new SubjectSpec("Entrepreneurship", 2, "F5-COM-ACC-ENT")
+        ));
+
+        // ============================================================
+        // ADMINISTRATION & COMMUNICATION TECHNIQUES (Forms 3-5)
+        // ============================================================
+
+        // Form 3 ACT - Use unique codes for each subject
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F3-COM-ACT-MATH"),
+                new SubjectSpec("English", 5, "F3-COM-ACT-ENG"),
+                new SubjectSpec("French", 5, "F3-COM-ACT-FREN"),
+                new SubjectSpec("Economics", 3, "F3-COM-ACT-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F3-COM-ACT-LAW"),
+                new SubjectSpec("Physical Education", 2, "F3-COM-ACT-PE"),
+                new SubjectSpec("Office and Administration Management", 3, "F3-COM-ACT-OAM"),
+                new SubjectSpec("Information Processing", 3, "F3-COM-ACT-IP"),
+                new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACT-PCT"),
+                new SubjectSpec("Introduction to Accounting", 3, "F3-COM-ACT-ACC-INTRO"),
+                new SubjectSpec("Information Technology", 3, "F3-COM-ACT-IT"),
+                new SubjectSpec("Graphic Designing", 2, "F3-COM-ACT-GRAPHIC"),
+                new SubjectSpec("Business Mathematics", 2, "F3-COM-ACT-BUSMATH")  // Changed from "F3-COM-ACT-MATH"
+        ));
+
+        // Form 4 ACT - Use unique codes for each subject
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F4-COM-ACT-MATH"),
+                new SubjectSpec("English", 5, "F4-COM-ACT-ENG"),
+                new SubjectSpec("French", 5, "F4-COM-ACT-FREN"),
+                new SubjectSpec("Economics", 3, "F4-COM-ACT-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F4-COM-ACT-LAW"),
+                new SubjectSpec("Physical Education", 2, "F4-COM-ACT-PE"),
+                new SubjectSpec("Office and Administration Management", 3, "F4-COM-ACT-OAM"),
+                new SubjectSpec("Information Processing", 3, "F4-COM-ACT-IP"),
+                new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACT-PCT"),
+                new SubjectSpec("Financial Accounting for Administrators", 3, "F4-COM-ACT-FA"),
+                new SubjectSpec("Information Technology", 3, "F4-COM-ACT-IT"),
+                new SubjectSpec("Graphic Designing", 2, "F4-COM-ACT-GRAPHIC"),
+                new SubjectSpec("Business Mathematics", 2, "F4-COM-ACT-BUSMATH")  // Changed from "F4-COM-ACT-MATH"
+        ));
+
+        // Form 5 ACT - Use unique codes for each subject
+        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                new SubjectSpec("Mathematics", 5, "F5-COM-ACT-MATH"),
+                new SubjectSpec("English", 5, "F5-COM-ACT-ENG"),
+                new SubjectSpec("French", 5, "F5-COM-ACT-FREN"),
+                new SubjectSpec("Economics", 3, "F5-COM-ACT-ECONS"),
+                new SubjectSpec("Law and Government", 2, "F5-COM-ACT-LAW"),
+                new SubjectSpec("Physical Education", 2, "F5-COM-ACT-PE"),
+                new SubjectSpec("Advanced Office and Administration Management", 3, "F5-COM-ACT-OAM"),
+                new SubjectSpec("Advanced Information Processing", 3, "F5-COM-ACT-IP"),
+                new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACT-PCT"),
+                new SubjectSpec("Financial Management for Administrators", 3, "F5-COM-ACT-FM"),
+                new SubjectSpec("Advanced Information Technology", 3, "F5-COM-ACT-IT"),
+                new SubjectSpec("Advanced Graphic Designing", 2, "F5-COM-ACT-GRAPHIC"),
+                new SubjectSpec("Advanced Business Mathematics", 2, "F5-COM-ACT-ADV-BUSMATH")  // Changed from "F5-COM-ACT-MATH"
+        ));
+
+        // ============================================================
+        // SIXTH FORM - ACCOUNTING
+        // ============================================================
+
+        // Lower Sixth Accounting
+        if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-COM-ACC", "Accounting", Arrays.asList(
+                    new SubjectSpec("Cost and Management Accounting", 5, "L6-COM-ACC-CMA"),
+                    new SubjectSpec("Financial Accounting", 5, "L6-COM-ACC-FA"),
+                    new SubjectSpec("Corporate Accounting", 5, "L6-COM-ACC-CA"),
+                    new SubjectSpec("Business Mathematics", 5, "L6-COM-ACC-BUSMATH"),
+                    new SubjectSpec("Entrepreneurship", 5, "L6-COM-ACC-ENT"),
+                    new SubjectSpec("Economics", 5, "L6-COM-ACC-ECONS"),
+                    new SubjectSpec("Commerce and Finance", 5, "L6-COM-ACC-FIN"),
+                    new SubjectSpec("Business Management", 5, "L6-COM-ACC-MGMT")
+            ));
+        }
+
+        // Upper Sixth Accounting
+        if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-COM-ACC", "Accounting", Arrays.asList(
+                    new SubjectSpec("Advanced Cost and Management Accounting", 5, "U6-COM-ACC-CMA"),
+                    new SubjectSpec("Advanced Financial Accounting", 5, "U6-COM-ACC-FA"),
+                    new SubjectSpec("Advanced Corporate Accounting", 5, "U6-COM-ACC-CA"),
+                    new SubjectSpec("Advanced Business Mathematics", 5, "U6-COM-ACC-ADV-BUSMATH"),
+                    new SubjectSpec("Advanced Entrepreneurship", 5, "U6-COM-ACC-ENT"),
+                    new SubjectSpec("Advanced Economics", 5, "U6-COM-ACC-ECONS"),
+                    new SubjectSpec("International Finance", 5, "U6-COM-ACC-FIN"),
+                    new SubjectSpec("Strategic Business Management", 5, "U6-COM-ACC-MGMT")
+            ));
+        }
+
+        // ============================================================
+        // SIXTH FORM - ADMINISTRATION & COMMUNICATION TECHNIQUES
+        // ============================================================
+
+        // Lower Sixth ACT
+        if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                    new SubjectSpec("Automated Clerical Management", 5, "L6-COM-ACT-ACM"),
+                    new SubjectSpec("Professional English", 5, "L6-COM-ACT-PENG"),
+                    new SubjectSpec("Applied Office Work", 5, "L6-COM-ACT-APPWORK"),
+                    new SubjectSpec("Graphic Designing", 5, "L6-COM-ACT-GRAPHIC"),
+                    new SubjectSpec("Office Technology", 5, "L6-COM-ACT-OFFTECH"),
+                    new SubjectSpec("Information Processing", 5, "L6-COM-ACT-INFO"),
+                    new SubjectSpec("Professional Communication Technique", 5, "L6-COM-ACT-PCT"),
+                    new SubjectSpec("Business Finance for Administrators", 5, "L6-COM-ACT-FIN")
+            ));
+        }
+
+        // Upper Sixth ACT
+        if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                    new SubjectSpec("Advanced Automated Clerical Management", 5, "U6-COM-ACT-ACM"),
+                    new SubjectSpec("Advanced Professional English", 5, "U6-COM-ACT-PENG"),
+                    new SubjectSpec("Advanced Applied Office Work", 5, "U6-COM-ACT-APPWORK"),
+                    new SubjectSpec("Advanced Graphic Designing", 5, "U6-COM-ACT-GRAPHIC"),
+                    new SubjectSpec("Advanced Office Technology", 5, "U6-COM-ACT-OFFTECH"),
+                    new SubjectSpec("Advanced Information Processing", 5, "U6-COM-ACT-INFO"),
+                    new SubjectSpec("Advanced Professional Communication Technique", 5, "U6-COM-ACT-PCT"),
+                    new SubjectSpec("Corporate Finance Management", 5, "U6-COM-ACT-FIN")
+            ));
+        }
+    }
+
+    private void createBuildingConstructionSubjects(List<Subject> subjects, Department department,
+                                                    Map<ClassLevel, ClassRoom> classRoomMap) {
+
+        for (ClassLevel level : Arrays.asList(
+                ClassLevel.FORM_1, ClassLevel.FORM_2, ClassLevel.FORM_3,
+                ClassLevel.FORM_4, ClassLevel.FORM_5)) {
+
+            if (classRoomMap.containsKey(level)) {
+
+                String formCode = level.name().replace("FORM_", "F");
+
+                createFormSubjects(subjects, department, classRoomMap, level, formCode + "-BC", Arrays.asList(
+
+                        // 🟦 TRADE SUBJECTS (BC)
+                        new SubjectSpec("Quantities and Estimate", 3, formCode + "-BC-QE"),
+                        new SubjectSpec("Soils / Surveying", 3, formCode + "-BC-SURV"),
+                        new SubjectSpec("Practicals", 5, formCode + "-BC-PRAC"),
+                        new SubjectSpec("Technical Drawing", 4, formCode + "-BC-TD"),
+                        new SubjectSpec("Applied Mechanics", 3, formCode + "-BC-AM"),
+                        new SubjectSpec("Construction Processes", 3, formCode + "-BC-CP"),
+                        new SubjectSpec("Project Management", 3, formCode + "-BC-PM"),
+                        new SubjectSpec("Trade and Training", 3, formCode + "-BC-TT"),
+
+                        // 🟩 GENERAL SUBJECTS
+                        new SubjectSpec("English", 5, formCode + "-BC-ENG"),
+                        new SubjectSpec("French", 5, formCode + "-BC-FR"),
+                        new SubjectSpec("Mathematics", 5, formCode + "-BC-MATH"),
+                        new SubjectSpec("Physics", 5, formCode + "-BC-PHY"),
+                        new SubjectSpec("Chemistry", 5, formCode + "-BC-CHEM"),
+                        new SubjectSpec("Citizenship", 2, formCode + "-BC-CIT"),
+                        new SubjectSpec("Law and Government", 2, formCode + "-BC-LAW"),
+                        new SubjectSpec("History / Geography", 3, formCode + "-BC-HISTGEO"),
+                        new SubjectSpec("Computer Science", 3, formCode + "-BC-COMPSCI"),
+                        new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI")
+                ));
+            }
+        }
+
+        // LOWER SIXTH BC
+        if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
+
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
+                    "L6-BC", "Building Construction", Arrays.asList(
+
+                            new SubjectSpec("Quantities and Estimate", 3, "L6-BC-QE"),
+                            new SubjectSpec("Soils / Surveying", 3, "L6-BC-SURV"),
+                            new SubjectSpec("Practicals", 5, "L6-BC-PRAC"),
+                            new SubjectSpec("Technical Drawing", 4, "L6-BC-TD"),
+                            new SubjectSpec("Applied Mechanics", 3, "L6-BC-AM"),
+                            new SubjectSpec("Construction Processes", 3, "L6-BC-CP"),
+                            new SubjectSpec("Project Management", 3, "L6-BC-PM"),
+                            new SubjectSpec("Trade and Training", 3, "L6-BC-TT")
+                    ));
+        }
+
+        // UPPER SIXTH BC
+        if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
+                    "U6-BC", "Building Construction", Arrays.asList(
+
+                            new SubjectSpec("Quantities and Estimate", 3, "U6-BC-QE"),
+                            new SubjectSpec("Soils / Surveying", 3, "U6-BC-SURV"),
+                            new SubjectSpec("Practicals", 5, "U6-BC-PRAC"),
+                            new SubjectSpec("Technical Drawing", 4, "U6-BC-TD"),
+                            new SubjectSpec("Applied Mechanics", 3, "U6-BC-AM"),
+                            new SubjectSpec("Construction Processes", 3, "U6-BC-CP"),
+                            new SubjectSpec("Project Management", 3, "U6-BC-PM"),
+                            new SubjectSpec("Trade and Training", 3, "U6-BC-TT")
+                    ));
+        }
+
+
+    }
+
+    private void createHomeEconomicsSubjects(
+            List<Subject> subjects,
+            Department department,
+            Map<ClassLevel, ClassRoom> classRoomMap) {
+
+        for (ClassLevel level : Arrays.asList(
+                ClassLevel.FORM_1,
+                ClassLevel.FORM_2,
+                ClassLevel.FORM_3,
+                ClassLevel.FORM_4,
+                ClassLevel.FORM_5)) {
+
+            if (!classRoomMap.containsKey(level)) {
+                continue;
+            }
+
+            // F1, F2, F3, F4, F5
+            String levelCode = level.name().replace("FORM_", "F");
+
+            createFormSubjects(
+                    subjects,
+                    department,
+                    classRoomMap,
+                    level,
+                    levelCode + "-HE",
+                    Arrays.asList(
+
+                            // 🟩 PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Food Nutrition and Health (FNH)", 4, levelCode + "-HE-FNH"),
+                            new SubjectSpec("Practicals on Food Nutrition and Health", 2, levelCode + "-HE-FNH-PRAC"),
+                            new SubjectSpec("Resource Management on Home Studies (RMHS)", 4, levelCode + "-HE-RMHS"),
+                            new SubjectSpec("Practicals on RMHS", 2, levelCode + "-HE-RMHS-PRAC"),
+                            new SubjectSpec("Family Life Education and Gerontology (FLEG)", 4, levelCode + "-HE-FLEG"),
+
+                            // 🟦 RELATED PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Natural Science", 2, levelCode + "-HE-NSCI"),
+                            new SubjectSpec("Business Mathematics", 2, levelCode + "-HE-BUSMATH"),
+                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
+
+                            // 🟧 GENERAL SUBJECTS (COMPULSORY)
+                            new SubjectSpec("French", 4, levelCode + "-HE-FREN"),
+                            new SubjectSpec("English", 4, levelCode + "-HE-ENG"),
+                            new SubjectSpec("Mathematics", 4, levelCode + "-HE-MATH"),
+                            new SubjectSpec("Economic Geography", 2, levelCode + "-HE-ECOGEO"),
+                            new SubjectSpec("Law and Government", 2, levelCode + "-HE-LAW"),
+                            new SubjectSpec("Citizenship", 2, levelCode + "-HE-CIT"),
+                            new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP")
+
+                    )
+            );
+        }
+    }
+        private void createHomeEconomicsSixthFormSubjects(
+                List<Subject> subjects,
+                Department department,
+                Map<ClassLevel, ClassRoom> classRoomMap) {
+
+            for (ClassLevel level : Arrays.asList(
+                    ClassLevel.LOWER_SIXTH,
+                    ClassLevel.UPPER_SIXTH)) {
+
+                if (!classRoomMap.containsKey(level)) {
+                    continue;
+                }
+
+                String levelCode = level == ClassLevel.LOWER_SIXTH ? "L6" : "U6";
+
+                createFormSubjects(
+                        subjects,
+                        department,
+                        classRoomMap,
+                        level,
+                        levelCode + "-HE",
+                        Arrays.asList(
+
+                                // 🟩 PROFESSIONAL SUBJECTS
+                                new SubjectSpec("Catering Management and Dietetics", 5, levelCode + "-HE-CMD"),
+                                new SubjectSpec("Culinary Practicals on Catering Management and Dietetics", 3, levelCode + "-HE-CMD-PRAC"),
+                                new SubjectSpec("Family Life Education and Gerontology (Theory)", 5, levelCode + "-HE-FLEG"),
+                                new SubjectSpec("Family Life Education and Gerontology (Practicals)", 3, levelCode + "-HE-FLEG-PRAC"),
+                                new SubjectSpec("Resource Management on Home Studies (RMHS)", 5, levelCode + "-HE-RMHS"),
+                                new SubjectSpec("Practicals on RMHS", 3, levelCode + "-HE-RMHS-PRAC"),
+
+                                // 🟦 RELATED PROFESSIONAL SUBJECTS
+                                new SubjectSpec("Social Life", 2, levelCode + "-HE-SLIFE"),
+                                new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
+                                new SubjectSpec("Natural Science", 3, levelCode + "-HE-NSCI"),
+                                new SubjectSpec("Economics", 3, levelCode + "-HE-ECON"),
+
+                                // 🟧 GENERAL / SUPPORTING SUBJECTS
+                                new SubjectSpec("Professional English", 4, levelCode + "-HE-PENG"),
+                                new SubjectSpec("Management Aided in Computer", 1, levelCode + "-HE-MGT-COMP")
+
+                        )
+                );
+            }
+        }
+
+    private void createEPSSubjects(List<Subject> subjects, Department department,
+                                   Map<ClassLevel, ClassRoom> classRoomMap) {
+
+        // Form 1 EPS Subjects
+        if (classRoomMap.containsKey(ClassLevel.FORM_1)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_1, "F1-EPS", Arrays.asList(
+                    new SubjectSpec("Mathematics", 5, "F1-EPS-MATH"),
+                    new SubjectSpec("English", 5, "F1-EPS-ENG"),
+                    new SubjectSpec("French", 5, "F1-EPS-FREN"),
+                    new SubjectSpec("Citizenship", 2, "F1-EPS-CIT"),
+                    new SubjectSpec("Human And Economic Geography", 2, "F1-EPS-GEO"),
+                    new SubjectSpec("Engineering Science", 2, "F1-EPS-ENG-SCI"),  // Changed from "F1-EPS-ENG"
+                    new SubjectSpec("Computer Science", 3, "F1-EPS-COMP"),
+                    new SubjectSpec("Entrepreneurship", 2, "F1-EPS-ENT"),
+                    new SubjectSpec("Electrical Technology", 2, "F1-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 2, "F1-EPS-ELEC-DIA"),
+                    new SubjectSpec("EPS Practical", 6, "F1-EPS-PRAC"),
+                    new SubjectSpec("Engineering Drawing", 4, "F1-EPS-ENG-DRAW")
+            ));
+        }
+
+        // Form 2 EPS Subjects
+        if (classRoomMap.containsKey(ClassLevel.FORM_2)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_2, "F2-EPS", Arrays.asList(
+                    new SubjectSpec("Mathematics", 5, "F2-EPS-MATH"),
+                    new SubjectSpec("English", 5, "F2-EPS-ENG"),
+                    new SubjectSpec("French", 5, "F2-EPS-FREN"),
+                    new SubjectSpec("Citizenship", 2, "F2-EPS-CIT"),
+                    new SubjectSpec("Human And Economic Geography", 2, "F2-EPS-GEO"),
+                    new SubjectSpec("Engineering Science", 2, "F2-EPS-ENG-SCI"),  // Changed from "F2-EPS-ENG"
+                    new SubjectSpec("Computer Science", 3, "F2-EPS-COMP"),
+                    new SubjectSpec("Entrepreneurship", 2, "F2-EPS-ENT"),
+                    new SubjectSpec("Electrical Technology", 2, "F2-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 2, "F2-EPS-ELEC-DIA"),
+                    new SubjectSpec("EPS Practical", 6, "F2-EPS-PRAC"),
+                    new SubjectSpec("Engineering Drawing", 4, "F2-EPS-ENG-DRAW"),
+                    new SubjectSpec("Electrical Circuit", 2, "F2-EPS-ELEC-CIR")
+            ));
+        }
+
+        // Form 3 EPS Subjects
+        if (classRoomMap.containsKey(ClassLevel.FORM_3)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-EPS", Arrays.asList(
+                    new SubjectSpec("Mathematics", 5, "F3-EPS-MATH"),
+                    new SubjectSpec("English", 5, "F3-EPS-ENG"),
+                    new SubjectSpec("French", 5, "F3-EPS-FREN"),
+                    new SubjectSpec("Citizenship", 2, "F3-EPS-CIT"),
+                    new SubjectSpec("Human And Economic Geography", 2, "F3-EPS-GEO"),
+                    new SubjectSpec("Engineering Science", 2, "F3-EPS-ENG-SCI"),  // Changed from "F3-EPS-ENG"
+                    new SubjectSpec("Computer Science", 3, "F3-EPS-COMP"),
+                    new SubjectSpec("Law And Government", 2, "F3-EPS-LAW-GOV"),
+                    new SubjectSpec("Entrepreneurship", 2, "F3-EPS-ENT"),
+                    new SubjectSpec("Electrical Technology", 2, "F3-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 2, "F3-EPS-ELEC-DIA"),
+                    new SubjectSpec("EPS Practical", 6, "F3-EPS-PRAC"),
+                    new SubjectSpec("Engineering Drawing", 4, "F3-EPS-ENG-DRAW"),
+                    new SubjectSpec("Electrical Circuit", 2, "F3-EPS-ELEC-CIR"),
+                    new SubjectSpec("Electrical Machine", 2, "F3-EPS-ELEC-MACH"),
+                    new SubjectSpec("Test and Measurement", 2, "F3-EPS-TEST-MEA")
+            ));
+        }
+
+        // Form 4 EPS Subjects
+        if (classRoomMap.containsKey(ClassLevel.FORM_4)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-EPS", Arrays.asList(
+                    new SubjectSpec("Mathematics", 5, "F4-EPS-MATH"),
+                    new SubjectSpec("English", 5, "F4-EPS-ENG"),
+                    new SubjectSpec("French", 5, "F4-EPS-FREN"),
+                    new SubjectSpec("Citizenship", 2, "F4-EPS-CIT"),
+                    new SubjectSpec("Human And Economic Geography", 2, "F4-EPS-GEO"),
+                    new SubjectSpec("Engineering Science", 2, "F4-EPS-ENG-SCI"),  // Changed from "F4-EPS-ENG"
+                    new SubjectSpec("Computer Science", 3, "F4-EPS-COMP"),
+                    new SubjectSpec("Law And Government", 2, "F4-EPS-LAW-GOV"),
+                    new SubjectSpec("Entrepreneurship", 2, "F4-EPS-ENT"),
+                    new SubjectSpec("Electrical Technology", 2, "F4-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 2, "F4-EPS-ELEC-DIA"),
+                    new SubjectSpec("EPS Practical", 6, "F4-EPS-PRAC"),
+                    new SubjectSpec("Engineering Drawing", 4, "F4-EPS-ENG-DRAW"),
+                    new SubjectSpec("Electrical Circuit", 2, "F4-EPS-ELEC-CIR"),
+                    new SubjectSpec("Electrical Machine", 2, "F4-EPS-ELEC-MACH"),
+                    new SubjectSpec("Test and Measurement", 2, "F4-EPS-TEST-MEA")
+            ));
+        }
+
+        // Form 5 EPS Subjects
+        if (classRoomMap.containsKey(ClassLevel.FORM_5)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-EPS", Arrays.asList(
+                    new SubjectSpec("Mathematics", 5, "F5-EPS-MATH"),
+                    new SubjectSpec("English", 5, "F5-EPS-ENG"),
+                    new SubjectSpec("French", 5, "F5-EPS-FREN"),
+                    new SubjectSpec("Citizenship", 2, "F5-EPS-CIT"),
+                    new SubjectSpec("Human And Economic Geography", 2, "F5-EPS-GEO"),
+                    new SubjectSpec("Engineering Science", 2, "F5-EPS-ENG-SCI"),  // Changed from "F5-EPS-ENG"
+                    new SubjectSpec("Computer Science", 3, "F5-EPS-COMP"),
+                    new SubjectSpec("Law And Government", 2, "F5-EPS-LAW-GOV"),
+                    new SubjectSpec("Entrepreneurship", 2, "F5-EPS-ENT"),
+                    new SubjectSpec("Electrical Technology", 2, "F5-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 2, "F5-EPS-ELEC-DIA"),
+                    new SubjectSpec("EPS Practical", 6, "F5-EPS-PRAC"),
+                    new SubjectSpec("Engineering Drawing", 4, "F5-EPS-ENG-DRAW"),
+                    new SubjectSpec("Electrical Circuit", 2, "F5-EPS-ELEC-CIR"),
+                    new SubjectSpec("Electrical Machine", 2, "F5-EPS-ELEC-MACH"),
+                    new SubjectSpec("Test and Measurement", 2, "F5-EPS-TEST-MEA")
+            ));
+        }
+
+        if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-EPS", Arrays.asList(
+                    new SubjectSpec("Electrical Technology", 5, "L6-EPS-ELEC-TECH"),
+                    new SubjectSpec("Electrical Diagram", 5, "L6-EPS-ELEC-DIA"),
+                    new SubjectSpec("Engineering Drawing", 5, "L6-EPS-ENG-DRAW"),
+                    new SubjectSpec("EPS Practical", 6, "L6-EPS-PRAC"),
+                    new SubjectSpec("Electrical Circuit", 5, "L6-EPS-ELEC-CIR"),
+                    new SubjectSpec("Electrical Machine", 5, "L6-EPS-ELEC-MACH"),
+                    new SubjectSpec("Test and Measurement", 5, "L6-EPS-TEST-MEA"),
+                    new SubjectSpec("Power Systems", 5, "L6-EPS-POWER-SYS"),
+                    new SubjectSpec("Control Systems", 5, "L6-EPS-CONTROL-SYS"),
+                    new SubjectSpec("Electronics", 5, "L6-EPS-ELECTRONICS"),
+                    new SubjectSpec("Professional English", 4, "L6-EPS-PENG"),
+                    new SubjectSpec("Professional Mathematics", 4, "L6-EPS-PMATH"),
+                    new SubjectSpec("Engineering Science", 4, "L6-EPS-ENG-SCI"),
+                    new SubjectSpec("Entrepreneurship", 3, "L6-EPS-ENT"),
+                    new SubjectSpec("Computer Applications", 3, "L6-EPS-COMP-APP")
+            ));
+        }
+
+// SIXTH FORM EPS SUBJECTS (UPPER SIXTH)
+        if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
+            createFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-EPS", Arrays.asList(
+                    new SubjectSpec("Advanced Electrical Technology", 5, "U6-EPS-ADV-ELEC-TECH"),
+                    new SubjectSpec("Advanced Electrical Diagram", 5, "U6-EPS-ADV-ELEC-DIA"),
+                    new SubjectSpec("Advanced Engineering Drawing", 5, "U6-EPS-ADV-ENG-DRAW"),
+                    new SubjectSpec("Advanced EPS Practical", 6, "U6-EPS-ADV-PRAC"),
+                    new SubjectSpec("Advanced Electrical Circuit", 5, "U6-EPS-ADV-ELEC-CIR"),
+                    new SubjectSpec("Advanced Electrical Machine", 5, "U6-EPS-ADV-ELEC-MACH"),
+                    new SubjectSpec("Advanced Test and Measurement", 5, "U6-EPS-ADV-TEST-MEA"),
+                    new SubjectSpec("Advanced Power Systems", 5, "U6-EPS-ADV-POWER-SYS"),
+                    new SubjectSpec("Advanced Control Systems", 5, "U6-EPS-ADV-CONTROL-SYS"),
+                    new SubjectSpec("Advanced Electronics", 5, "U6-EPS-ADV-ELECTRONICS"),
+                    new SubjectSpec("Power Electronics", 5, "U6-EPS-POWER-ELECTRONICS"),
+                    new SubjectSpec("Renewable Energy Systems", 5, "U6-EPS-RENEW-ENERGY"),
+                    new SubjectSpec("Professional English", 4, "U6-EPS-PENG"),
+                    new SubjectSpec("Advanced Professional Mathematics", 4, "U6-EPS-ADV-PMATH"),
+                    new SubjectSpec("Advanced Engineering Science", 4, "U6-EPS-ADV-ENG-SCI"),
+                    new SubjectSpec("Advanced Entrepreneurship", 3, "U6-EPS-ADV-ENT")
+            ));
+        }
+    }
+
+    private void createCISubjects(
+            List<Subject> subjects,
+            Department department,
+            Map<ClassLevel, ClassRoom> classRoomMap) {
+
+        for (ClassLevel level : Arrays.asList(
+                ClassLevel.FORM_1,
+                ClassLevel.FORM_2,
+                ClassLevel.FORM_3,
+                ClassLevel.FORM_4,
+                ClassLevel.FORM_5)) {
+
+            if (!classRoomMap.containsKey(level)) {
+                continue;
+            }
+
+            String levelCode = level.name().replace("FORM_", "F");
+
+            createFormSubjects(
+                    subjects,
+                    department,
+                    classRoomMap,
+                    level,
+                    levelCode + "-CI",
+                    Arrays.asList(
+                            // 🟦 GENERAL COMPULSORY SUBJECTS
+                            new SubjectSpec("English Language", 3, levelCode + "-CI-ENG"),
+                            new SubjectSpec("Mathematics", 3, levelCode + "-CI-MATH"),
+                            new SubjectSpec("French Language", 3, levelCode + "-CI-FREN"),
+                            new SubjectSpec("Citizenship", 3, levelCode + "-CI-CIT"),
+                            new SubjectSpec("Physical Science", 4, levelCode + "-CI-PSCI"),
+                            new SubjectSpec("Legislation", 4, levelCode + "-CI-LAW"),
+
+                            // 🟩 TIMED / PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Sewing", 4, levelCode + "-CI-SEW"),
+                            new SubjectSpec("Pattern Drafting", 4, levelCode + "-CI-PATTERN"),
+                            new SubjectSpec("Textile Technology", 3, levelCode + "-CI-TEXT"),
+                            new SubjectSpec("Work Organization", 2, levelCode + "-CI-WORKORG"),
+                            new SubjectSpec("Fashion Drawing", 3, levelCode + "-CI-FDRAW"),
+
+                            // 🟨 OPTIONAL SUBJECTS
+                            new SubjectSpec("Computer Science", 4, levelCode + "-CI-CS", true),
+                            new SubjectSpec("Information and Communication Technology", 4, levelCode + "-CI-ICT", true)
+                    )
+            );
+        }
+    }
+
+    private void createFormSubjects(List<Subject> subjects, Department department,
+                                    Map<ClassLevel, ClassRoom> classRoomMap, ClassLevel level,
+                                    String prefix, List<SubjectSpec> specs) {
+        if (!classRoomMap.containsKey(level)) return;
+
+        ClassRoom classRoom = classRoomMap.get(level);
+        for (SubjectSpec spec : specs) {
+            subjects.add(
+                    Subject.builder()
+                            .name(spec.name)
+                            .coefficient(spec.coefficient)
+                            .department(department)
+                            .classRoom(classRoom)
+                            .subjectCode(spec.code)
+                            .optional(spec.optional)
+                            .description(prefix + " - " + spec.name + " - " + classRoom.getName())
+                            .build()
+            );
+        }
+    }
+
+    private void createSpecialtyFormSubjects(List<Subject> subjects, Department department,
+                                             Map<ClassLevel, ClassRoom> classRoomMap, ClassLevel level,
+                                             String prefix, String specialty, List<SubjectSpec> specs) {
+        if (!classRoomMap.containsKey(level)) return;
+
+        ClassRoom classRoom = classRoomMap.get(level);
+        for (SubjectSpec spec : specs) {
+            subjects.add(
+                    Subject.builder()
+                            .name(spec.name)
+                            .coefficient(spec.coefficient)
+                            .department(department)
+                            .classRoom(classRoom)
+                            .subjectCode(spec.code)
+                            .specialty(specialty)
+                            .description(prefix + ": " + spec.name + " for " + specialty + " - " + classRoom.getName()) // Using prefix
+                            .build()
+            );
+        }
+    }
+
+    // Helper class for subject specifications
+    private static class SubjectSpec {
+        String name;
+        int coefficient;
+        String code;
+        boolean optional;
+
+        // Constructor for compulsory subjects
+        SubjectSpec(String name, int coefficient, String code) {
+            this(name, coefficient, code, false);
+        }
+
+        // Constructor with optional flag
+        SubjectSpec(String name, int coefficient, String code, boolean optional) {
+            this.name = name;
+            this.coefficient = coefficient;
+            this.code = code;
+            this.optional = optional;
         }
     }
 }

@@ -26,7 +26,6 @@ public class StudentEnrollmentService {
     private final SubjectService subjectService;
 
     private static final Map<ClassLevel, List<String>> COMPULSORY_SUBJECT_NAMES = createEnhancedCompulsoryMap();
-    private static final Map<DepartmentCode, List<String>> DEPARTMENT_CORE_SUBJECTS = createDepartmentCoreMap();
 
     private static Map<ClassLevel, List<String>> createEnhancedCompulsoryMap() {
         Map<ClassLevel, List<String>> compulsoryMap = new HashMap<>();
@@ -42,19 +41,6 @@ public class StudentEnrollmentService {
         compulsoryMap.put(ClassLevel.UPPER_SIXTH, new ArrayList<>());
 
         return compulsoryMap;
-    }
-
-    private static Map<DepartmentCode, List<String>> createDepartmentCoreMap() {
-        Map<DepartmentCode, List<String>> deptCoreMap = new HashMap<>();
-
-        deptCoreMap.put(DepartmentCode.SCI, Arrays.asList("O-Biology", "O-Chemistry", "O-Physics"));
-        deptCoreMap.put(DepartmentCode.ART, Arrays.asList("O-History", "O-Geography", "O-Literature in English"));
-        deptCoreMap.put(DepartmentCode.COM, Arrays.asList("O-Accounting", "O-Commerce", "O-Economics"));
-        deptCoreMap.put(DepartmentCode.TEC, Arrays.asList("Technical Drawing", "Workshop Practice", "Engineering Science"));
-        deptCoreMap.put(DepartmentCode.HE, Arrays.asList("Food and Nutrition", "Home Management", "Clothing and Textiles"));
-        deptCoreMap.put(DepartmentCode.GEN, new ArrayList<>());
-
-        return deptCoreMap;
     }
 
     // NEW: Method to enroll existing student in new subjects
@@ -336,21 +322,44 @@ public class StudentEnrollmentService {
         Long departmentId = student.getDepartment().getId();
         String specialty = student.getSpecialty();
 
+        // Get grouped subjects
         Map<String, List<Subject>> groupedSubjects = subjectService.getGroupedSubjectsForEnrollment(
                 classCode, departmentId, specialty);
 
-        List<Subject> appropriateSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
+        // Always add compulsory subjects
+        List<Subject> autoAssignedSubjects = new ArrayList<>(groupedSubjects.getOrDefault("compulsory", new ArrayList<>()));
 
         ClassLevel classLevel = student.getClassRoom().getCode();
-        if ((classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5 || classLevel.isSixthForm())) {
-            appropriateSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
+
+        // For Forms 1-2, add department subjects (these are their main subjects)
+        if (classLevel == ClassLevel.FORM_1 || classLevel == ClassLevel.FORM_2) {
+            autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
+        }
+        // For Forms 3-5, add department subjects
+        else if (classLevel == ClassLevel.FORM_3 || classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5) {
+            autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("department", new ArrayList<>()));
+        }
+        // For Sixth Form, add specialty subjects
+        else if (classLevel.isSixthForm()) {
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                autoAssignedSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
+            }
         }
 
-        if (classLevel.isSixthForm() && specialty != null && !specialty.trim().isEmpty()) {
-            appropriateSubjects.addAll(groupedSubjects.getOrDefault("specialty", new ArrayList<>()));
-        }
+        // Log what we're enrolling
+        log.info("🎯 Auto-assigning {} subjects for student {} (Class: {}, Dept: {}, Specialty: {})",
+                autoAssignedSubjects.size(), student.getStudentId(),
+                classLevel.getDisplayName(),
+                student.getDepartment().getName(),
+                specialty != null ? specialty : "None");
 
-        return appropriateSubjects;
+        // Log breakdown
+        log.info("📋 Breakdown - Compulsory: {}, Department: {}, Specialty: {}",
+                groupedSubjects.getOrDefault("compulsory", new ArrayList<>()).size(),
+                groupedSubjects.getOrDefault("department", new ArrayList<>()).size(),
+                groupedSubjects.getOrDefault("specialty", new ArrayList<>()).size());
+
+        return autoAssignedSubjects;
     }
 
     private List<Subject> getSelectedSubjectsWithAutoEnrollment(Student student, List<Long> subjectIds) {
@@ -385,15 +394,17 @@ public class StudentEnrollmentService {
         }
 
         ClassLevel classLevel = classRoom.getCode();
-        DepartmentCode deptCode = department.getCode();
+        // DepartmentCode deptCode = department.getCode(); // This variable was unused
 
         if (classLevel != ClassLevel.FORM_4 && classLevel != ClassLevel.FORM_5) {
             return false;
         }
 
-        List<String> coreSubjects = DEPARTMENT_CORE_SUBJECTS.get(deptCode);
-        return coreSubjects != null && coreSubjects.contains(subject.getName()) &&
-                subject.getDepartment().getId().equals(department.getId());
+        // Check if the subject belongs to the student's department
+        return subject.getDepartment().getId().equals(department.getId()) &&
+                subject.getName() != null &&
+                !subject.getName().startsWith("O-") && // Not a general O-level subject
+                !subject.getName().startsWith("A-");   // Not an A-level subject
     }
 
     private boolean isSubjectAppropriateForStudent(Subject subject, Student student) {
