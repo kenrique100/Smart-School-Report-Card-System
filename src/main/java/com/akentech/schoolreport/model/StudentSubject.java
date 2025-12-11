@@ -14,6 +14,7 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class StudentSubject {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,13 +38,13 @@ public class StudentSubject {
     @Column(name = "is_compulsory")
     private Boolean isCompulsory = true;
 
-    // FIX 1: Add performanceString property
+    // FIX: Add performanceString property with proper null handling
     @Transient
     public String getPerformanceString() {
-        return performance != null ? performance.getDisplayName() : null;
+        return performance != null ? performance.getDisplayName() : "Not Assessed";
     }
 
-    // FIX 2: Add helper method for template compatibility
+    // FIX: Add helper method for template compatibility
     @Transient
     public String getFormattedScore() {
         return score != null ? String.format("%.2f", score) : "N/A";
@@ -51,7 +52,7 @@ public class StudentSubject {
 
     @Transient
     public Boolean getCompulsory() {
-        return this.isCompulsory;
+        return Boolean.TRUE.equals(this.isCompulsory);
     }
 
     @Transient

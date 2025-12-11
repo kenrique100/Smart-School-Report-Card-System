@@ -96,7 +96,6 @@ public class SubjectService {
         }
     }
 
-    // Your other methods remain the same...
     @Transactional(readOnly = true)
     public Map<String, List<Subject>> getSubjectsGroupedByDepartmentAndSpecialty() {
         List<Subject> allSubjects = getAllSubjects();
@@ -220,6 +219,9 @@ public class SubjectService {
         Optional<Department> departmentOpt = departmentRepository.findById(departmentId);
         DepartmentCode deptCode = departmentOpt.map(Department::getCode).orElse(DepartmentCode.GEN);
 
+        // Get compulsory subjects based on class level
+        List<String> compulsorySubjectNames = getCompulsorySubjectNamesForClass(classLevel);
+
         for (Subject subject : availableSubjects) {
             // Check if subject is optional
             if (Boolean.TRUE.equals(subject.getOptional())) {
@@ -227,21 +229,29 @@ public class SubjectService {
                 continue;
             }
 
-            // Check if subject matches specialty
-            if (specialty != null && !specialty.trim().isEmpty() &&
-                    subject.getSpecialty() != null && subject.getSpecialty().equals(specialty)) {
+            // Check if subject is compulsory based on name
+            if (compulsorySubjectNames.contains(subject.getName())) {
+                compulsory.add(subject);
+                continue;
+            }
+
+            // Check if subject matches specialty (for sixth form only)
+            if (classLevel.isSixthForm() &&
+                    specialty != null && !specialty.trim().isEmpty() &&
+                    subject.getSpecialty() != null &&
+                    subject.getSpecialty().equals(specialty)) {
                 specialtySubjects.add(subject);
                 continue;
             }
 
-            // Check if subject belongs to the department
+            // Check if subject belongs to the department (for all classes)
             if (subject.getDepartment() != null &&
                     subject.getDepartment().getId().equals(departmentId)) {
                 departmentCore.add(subject);
                 continue;
             }
 
-            // General subjects (no specific department) are considered compulsory
+            // General subjects (no specific department or specialty) are compulsory
             if (subject.getDepartment() == null ||
                     subject.getDepartment().getCode() == DepartmentCode.GEN) {
                 compulsory.add(subject);
@@ -257,6 +267,19 @@ public class SubjectService {
                 compulsory.size(), departmentCore.size(), specialtySubjects.size(), optional.size());
 
         return grouped;
+    }
+
+    private List<String> getCompulsorySubjectNamesForClass(ClassLevel classLevel) {
+        Map<ClassLevel, List<String>> compulsoryMap = Map.of(
+                ClassLevel.FORM_1, Arrays.asList("Mathematics", "English", "French"),
+                ClassLevel.FORM_2, Arrays.asList("Mathematics", "English", "French"),
+                ClassLevel.FORM_3, Arrays.asList("Mathematics", "English", "French"),
+                ClassLevel.FORM_4, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"),
+                ClassLevel.FORM_5, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"),
+                ClassLevel.LOWER_SIXTH, Collections.emptyList(),
+                ClassLevel.UPPER_SIXTH, Collections.emptyList()
+        );
+        return compulsoryMap.getOrDefault(classLevel, Collections.emptyList());
     }
 
     @Transactional(readOnly = true)
@@ -444,11 +467,37 @@ public class SubjectService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public List<Subject> getSubjectsByIds(List<Long> subjectIds) {
         if (subjectIds == null || subjectIds.isEmpty()) {
-            return List.of();
+            log.warn("Empty subject IDs list provided");
+            return new ArrayList<>();
         }
-        return subjectRepository.findAllById(subjectIds);
+
+        // Filter out null values
+        List<Long> validIds = subjectIds.stream()
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (validIds.isEmpty()) {
+            log.warn("No valid subject IDs in the list");
+            return new ArrayList<>();
+        }
+
+        log.info("Fetching subjects with IDs: {}", validIds);
+        List<Subject> subjects = subjectRepository.findAllById(validIds);
+
+        if (subjects.size() != validIds.size()) {
+            Set<Long> foundIds = subjects.stream()
+                    .map(Subject::getId)
+                    .collect(Collectors.toSet());
+
+            List<Long> missingIds = validIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+
+            log.warn("Some subject IDs not found: {}", missingIds);
+        }
+
+        return subjects;
     }
 }

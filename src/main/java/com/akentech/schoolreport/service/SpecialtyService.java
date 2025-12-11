@@ -20,11 +20,13 @@ public class SpecialtyService {
     private Map<String, List<String>> createDepartmentSpecialties() {
         Map<String, List<String>> specialties = new HashMap<>();
         specialties.put("COM", Arrays.asList("Accounting", "Administration & Communication Techniques"));
-        specialties.put("TEC", new ArrayList<>()); // No specialties
+        specialties.put("EPS", new ArrayList<>()); // No specialties
         specialties.put("SCI", Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"));
         specialties.put("ART", Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"));
         specialties.put("HE", new ArrayList<>()); // No specialty
-        specialties.put("GEN", new ArrayList<>());
+        specialties.put("GEN", new ArrayList<>()); // No specialty
+        specialties.put("CI", new ArrayList<>()); // No specialty
+        specialties.put("BC", new ArrayList<>()); // No specialty
         return specialties;
     }
 
@@ -40,10 +42,6 @@ public class SpecialtyService {
         return List.of("Accounting", "Administration & Communication Techniques");
     }
 
-    public List<String> getTechnicalSpecialties() {
-        return List.of(); // No specialties
-    }
-
     public List<String> getScienceSpecialties() {
         return List.of("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
     }
@@ -52,17 +50,11 @@ public class SpecialtyService {
         return List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8");
     }
 
-    public List<String> getHomeEconomicsSpecialties() {
-        return List.of(); // No specialty
-    }
-
     public List<String> getAllSpecialties() {
         List<String> all = new ArrayList<>();
         all.addAll(getCommercialSpecialties());
-        all.addAll(getTechnicalSpecialties());
         all.addAll(getScienceSpecialties());
         all.addAll(getArtsSpecialties());
-        all.addAll(getHomeEconomicsSpecialties());
         return all;
     }
 
@@ -78,10 +70,15 @@ public class SpecialtyService {
     public SpecialtyRequirement checkSpecialtyRequirement(String classCode, String departmentCode) {
         log.info("Checking specialty requirement for class: {}, department: {}", classCode, departmentCode);
 
-        boolean required = isSpecialtyRequired(classCode, departmentCode);
-        boolean allowed = isSpecialtyAllowed(classCode, departmentCode);
         boolean hasSpecialties = hasSpecialties(departmentCode);
         List<String> specialties = getSpecialtiesByDepartment(departmentCode);
+
+        // Check if sixth form
+        boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+
+        // Determine requirements
+        boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
+        boolean allowed = hasSpecialties && !classCode.equals("FORM_1") && !classCode.equals("FORM_2") && !classCode.equals("FORM_3");
 
         log.info("Specialty requirement - required: {}, allowed: {}, hasSpecialties: {}, specialties: {}",
                 required, allowed, hasSpecialties, specialties.size());
@@ -111,12 +108,7 @@ public class SpecialtyService {
         }
 
         // Specialty allowed for Forms 4-5 and Sixth Form in departments with specialties
-        if (classCode.equals("FORM_4") || classCode.equals("FORM_5") ||
-                classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH")) {
-            return hasSpecialties(departmentCode);
-        }
-
-        return false;
+        return hasSpecialties(departmentCode);
     }
 
     @Getter

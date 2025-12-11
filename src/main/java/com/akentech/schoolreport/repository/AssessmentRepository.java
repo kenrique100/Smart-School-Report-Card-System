@@ -15,6 +15,9 @@ import java.util.Optional;
 @Repository
 public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
 
+    @Query("SELECT DISTINCT a.student.id FROM Assessment a")
+    List<Long> findDistinctStudentIds();
+
     @Query("SELECT a FROM Assessment a WHERE a.student.id = :studentId AND a.term = :term ORDER BY a.subject.name ASC")
     List<Assessment> findByStudentIdAndTermOrderBySubjectNameAsc(@Param("studentId") Long studentId,
                                                                  @Param("term") Integer term);

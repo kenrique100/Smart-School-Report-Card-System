@@ -6,16 +6,36 @@
     <title>Add Subject - Student Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .help-text {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        .example-text {
+            background-color: #f3f4f6;
+            border-left: 3px solid #3b82f6;
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+        .required-field::after {
+            content: " *";
+            color: #ef4444;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
 <div class="flex">
-    <!-- Sidebar -->
+    <!-- Sidebar (keep as is) -->
     <div class="w-64 bg-blue-800 text-white min-h-screen">
         <div class="p-4">
             <h1 class="text-xl font-bold">School Management</h1>
             <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
         </div>
         <nav class="mt-6">
+            <!-- Navigation links (same as before) -->
             <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
                 <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
             </a>
@@ -37,9 +57,6 @@
             <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-chart-bar mr-2"></i>Exam Results
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
-            </a>
             <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
                 <i class="fas fa-edit mr-2"></i>Enter Assessments
             </a>
@@ -55,6 +72,7 @@
         <div class="bg-white shadow">
             <div class="px-6 py-4">
                 <h1 class="text-2xl font-bold text-gray-800">Add New Subject</h1>
+                <p class="text-gray-600">Create a new subject for a specific class and department</p>
             </div>
         </div>
 
@@ -67,101 +85,201 @@
                 <i class="fas fa-exclamation-circle mr-2"></i><span th:text="${error}"></span>
             </div>
 
-            <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
-                <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-6">
-                    <!-- Basic Information -->
-                    <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
-
+            <div class="max-w-3xl mx-auto">
+                <!-- Quick Reference Card -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-500 text-lg mr-3 mt-1"></i>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
-                            <input type="text" th:field="*{name}" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter subject name (e.g., O-Mathematics, A-Physics)">
-                            <div th:if="${#fields.hasErrors('name')}" class="text-red-500 text-sm mt-1">
-                                <span th:errors="*{name}">Name error</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Coefficient *</label>
-                            <input type="number" th:field="*{coefficient}" min="1" max="10" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="1-10">
-                            <p class="text-xs text-gray-500 mt-1">Weight of the subject for weighted average calculations (1-10)</p>
-                            <div th:if="${#fields.hasErrors('coefficient')}" class="text-red-500 text-sm mt-1">
-                                <span th:errors="*{coefficient}">Coefficient error</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea th:field="*{description}"
-                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Enter subject description (optional)"
-                                      rows="3"></textarea>
+                            <h3 class="font-semibold text-blue-800 mb-2">Subject Creation Guidelines</h3>
+                            <ul class="text-sm text-blue-700 space-y-1">
+                                <li>• <strong>Classroom:</strong> Select which class this subject belongs to (e.g., Form 1, Lower Sixth)</li>
+                                <li>• <strong>Department:</strong> Choose the department that offers this subject (e.g., Sciences, Commercial)</li>
+                                <li>• <strong>Subject Code:</strong> Use format: [Level]-[Subject]-[Dept]-[Seq] (e.g., F1-MATH-SCI-001, A-MATH-SCI-001)</li>
+                                <li>• <strong>Coefficient:</strong> Typically 1-5 for regular subjects, 5-10 for core subjects</li>
+                                <li>• <strong>Specialty:</strong> Only required for Sixth Form subjects (e.g., S1 for Science specialization)</li>
+                            </ul>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Department & Specialty Assignment -->
-                    <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Department & Specialty</h2>
+                <div class="bg-white rounded-lg shadow p-8">
+                    <form th:action="@{/subjects/add}" th:object="${subject}" method="post" class="space-y-8">
+                        <!-- Classroom & Department Section -->
+                        <div class="border-b pb-6">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-school mr-2 text-blue-500"></i>Class & Department Assignment
+                            </h2>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
-                            <select th:field="*{department}" id="department" required
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Select Department</option>
-                                <option th:each="dept : ${departments}"
-                                        th:value="${dept.id}"
-                                        th:text="${dept.name}"
-                                        th:attr="data-code=${dept.code}"></option>
-                            </select>
-                            <div th:if="${#fields.hasErrors('department')}" class="text-red-500 text-sm mt-1">
-                                <span th:errors="*{department}">Department error</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Classroom Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Classroom</label>
+                                    <select th:field="*{classRoom}" required
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select Classroom...</option>
+                                        <option th:each="classroom : ${classRooms}"
+                                                th:value="${classroom.id}"
+                                                th:text="${classroom.name} + ' (' + ${classroom.code} + ')'"></option>
+                                    </select>
+                                    <div th:if="${#fields.hasErrors('classRoom')}" class="text-red-500 text-sm mt-1">
+                                        <span th:errors="*{classRoom}">Classroom error</span>
+                                    </div>
+                                    <div class="example-text">
+                                        <strong>Examples:</strong><br>
+                                        • Form 1 (F1-COM) - Commercial Form 1<br>
+                                        • Lower Sixth (L6-SCI) - Science Sixth Form<br>
+                                        • Upper Sixth (U6-ART) - Arts Sixth Form<br>
+                                        • Form 4 (F4-SCI) - Science Form 4
+                                    </div>
+                                </div>
+
+                                <!-- Department Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Department</label>
+                                    <select th:field="*{department}" id="department" required
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select Department...</option>
+                                        <option th:each="dept : ${departments}"
+                                                th:value="${dept.id}"
+                                                th:text="${dept.name}"></option>
+                                    </select>
+                                    <div th:if="${#fields.hasErrors('department')}" class="text-red-500 text-sm mt-1">
+                                        <span th:errors="*{department}">Department error</span>
+                                    </div>
+                                    <div class="example-text">
+                                        <strong>Examples:</strong><br>
+                                        • SCI - Sciences (Physics, Chemistry, Biology)<br>
+                                        • COM - Commercial (Accounting, Commerce)<br>
+                                        • ART - Arts (Literature, History)<br>
+                                        • BC - Building & Construction
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Specialty</label>
-                            <select th:field="*{specialty}" id="specialty"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">General (No Specialty)</option>
-                                <!-- Specialty options will be populated dynamically -->
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Select a specialty if this subject is specific to a particular program (Sixth Form only)</p>
-                        </div>
+                        <!-- Subject Details Section -->
+                        <div class="border-b pb-6">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-book mr-2 text-green-500"></i>Subject Details
+                            </h2>
 
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject Code *</label>
-                            <input type="text" th:field="*{subjectCode}" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="e.g., O-MATH, A-PHY-SCI">
-                            <p class="text-xs text-gray-500 mt-1">Unique subject code following naming conventions (O- for Ordinary, A- for Advanced Level)</p>
-                            <div th:if="${#fields.hasErrors('subjectCode')}" class="text-red-500 text-sm mt-1">
-                                <span th:errors="*{subjectCode}">Subject code error</span>
+                            <div class="space-y-6">
+                                <!-- Subject Name -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Subject Name</label>
+                                    <input type="text" th:field="*{name}" required
+                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Enter full subject name">
+                                    <div th:if="${#fields.hasErrors('name')}" class="text-red-500 text-sm mt-1">
+                                        <span th:errors="*{name}">Name error</span>
+                                    </div>
+                                    <div class="example-text">
+                                        <strong>Naming Convention:</strong><br>
+                                        • For Ordinary Level (Forms 1-5): Start with "O-" (e.g., O-Mathematics)<br>
+                                        • For Advanced Level (Sixth Form): Start with "A-" (e.g., A-Physics)<br>
+                                        • For Form 1-3 subjects: Use plain name (e.g., Mathematics, English)<br>
+                                        • <strong>Examples:</strong> O-Mathematics, A-Physics, French, History
+                                    </div>
+                                </div>
+
+                                <!-- Subject Code -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Subject Code</label>
+                                    <input type="text" th:field="*{subjectCode}" required
+                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="e.g., F1-MATH-SCI-001, A-PHY-SCI-001">
+                                    <div th:if="${#fields.hasErrors('subjectCode')}" class="text-red-500 text-sm mt-1">
+                                        <span th:errors="*{subjectCode}">Subject code error</span>
+                                    </div>
+                                    <div class="example-text">
+                                        <strong>Code Format:</strong> [Class]-[Subject]-[Dept]-[Sequence]<br>
+                                        • Form 1 Science Mathematics: <code>F1-MATH-SCI-001</code><br>
+                                        • Lower Sixth Physics: <code>L6-PHY-SCI-001</code><br>
+                                        • Form 3 Commercial English: <code>F3-ENG-COM-001</code><br>
+                                        • Upper Sixth History: <code>U6-HIS-ART-001</code>
+                                    </div>
+                                </div>
+
+                                <!-- Coefficient -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Coefficient</label>
+                                        <input type="number" th:field="*{coefficient}" min="1" max="10" required
+                                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="1-10">
+                                        <div th:if="${#fields.hasErrors('coefficient')}" class="text-red-500 text-sm mt-1">
+                                            <span th:errors="*{coefficient}">Coefficient error</span>
+                                        </div>
+                                        <div class="example-text">
+                                            <strong>Guidelines:</strong><br>
+                                            • Core subjects: 5-10<br>
+                                            • Major subjects: 3-5<br>
+                                            • Minor/optional subjects: 1-3<br>
+                                            • Default: 4
+                                        </div>
+                                    </div>
+
+                                    <!-- Specialty (for Sixth Form) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Specialty</label>
+                                        <select th:field="*{specialty}" id="specialty"
+                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">General (No Specialty)</option>
+                                            <!-- Will be populated by JavaScript -->
+                                        </select>
+                                        <div class="example-text">
+                                            <strong>For Sixth Form Only:</strong><br>
+                                            • Science specialties: S1, S2, S3, S4<br>
+                                            • Arts specialties: A1, A2, A3, A4<br>
+                                            • Commercial: Accounting, ACT<br>
+                                            • Leave empty for Forms 1-5
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Description -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                    <textarea th:field="*{description}"
+                                              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                              placeholder="Enter detailed subject description, objectives, and learning outcomes"
+                                              rows="4"></textarea>
+                                    <div class="example-text">
+                                        <strong>Example Description:</strong><br>
+                                        "This course covers fundamental concepts in algebra, geometry, and trigonometry. Students will develop problem-solving skills and mathematical reasoning applicable to real-world situations."
+                                    </div>
+                                </div>
+
+                                <!-- Optional Subject Checkbox -->
+                                <div>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" th:field="*{optional}"
+                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-700 font-medium">This is an Optional Subject</span>
+                                    </label>
+                                    <div class="example-text">
+                                        <strong>Optional Subjects:</strong> Students can choose whether to take these subjects.<br>
+                                        <strong>Compulsory Subjects:</strong> All students in the class must take these.<br>
+                                        • Usually check for: Art, Music, Additional Mathematics, etc.
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <label class="inline-flex items-center">
-                                <input type="checkbox" th:field="*{optional}"
-                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <span class="ml-2 text-sm text-gray-700">Optional Subject</span>
-                            </label>
-                            <p class="text-xs text-gray-500 mt-1">Check if this subject is optional (students can choose to take it)</p>
+                        <!-- Form Actions -->
+                        <div class="flex justify-between pt-4">
+                            <a th:href="@{/subjects}"
+                               class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition flex items-center font-medium">
+                                <i class="fas fa-arrow-left mr-2"></i>Cancel
+                            </a>
+                            <button type="submit"
+                                    class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center font-medium shadow-md">
+                                <i class="fas fa-plus-circle mr-2"></i>Create Subject
+                            </button>
                         </div>
-                    </div>
-
-                    <div class="flex justify-between pt-4">
-                        <a th:href="@{/subjects}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition flex items-center">
-                            <i class="fas fa-arrow-left mr-2"></i>Back to Subjects
-                        </a>
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
-                            <i class="fas fa-save mr-2"></i>Add Subject
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </main>
 
@@ -175,6 +293,7 @@
 </div>
 
 <script>
+    // Function to update specialties based on selected department
     async function updateSpecialties() {
         const departmentSelect = document.getElementById('department');
         const specialtySelect = document.getElementById('specialty');
@@ -186,75 +305,182 @@
         }
 
         if (!departmentId) {
+            // Add default message
+            const option = document.createElement('option');
+            option.value = "";
+            option.textContent = "Select a department first";
+            specialtySelect.appendChild(option);
             return;
         }
 
         try {
+            // Show loading state
+            specialtySelect.disabled = true;
+
             const response = await fetch(`/subjects/specialties/${departmentId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch specialties');
             }
             const specialties = await response.json();
 
-            // Add new specialty options
-            specialties.forEach(specialty => {
+            if (specialties.length === 0) {
                 const option = document.createElement('option');
-                option.value = specialty;
-                option.textContent = specialty;
+                option.value = "";
+                option.textContent = "No specialties available for this department";
                 specialtySelect.appendChild(option);
-            });
+            } else {
+                // Add new specialty options
+                specialties.forEach(specialty => {
+                    const option = document.createElement('option');
+                    option.value = specialty;
+                    option.textContent = specialty;
+                    specialtySelect.appendChild(option);
+                });
+            }
+
+            specialtySelect.disabled = false;
         } catch (error) {
             console.error('Error fetching specialties:', error);
+            const option = document.createElement('option');
+            option.value = "";
+            option.textContent = "Error loading specialties";
+            specialtySelect.appendChild(option);
+            specialtySelect.disabled = false;
         }
     }
 
+    // Auto-generate subject code based on selections
+    function generateSubjectCode() {
+        const nameInput = document.querySelector('input[th\\:field="*{name}"]');
+        const classroomSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
+        const departmentSelect = document.getElementById('department');
+        const subjectCodeInput = document.querySelector('input[th\\:field="*{subjectCode}"]');
+
+        if (classroomSelect.value && departmentSelect.value && nameInput.value) {
+            // Get classroom name (e.g., "Form 1 (F1-COM)")
+            const classroomText = classroomSelect.options[classroomSelect.selectedIndex].text;
+            const classroomMatch = classroomText.match(/\(([^)]+)\)/);
+            const classroomCode = classroomMatch ? classroomMatch[1] : '';
+
+            // Get department name
+            const departmentText = departmentSelect.options[departmentSelect.selectedIndex].text;
+
+            // Get first 3-4 letters of subject name
+            const subjectAbbr = nameInput.value.substring(0, 3).toUpperCase();
+
+            // Generate code
+            const generatedCode = `${classroomCode}-${subjectAbbr}-${departmentText.substring(0, 3).toUpperCase()}-001`;
+
+            // Set the generated code
+            subjectCodeInput.value = generatedCode;
+        }
+    }
+
+    // Form validation
+    function validateForm(e) {
+        const nameInput = document.querySelector('input[th\\:field="*{name}"]');
+        const coefficientInput = document.querySelector('input[th\\:field="*{coefficient}"]');
+        const classroomSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
+        const departmentSelect = document.getElementById('department');
+        const subjectCodeInput = document.querySelector('input[th\\:field="*{subjectCode}"]');
+
+        const errors = [];
+
+        if (!nameInput.value.trim()) {
+            errors.push('Subject name is required');
+            nameInput.classList.add('border-red-500');
+        } else {
+            nameInput.classList.remove('border-red-500');
+        }
+
+        if (!coefficientInput.value || coefficientInput.value < 1 || coefficientInput.value > 10) {
+            errors.push('Please enter a valid coefficient between 1 and 10');
+            coefficientInput.classList.add('border-red-500');
+        } else {
+            coefficientInput.classList.remove('border-red-500');
+        }
+
+        if (!classroomSelect.value) {
+            errors.push('Please select a classroom');
+            classroomSelect.classList.add('border-red-500');
+        } else {
+            classroomSelect.classList.remove('border-red-500');
+        }
+
+        if (!departmentSelect.value) {
+            errors.push('Please select a department');
+            departmentSelect.classList.add('border-red-500');
+        } else {
+            departmentSelect.classList.remove('border-red-500');
+        }
+
+        if (!subjectCodeInput.value.trim()) {
+            errors.push('Subject code is required');
+            subjectCodeInput.classList.add('border-red-500');
+        } else {
+            subjectCodeInput.classList.remove('border-red-500');
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Please fix the following errors:\n\n' + errors.join('\n• '));
+            return false;
+        }
+
+        return true;
+    }
+
+    // Initialize form
     document.addEventListener('DOMContentLoaded', function() {
         const departmentSelect = document.getElementById('department');
+        const classroomSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
+        const nameInput = document.querySelector('input[th\\:field="*{name}"]');
+        const subjectCodeInput = document.querySelector('input[th\\:field="*{subjectCode}"]');
+        const form = document.querySelector('form');
+
+        // Event listeners
         if (departmentSelect) {
             departmentSelect.addEventListener('change', updateSpecialties);
-
             // Initialize specialties if department is already selected
             if (departmentSelect.value) {
                 updateSpecialties();
             }
         }
 
+        // Auto-generate code when classroom, department, or name changes
+        if (classroomSelect) {
+            classroomSelect.addEventListener('change', generateSubjectCode);
+        }
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', generateSubjectCode);
+        }
+        if (nameInput) {
+            nameInput.addEventListener('blur', generateSubjectCode);
+        }
+
         // Form validation
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(e) {
-            const nameInput = this.querySelector('input[th\\:field="*{name}"]');
-            const coefficientInput = this.querySelector('input[th\\:field="*{coefficient}"]');
-            const departmentSelect = this.querySelector('select[th\\:field="*{department}"]');
-            const subjectCodeInput = this.querySelector('input[th\\:field="*{subjectCode}"]');
+        if (form) {
+            form.addEventListener('submit', validateForm);
+        }
 
-            if (!nameInput.value.trim()) {
-                e.preventDefault();
-                alert('Please enter a subject name.');
-                nameInput.focus();
-                return false;
-            }
+        // Show/hide specialty field based on classroom
+        function toggleSpecialtyField() {
+            const classroomText = classroomSelect.options[classroomSelect.selectedIndex].text;
+            const isSixthForm = classroomText.includes('Sixth');
+            const specialtyField = document.getElementById('specialty').closest('div');
 
-            if (!coefficientInput.value || coefficientInput.value < 1 || coefficientInput.value > 10) {
-                e.preventDefault();
-                alert('Please enter a valid coefficient between 1 and 10.');
-                coefficientInput.focus();
-                return false;
+            if (isSixthForm) {
+                specialtyField.style.display = 'block';
+            } else {
+                specialtyField.style.display = 'block'; // Still show but with "General" option
             }
+        }
 
-            if (!departmentSelect.value) {
-                e.preventDefault();
-                alert('Please select a department.');
-                departmentSelect.focus();
-                return false;
-            }
-
-            if (!subjectCodeInput.value.trim()) {
-                e.preventDefault();
-                alert('Please enter a subject code.');
-                subjectCodeInput.focus();
-                return false;
-            }
-        });
+        if (classroomSelect) {
+            classroomSelect.addEventListener('change', toggleSpecialtyField);
+            // Initial check
+            toggleSpecialtyField();
+        }
     });
 </script>
 </body>

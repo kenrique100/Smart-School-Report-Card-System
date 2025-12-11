@@ -49,8 +49,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findBySpecialty(String specialty);
     Page<Student> findBySpecialty(String specialty, Pageable pageable);
 
-    @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL")
-    Long countDistinctSpecialties();
+    @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL AND s.specialty != ''")
+    long countDistinctSpecialties();
 
     // FIXED: Email query that properly handles null values
     @Query("SELECT s FROM Student s WHERE s.email = :email AND s.email IS NOT NULL")

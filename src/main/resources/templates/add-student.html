@@ -65,6 +65,9 @@
             ring-color: #ef4444;
             border-color: #ef4444;
         }
+        .hidden-input {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -89,7 +92,7 @@
         <span th:text="${error}" class="font-medium"></span>
     </div>
 
-    <form th:action="@{/students/save}" th:object="${student}" method="post" class="space-y-8 p-8">
+    <form th:action="@{/students/save}" th:object="${student}" method="post" class="space-y-8 p-8" id="studentForm">
         <!-- Personal Information -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200">
             <h2 class="text-xl font-semibold text-blue-800 mb-6 flex items-center">
@@ -239,34 +242,33 @@
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Available Subjects</h3>
                 <p class="text-sm text-gray-600">Select subjects for this student. Subjects are automatically filtered based on the selected class, department, and specialty.</p>
                 <div class="mt-3 flex items-center space-x-4">
-                    <button type="button" onclick="selectAllSubjects()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
-                        <i class="fas fa-check-square mr-2"></i>Select All
+                    <button type="button" onclick="selectAllNonCompulsorySubjects()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                        <i class="fas fa-check-square mr-2"></i>Select All Optional
                     </button>
-                    <button type="button" onclick="deselectAllSubjects()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm">
-                        <i class="fas fa-times-circle mr-2"></i>Deselect All
+                    <button type="button" onclick="deselectAllNonCompulsorySubjects()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm">
+                        <i class="fas fa-times-circle mr-2"></i>Deselect All Optional
                     </button>
                     <span class="text-sm text-gray-600" id="selectionCount">0 subjects selected</span>
                 </div>
             </div>
 
-            <!-- Subject Checkboxes Container -->
-            <div id="subjectCheckboxes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4 border border-gray-200 rounded-lg bg-white">
-                <!-- Subjects will be loaded here dynamically -->
-                <div class="text-center text-gray-500 py-8 col-span-full" id="noSubjectsMessage">
-                    <i class="fas fa-book-open text-4xl mb-3 text-gray-300"></i>
-                    <p>Please select a class and department to see available subjects.</p>
-                </div>
+            <!-- Hidden input for subject IDs -->
+            <input type="hidden" id="subjectIdsInput" name="subjectIds" value="">
+
+            <!-- Subject Groups -->
+            <div id="subjectGroups" class="space-y-6">
+                <!-- Groups will be loaded here dynamically -->
             </div>
 
             <!-- Loading Indicator -->
-            <div id="loadingSubjects" class="hidden text-center py-4">
-                <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mr-2"></i>
-                <span class="text-gray-600">Loading subjects...</span>
+            <div id="loadingSubjects" class="hidden text-center py-8">
+                <i class="fas fa-spinner fa-spin text-blue-500 text-3xl mr-2"></i>
+                <span class="text-gray-600 text-lg">Loading subjects...</span>
             </div>
 
             <!-- Selection Summary -->
-            <div id="selectionSummary" class="mt-4 p-4 bg-gray-50 rounded-lg border hidden">
-                <h4 class="font-semibold text-gray-800 mb-2">Selection Summary</h4>
+            <div id="selectionSummary" class="mt-6 p-4 bg-gray-50 rounded-lg border hidden">
+                <h4 class="font-semibold text-gray-800 mb-4">Selection Summary</h4>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                     <div class="text-center">
                         <div class="text-2xl font-bold text-blue-600" id="totalSelected">0</div>
@@ -305,67 +307,13 @@
     </form>
 </div>
 
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    // Get initial parameters from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialClass = urlParams.get('classLevel');
-    const initialDept = urlParams.get('departmentCode');
-    const initialSpecialty = urlParams.get('specialty');
-
-    // Set initial values if provided
-    document.addEventListener('DOMContentLoaded', function() {
-        if (initialClass && initialClass !== 'null') {
-            const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
-            if (classSelect) {
-                // Find option with matching data-code
-                const options = classSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].getAttribute('data-code') === initialClass) {
-                        classSelect.value = options[i].value;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (initialDept && initialDept !== 'null') {
-            const deptSelect = document.querySelector('select[th\\:field="*{department}"]');
-            if (deptSelect) {
-                // Find option with matching data-code
-                const options = deptSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].getAttribute('data-code') === initialDept) {
-                        deptSelect.value = options[i].value;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Trigger change events to load subjects and update specialty field
-        setTimeout(() => {
-            const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
-            const deptSelect = document.querySelector('select[th\\:field="*{department}"]');
-
-            if (classSelect && classSelect.value) {
-                handleClassChange(classSelect);
-            }
-            if (deptSelect && deptSelect.value) {
-                handleDepartmentChange(deptSelect);
-            }
-        }, 500);
-    });
-    /*]]>*/
-</script>
-
 <script>
     let currentClassCode = '';
     let currentDepartmentId = '';
     let currentDepartmentCode = '';
     let currentSpecialty = '';
+    let selectedSubjectIds = new Set();
 
-    // Initialize form
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Form initialized');
 
@@ -390,6 +338,44 @@
                 updateSpecialtyField(classCode, departmentCode);
             }
         });
+
+        // Initialize with URL parameters if any
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialClass = urlParams.get('classLevel');
+        const initialDept = urlParams.get('departmentCode');
+        const initialSpecialty = urlParams.get('specialty');
+
+        if (initialClass && initialClass !== 'null') {
+            const classSelect = document.getElementById('classRoom');
+            const options = classSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].getAttribute('data-code') === initialClass) {
+                    classSelect.value = options[i].value;
+                    currentClassCode = initialClass;
+                    break;
+                }
+            }
+        }
+
+        if (initialDept && initialDept !== 'null') {
+            const deptSelect = document.getElementById('department');
+            const options = deptSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].getAttribute('data-code') === initialDept) {
+                    deptSelect.value = options[i].value;
+                    currentDepartmentCode = initialDept;
+                    currentDepartmentId = deptSelect.value;
+                    break;
+                }
+            }
+        }
+
+        // Trigger initial load if we have both class and department
+        if (currentClassCode && currentDepartmentId) {
+            setTimeout(() => {
+                updateSpecialtyField(currentClassCode, currentDepartmentCode);
+            }, 500);
+        }
     });
 
     function updateSpecialtyField(classCode, departmentCode) {
@@ -449,10 +435,13 @@
                     updateSpecialtyOptions(response.specialties);
                 }
 
+                // Update current values
+                currentClassCode = classCode;
+                currentDepartmentCode = departmentCode;
+                currentDepartmentId = $('#department').val();
+
                 // Load subjects after updating specialty field
-                if (currentClassCode && currentDepartmentId) {
-                    loadSubjects();
-                }
+                loadSubjects();
             },
             error: function(xhr, status, error) {
                 console.error('Error checking specialty requirements:', error);
@@ -515,6 +504,7 @@
 
             displaySubjects(result.groupedSubjects);
             hideLoading();
+            updateSelectionSummary();
 
         } catch (error) {
             console.error('Error loading subjects:', error);
@@ -523,121 +513,171 @@
         }
     }
 
-    // FIXED: Properly handle grouped subjects structure
     function displaySubjects(groupedSubjects) {
-        const container = document.getElementById('subjectCheckboxes');
+        const container = document.getElementById('subjectGroups');
         container.innerHTML = '';
 
-        let totalSubjects = 0;
+        // Define the order and configuration for groups
+        const groups = [
+            { key: 'compulsory', title: 'Compulsory Subjects', color: 'green', icon: 'fa-check-circle' },
+            { key: 'department', title: 'Department Core Subjects', color: 'blue', icon: 'fa-building' },
+            { key: 'specialty', title: 'Specialty Subjects', color: 'yellow', icon: 'fa-tag' },
+            { key: 'optional', title: 'Optional Subjects', color: 'purple', icon: 'fa-list-alt' }
+        ];
+
         let hasSubjects = false;
 
-        // Define the order of groups to display
-        const groupOrder = ['compulsory', 'department', 'specialty', 'optional'];
-
-        groupOrder.forEach(groupType => {
-            const subjects = groupedSubjects[groupType];
+        groups.forEach(group => {
+            const subjects = groupedSubjects[group.key];
             if (subjects && subjects.length > 0) {
                 hasSubjects = true;
-                totalSubjects += subjects.length;
-
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'col-span-full mb-2 mt-4 first:mt-0';
-                groupHeader.innerHTML = `
-                    <h4 class="font-semibold text-gray-700 capitalize">
-                        ${getGroupDisplayName(groupType)}
-                        <span class="text-sm font-normal text-gray-500">(${subjects.length} subjects)</span>
-                    </h4>
-                `;
-                container.appendChild(groupHeader);
-
-                subjects.forEach(subject => {
-                    const subjectDiv = document.createElement('div');
-                    subjectDiv.className = `subject-card bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 ${
-                        groupType === 'compulsory' ? 'compulsory-subject' :
-                            groupType === 'department' ? 'department-subject' :
-                                groupType === 'specialty' ? 'specialty-subject' : 'optional-subject'
-                    }`;
-
-                    const isCompulsory = groupType === 'compulsory';
-                    const badgeClass = groupType === 'compulsory' ? 'compulsory-badge' :
-                        groupType === 'department' ? 'department-badge' :
-                            groupType === 'specialty' ? 'specialty-badge' : 'optional-badge';
-                    const badgeText = getGroupDisplayName(groupType);
-
-                    subjectDiv.innerHTML = `
-                        <div class="flex items-start space-x-3">
-                            <input type="checkbox"
-                                   id="subject_${subject.id}"
-                                   name="subjectIds"
-                                   value="${subject.id}"
-                                   ${isCompulsory ? 'checked disabled' : ''}
-                                   class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 transition-colors"
-                                   onchange="updateSelectionSummary()">
-                            <div class="flex-1 min-w-0">
-                                <label for="subject_${subject.id}" class="block cursor-pointer">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <h4 class="font-semibold text-gray-900 text-sm leading-tight">${subject.name}</h4>
-                                        <span class="${badgeClass} text-xs px-2 py-1 rounded-full whitespace-nowrap ml-2">
-                                            ${badgeText}
-                                        </span>
-                                    </div>
-                                    <div class="text-xs text-gray-600 space-y-1">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium">Code:</span>
-                                            <code class="bg-gray-100 px-1 rounded">${subject.subjectCode || 'N/A'}</code>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium">Coefficient:</span>
-                                            <span class="font-semibold">${subject.coefficient || 'N/A'}</span>
-                                        </div>
-                                        ${subject.departmentName ? `
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium">Department:</span>
-                                            <span>${subject.departmentName}</span>
-                                        </div>` : ''}
-                                        ${subject.specialty ? `
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium">Specialty:</span>
-                                            <span class="bg-yellow-100 text-yellow-800 px-1 rounded">${subject.specialty}</span>
-                                        </div>` : ''}
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-
-                    container.appendChild(subjectDiv);
-                });
+                const groupDiv = createSubjectGroup(group, subjects);
+                container.appendChild(groupDiv);
             }
         });
 
         if (!hasSubjects) {
             showNoSubjectsMessage('No subjects available for the selected criteria.');
+            document.getElementById('selectionSummary').classList.add('hidden');
         } else {
             document.getElementById('selectionSummary').classList.remove('hidden');
-            updateSelectionSummary();
         }
-
-        // Update selection count
-        document.getElementById('selectionCount').textContent = `${totalSubjects} subjects available`;
     }
 
-    function getGroupDisplayName(groupType) {
-        const names = {
-            'compulsory': 'Compulsory',
-            'department': 'Department Core',
-            'specialty': 'Specialty',
-            'optional': 'Optional'
-        };
-        return names[groupType] || groupType;
+    function createSubjectGroup(group, subjects) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'subject-group';
+
+        const badgeClass = `${group.key}-badge`;
+        const cardClass = `${group.key}-subject`;
+        const isCompulsory = group.key === 'compulsory';
+
+        groupDiv.innerHTML = `
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-${group.color}-700 mb-4 flex items-center">
+                    <i class="fas ${group.icon} mr-2"></i>${group.title}
+                    <span class="${badgeClass} text-sm px-3 py-1 rounded-full ml-3">${subjects.length}</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${subjects.map(subject => createSubjectCard(subject, cardClass, isCompulsory)).join('')}
+                </div>
+            </div>
+        `;
+
+        return groupDiv;
+    }
+
+    function createSubjectCard(subject, cardClass, isCompulsory) {
+        const checkboxId = `subject_${subject.id}`;
+        const isChecked = isCompulsory ? 'checked' : '';
+        const isDisabled = isCompulsory ? 'disabled' : '';
+        const badgeText = isCompulsory ? 'Compulsory' :
+            cardClass.includes('department') ? 'Department' :
+                cardClass.includes('specialty') ? 'Specialty' : 'Optional';
+
+        return `
+            <div class="subject-card bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 ${cardClass}">
+                <div class="flex items-start space-x-3">
+                    <input type="checkbox" id="${checkboxId}"
+                           name="subjectIds" value="${subject.id}"
+                           ${isChecked} ${isDisabled}
+                           class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 transition-colors"
+                           onchange="handleSubjectCheckboxChange(this)">
+                    <div class="flex-1 min-w-0">
+                        <label for="${checkboxId}" class="block cursor-pointer">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-gray-900 text-sm leading-tight">${subject.name}</h4>
+                                <span class="${cardClass.replace('-subject', '-badge')} text-xs px-2 py-1 rounded-full whitespace-nowrap ml-2">
+                                    ${badgeText}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium">Code:</span>
+                                    <code class="bg-gray-100 px-1 rounded">${subject.subjectCode || 'N/A'}</code>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium">Coefficient:</span>
+                                    <span class="font-semibold">${subject.coefficient || 'N/A'}</span>
+                                </div>
+                                ${subject.departmentName ? `
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium">Department:</span>
+                                    <span>${subject.departmentName}</span>
+                                </div>` : ''}
+                                ${subject.specialty ? `
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium">Specialty:</span>
+                                    <span class="bg-yellow-100 text-yellow-800 px-1 rounded">${subject.specialty}</span>
+                                </div>` : ''}
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function handleSubjectCheckboxChange(checkbox) {
+        const subjectId = parseInt(checkbox.value);
+
+        if (checkbox.checked) {
+            selectedSubjectIds.add(subjectId);
+        } else {
+            selectedSubjectIds.delete(subjectId);
+        }
+
+        updateSelectionSummary();
+        updateHiddenInput();
+    }
+
+    function updateHiddenInput() {
+        const subjectIdsArray = Array.from(selectedSubjectIds);
+        document.getElementById('subjectIdsInput').value = subjectIdsArray.join(',');
+        console.log('Updated subject IDs:', subjectIdsArray);
+    }
+
+    function updateSelectionSummary() {
+        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:checked');
+        const compulsoryCheckboxes = document.querySelectorAll('input[name="subjectIds"]:checked[disabled]');
+        const departmentCheckboxes = document.querySelectorAll('.department-subject input[name="subjectIds"]:checked:not([disabled])');
+        const specialtyCheckboxes = document.querySelectorAll('.specialty-subject input[name="subjectIds"]:checked:not([disabled])');
+        const optionalCheckboxes = document.querySelectorAll('.optional-subject input[name="subjectIds"]:checked:not([disabled])');
+
+        document.getElementById('totalSelected').textContent = checkboxes.length;
+        document.getElementById('compulsorySelected').textContent = compulsoryCheckboxes.length;
+        document.getElementById('departmentSelected').textContent = departmentCheckboxes.length;
+        document.getElementById('specialtySelected').textContent = specialtyCheckboxes.length;
+        document.getElementById('optionalSelected').textContent = optionalCheckboxes.length;
+
+        // Update selection count
+        const totalSubjects = document.querySelectorAll('input[name="subjectIds"]').length;
+        document.getElementById('selectionCount').textContent =
+            `${checkboxes.length} of ${totalSubjects} subjects selected`;
+    }
+
+    function selectAllNonCompulsorySubjects() {
+        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:not([disabled])');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            handleSubjectCheckboxChange(checkbox);
+        });
+    }
+
+    function deselectAllNonCompulsorySubjects() {
+        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:not([disabled])');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            handleSubjectCheckboxChange(checkbox);
+        });
     }
 
     function showNoSubjectsMessage(message) {
-        const container = document.getElementById('subjectCheckboxes');
+        const container = document.getElementById('subjectGroups');
         container.innerHTML = `
             <div class="col-span-full text-center text-gray-500 py-8">
                 <i class="fas fa-book-open text-4xl mb-3 text-gray-300"></i>
-                <p>${message}</p>
+                <p class="text-lg">${message}</p>
             </div>
         `;
         document.getElementById('selectionSummary').classList.add('hidden');
@@ -645,67 +685,12 @@
 
     function showLoading() {
         document.getElementById('loadingSubjects').classList.remove('hidden');
-        document.getElementById('subjectCheckboxes').classList.add('hidden');
+        document.getElementById('subjectGroups').classList.add('hidden');
     }
 
     function hideLoading() {
         document.getElementById('loadingSubjects').classList.add('hidden');
-        document.getElementById('subjectCheckboxes').classList.remove('hidden');
-    }
-
-    function updateSelectionSummary() {
-        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:checked');
-        const compulsoryCheckboxes = document.querySelectorAll('input[name="subjectIds"]:checked[disabled]');
-        const departmentCheckboxes = document.querySelectorAll('input[name="subjectIds"]:checked:not([disabled])');
-        const optionalCheckboxes = document.querySelectorAll('input[name="subjectIds"]:checked:not([disabled])');
-
-        // Count by category
-        let compulsoryCount = compulsoryCheckboxes.length;
-        let departmentCount = 0;
-        let specialtyCount = 0;
-        let optionalCount = 0;
-
-        checkboxes.forEach(checkbox => {
-            if (checkbox.disabled) return; // Skip compulsory (already counted)
-
-            const subjectDiv = checkbox.closest('.subject-card');
-            if (subjectDiv) {
-                if (subjectDiv.classList.contains('department-subject')) {
-                    departmentCount++;
-                } else if (subjectDiv.classList.contains('specialty-subject')) {
-                    specialtyCount++;
-                } else if (subjectDiv.classList.contains('optional-subject')) {
-                    optionalCount++;
-                }
-            }
-        });
-
-        document.getElementById('totalSelected').textContent = checkboxes.length;
-        document.getElementById('compulsorySelected').textContent = compulsoryCount;
-        document.getElementById('departmentSelected').textContent = departmentCount;
-        document.getElementById('specialtySelected').textContent = specialtyCount;
-        document.getElementById('optionalSelected').textContent = optionalCount;
-
-        // Update selection count
-        const totalAvailable = document.querySelectorAll('input[name="subjectIds"]').length;
-        document.getElementById('selectionCount').textContent =
-            `${checkboxes.length} of ${totalAvailable} subjects selected`;
-    }
-
-    function selectAllSubjects() {
-        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:not([disabled])');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-        });
-        updateSelectionSummary();
-    }
-
-    function deselectAllSubjects() {
-        const checkboxes = document.querySelectorAll('input[name="subjectIds"]:not([disabled])');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateSelectionSummary();
+        document.getElementById('subjectGroups').classList.remove('hidden');
     }
 
     function handleClassChange(select) {
@@ -713,7 +698,7 @@
         currentClassCode = selectedOption ? selectedOption.getAttribute('data-code') : '';
         console.log('Class changed:', currentClassCode);
 
-        const departmentSelect = document.querySelector('select[th\\:field="*{department}"]');
+        const departmentSelect = document.getElementById('department');
         if (departmentSelect && departmentSelect.value) {
             const selectedDeptOption = departmentSelect.options[departmentSelect.selectedIndex];
             currentDepartmentCode = selectedDeptOption ? selectedDeptOption.getAttribute('data-code') : '';
@@ -732,7 +717,7 @@
         currentDepartmentId = select.value;
         console.log('Department changed:', { currentDepartmentCode, currentDepartmentId });
 
-        const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
+        const classSelect = document.getElementById('classRoom');
         if (classSelect && classSelect.value) {
             const selectedClassOption = classSelect.options[classSelect.selectedIndex];
             currentClassCode = selectedClassOption ? selectedClassOption.getAttribute('data-code') : '';
@@ -745,9 +730,9 @@
     }
 
     // Form validation
-    document.querySelector('form').addEventListener('submit', function(e) {
-        const classSelect = document.querySelector('select[th\\:field="*{classRoom}"]');
-        const departmentSelect = document.querySelector('select[th\\:field="*{department}"]');
+    document.getElementById('studentForm').addEventListener('submit', function(e) {
+        const classSelect = document.getElementById('classRoom');
+        const departmentSelect = document.getElementById('department');
 
         if (!classSelect.value || !departmentSelect.value) {
             e.preventDefault();
@@ -758,7 +743,6 @@
         // Validate specialty requirements
         const specialtyField = $('#specialty');
         const specialtyContainer = $('#specialty-container');
-        const specialtyLabel = $('#specialty-label');
 
         if (specialtyContainer.is(':visible') &&
             specialtyField.prop('required') &&
@@ -768,34 +752,10 @@
             return false;
         }
 
-        // Log selected subjects for debugging
-        const selectedSubjects = document.querySelectorAll('input[name="subjectIds"]:checked');
-        console.log('Selected subjects count:', selectedSubjects.length);
+        // Ensure subject IDs are properly set
+        updateHiddenInput();
 
-        // Ensure at least one subject is selected
-        if (selectedSubjects.length === 0) {
-            if (!confirm('No subjects selected. The student will be enrolled in compulsory subjects only. Continue?')) {
-                e.preventDefault();
-                return false;
-            }
-        }
-
-        // Create a hidden field for subject IDs if they're not already included
-        const subjectIds = Array.from(selectedSubjects)
-            .map(checkbox => checkbox.value)
-            .join(',');
-
-        // Check if there's already a subjectIds input
-        let subjectIdsInput = this.querySelector('input[name="subjectIds"]');
-        if (subjectIdsInput) {
-            subjectIdsInput.value = subjectIds;
-        } else {
-            subjectIdsInput = document.createElement('input');
-            subjectIdsInput.type = 'hidden';
-            subjectIdsInput.name = 'subjectIds';
-            subjectIdsInput.value = subjectIds;
-            this.appendChild(subjectIdsInput);
-        }
+        console.log('Form submitted with subject IDs:', document.getElementById('subjectIdsInput').value);
 
         return true;
     });

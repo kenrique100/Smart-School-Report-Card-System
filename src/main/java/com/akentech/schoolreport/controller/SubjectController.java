@@ -2,6 +2,8 @@ package com.akentech.schoolreport.controller;
 
 import com.akentech.schoolreport.exception.EntityNotFoundException;
 import com.akentech.schoolreport.model.Subject;
+import com.akentech.schoolreport.model.enums.ClassLevel;
+import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.service.SubjectService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class SubjectController {
 
     private final SubjectService subjectService;
     private final DepartmentRepository departmentRepository;
+    private final ClassRoomRepository classRoomRepository;
 
     @GetMapping
     public String listSubjects(
@@ -47,6 +50,50 @@ public class SubjectController {
 
             Page<Subject> subjectPage = subjectService.getSubjectsByFilters(name, departmentIdLong, specialty, pageable);
 
+            // Calculate statistics
+            List<Subject> allSubjects = subjectService.getAllSubjects();
+            long totalSubjects = allSubjects.size();
+
+            // Count Ordinary Level subjects (Forms 1-5)
+            long ordinarySubjects = allSubjects.stream()
+                    .filter(s -> {
+                        if (s.getClassRoom() == null || s.getClassRoom().getCode() == null) return false;
+                        ClassLevel level = s.getClassRoom().getCode();
+                        return level == ClassLevel.FORM_1 || level == ClassLevel.FORM_2 ||
+                                level == ClassLevel.FORM_3 || level == ClassLevel.FORM_4 ||
+                                level == ClassLevel.FORM_5;
+                    })
+                    .count();
+
+            // Count Advanced Level subjects (Sixth Form)
+            long advancedSubjects = allSubjects.stream()
+                    .filter(s -> {
+                        if (s.getClassRoom() == null || s.getClassRoom().getCode() == null) return false;
+                        ClassLevel level = s.getClassRoom().getCode();
+                        return level == ClassLevel.LOWER_SIXTH || level == ClassLevel.UPPER_SIXTH;
+                    })
+                    .count();
+
+            // Count optional subjects
+            long optionalSubjects = allSubjects.stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getOptional()))
+                    .count();
+
+            // Get all specialties for filter dropdown
+            List<String> allSpecialties = allSubjects.stream()
+                    .map(Subject::getSpecialty)
+                    .filter(s -> s != null && !s.trim().isEmpty())
+                    .distinct()
+                    .sorted()
+                    .toList();
+
+            // Add statistics to model
+            model.addAttribute("totalSubjects", totalSubjects);
+            model.addAttribute("ordinarySubjects", ordinarySubjects);
+            model.addAttribute("advancedSubjects", advancedSubjects);
+            model.addAttribute("optionalSubjects", optionalSubjects);
+            model.addAttribute("allSpecialties", allSpecialties);
+
             model.addAttribute("subjects", subjectPage.getContent());
             model.addAttribute("currentPage", subjectPage.getNumber());
             model.addAttribute("totalPages", subjectPage.getTotalPages());
@@ -63,10 +110,21 @@ public class SubjectController {
             model.addAttribute("departmentIdFilter", departmentIdLong);
             model.addAttribute("specialtyFilter", specialty);
 
+            log.info("Subject statistics - Total: {}, Ordinary: {}, Advanced: {}, Optional: {}",
+                    totalSubjects, ordinarySubjects, advancedSubjects, optionalSubjects);
+
             return "subjects";
         } catch (Exception e) {
             log.error("Error loading subjects list", e);
             model.addAttribute("error", "Unable to load subjects");
+
+            // Set default values for statistics on error
+            model.addAttribute("totalSubjects", 0);
+            model.addAttribute("ordinarySubjects", 0);
+            model.addAttribute("advancedSubjects", 0);
+            model.addAttribute("optionalSubjects", 0);
+            model.addAttribute("allSpecialties", List.of());
+
             return "subjects";
         }
     }
@@ -88,6 +146,7 @@ public class SubjectController {
     public String showAddForm(Model model) {
         model.addAttribute("subject", new Subject());
         model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("classRooms", classRoomRepository.findAll());
         return "add-subject";
     }
 
@@ -110,6 +169,7 @@ public class SubjectController {
 
             model.addAttribute("subject", subject);
             model.addAttribute("departments", departmentRepository.findAll());
+            model.addAttribute("classRooms", classRoomRepository.findAll());
             model.addAttribute("specialties", subjectService.getSpecialtiesByDepartment(subject.getDepartment().getId()));
             return "edit-subject";
         } catch (EntityNotFoundException e) {

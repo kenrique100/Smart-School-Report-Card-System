@@ -155,13 +155,9 @@ public class StudentController {
             student.setClassRoom(defaultClass);
         } else if (!classRooms.isEmpty()) {
             // Find first class with valid code
-            ClassRoom firstValidClass = classRooms.stream()
+            classRooms.stream()
                     .filter(cr -> cr.getCode() != null)
-                    .findFirst()
-                    .orElse(null);
-            if (firstValidClass != null) {
-                student.setClassRoom(firstValidClass);
-            }
+                    .findFirst().ifPresent(student::setClassRoom);
         }
 
         if (defaultDepartment != null) {
@@ -258,10 +254,14 @@ public class StudentController {
                 }
             }
 
-            Student savedStudent = studentService.createStudent(student, subjectIds);
-            log.info("Successfully created student with ID: {}", savedStudent.getStudentId());
+            log.info("📋 Student {} will be enrolled in {} subjects: {}",
+                    student.getFullName(), subjectIds.size(), subjectIds);
 
-            redirectAttributes.addFlashAttribute("success", "Student created successfully!");
+            Student savedStudent = studentService.createStudent(student, subjectIds);
+            log.info("✅ Successfully created student with ID: {}", savedStudent.getStudentId());
+
+            redirectAttributes.addFlashAttribute("success",
+                    "Student created successfully! Enrolled in " + subjectIds.size() + " subjects.");
             return "redirect:/students?success";
         } catch (BusinessRuleException | DataIntegrityException e) {
             log.warn("Business error saving student: {}", e.getMessage());
@@ -292,7 +292,9 @@ public class StudentController {
             model.addAttribute("specialties", studentService.getAllSpecialties());
             model.addAttribute("groupedSubjects", groupedSubjects);
             model.addAttribute("selectedSubjectIds", selectedSubjectIds);
-            model.addAttribute("studentSubjects", studentSubjects);
+
+            // Ensure studentSubjects is never null
+            model.addAttribute("studentSubjects", studentSubjects != null ? studentSubjects : new ArrayList<>());
 
             log.info("Edit form loaded for student {} with {} compulsory, {} department, {} optional subjects",
                     student.getStudentId(),
@@ -314,7 +316,7 @@ public class StudentController {
     public String updateStudent(@PathVariable Long id,
                                 @Valid @ModelAttribute("student") Student student,
                                 BindingResult result,
-                                @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
+                                @RequestParam(value = "subjectIds", required = false) String subjectIdsParam,
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -323,8 +325,21 @@ public class StudentController {
         }
 
         try {
+            // Parse subject IDs from comma-separated string
+            List<Long> subjectIds = new ArrayList<>();
+            if (subjectIdsParam != null && !subjectIdsParam.trim().isEmpty()) {
+                String[] ids = subjectIdsParam.split(",");
+                for (String idStr : ids) {
+                    try {
+                        subjectIds.add(Long.parseLong(idStr.trim()));
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid subject ID: {}", idStr);
+                    }
+                }
+            }
+
             Student updatedStudent = studentService.updateStudent(id, student, subjectIds);
-            log.info("Successfully updated student with ID: {}", updatedStudent.getStudentId());
+            log.info("✅ Successfully updated student with ID: {}", updatedStudent.getStudentId());
 
             redirectAttributes.addFlashAttribute("success", "Student updated successfully!");
             return "redirect:/students?updated";
@@ -406,7 +421,11 @@ public class StudentController {
             Map<String, List<Subject>> groupedSubjects =
                     subjectService.getGroupedSubjectsForEnrollment(classCode, departmentId, specialty);
 
-            Map<String, List<SubjectDTO>> groupedSubjectsDTO = convertToDTO(groupedSubjects);
+            // Convert to DTOs
+            Map<String, List<SubjectDTO>> groupedSubjectsDTO = new LinkedHashMap<>();
+            groupedSubjects.forEach((key, value) -> groupedSubjectsDTO.put(key, value.stream()
+                    .map(this::convertToSubjectDTO)
+                    .collect(Collectors.toList())));
 
             GroupedSubjectsResponse response = new GroupedSubjectsResponse();
             response.setSuccess(true);
@@ -417,6 +436,10 @@ public class StudentController {
             response.setOptionalCount(groupedSubjects.getOrDefault("optional", List.of()).size());
             response.setMessage("Subjects loaded successfully");
 
+            log.info("📊 Returning grouped subjects - Compulsory: {}, Department: {}, Specialty: {}, Optional: {}",
+                    response.getCompulsoryCount(), response.getDepartmentCount(),
+                    response.getSpecialtyCount(), response.getOptionalCount());
+
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -425,14 +448,22 @@ public class StudentController {
         }
     }
 
-    private Map<String, List<SubjectDTO>> convertToDTO(Map<String, List<Subject>> groupedSubjects) {
-        return groupedSubjects.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().stream()
-                                .map(SubjectDTO::fromEntity)
-                                .collect(Collectors.toList())
-                ));
+    private SubjectDTO convertToSubjectDTO(Subject subject) {
+        SubjectDTO dto = new SubjectDTO();
+        dto.setId(subject.getId());
+        dto.setName(subject.getName());
+        dto.setSubjectCode(subject.getSubjectCode());
+        dto.setCoefficient(subject.getCoefficient());
+        dto.setOptional(subject.getOptional());
+        dto.setSpecialty(subject.getSpecialty());
+        dto.setDescription(subject.getDescription());
+
+        if (subject.getDepartment() != null) {
+            dto.setDepartmentId(subject.getDepartment().getId());
+            dto.setDepartmentName(subject.getDepartment().getName());
+        }
+
+        return dto;
     }
 
     private ResponseEntity<GroupedSubjectsResponse> buildGroupedSubjectErrorResponse(Exception e) {
@@ -470,14 +501,12 @@ public class StudentController {
             // Check if sixth form
             boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
 
-            // Determine requirements
+            // Determine requirements - ONLY enable specialty if the department has specialties
             boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
-            boolean allowed = !classCode.equals("FORM_1") && !classCode.equals("FORM_2") &&
-                    !classCode.equals("FORM_3") && hasSpecialties;
 
             Map<String, Object> response = new HashMap<>();
             response.put("required", required);
-            response.put("allowed", allowed);
+            response.put("allowed", hasSpecialties);
             response.put("hasSpecialties", hasSpecialties);
             response.put("specialties", specialties);
             response.put("specialtiesCount", specialties.size());
@@ -487,10 +516,8 @@ public class StudentController {
                 message = "This department does not have specialties";
             } else if (required) {
                 message = "Specialty is required for " + classCode + " " + departmentCode;
-            } else if (allowed) {
-                message = "Specialty is optional";
             } else {
-                message = "Specialty is not allowed for this class";
+                message = "Specialty is optional";
             }
             response.put("message", message);
 
