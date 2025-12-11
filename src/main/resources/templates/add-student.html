@@ -4,10 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Student - Student Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Google Fonts (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="/css/material-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/icons/bootstrap-icons/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- Scripts -->
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+
     <style>
+        /* Custom styles with Roboto font */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9fafb;
+        }
+
         .subject-group {
             transition: all 0.3s ease;
         }
@@ -65,6 +88,25 @@
             ring-color: #ef4444;
             border-color: #ef4444;
         }
+
+        /* Material Icons custom styling */
+        .material-symbols-outlined.icon-sm {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-md {
+            font-size: 24px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-lg {
+            font-size: 36px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -77,7 +119,7 @@
                 <p class="text-blue-100 mt-1">Create a new student record with academic information</p>
             </div>
             <a th:href="@{/students}" class="bg-white/20 text-white px-6 py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center space-x-2">
-                <i class="fas fa-arrow-left"></i>
+                <span class="material-symbols-outlined icon-sm">arrow_back</span>
                 <span>Back to Students</span>
             </a>
         </div>
@@ -85,7 +127,7 @@
 
     <!-- Success/Error Messages -->
     <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 mx-6 mt-6 rounded-lg flex items-center">
-        <i class="fas fa-exclamation-triangle mr-3 text-lg"></i>
+        <span class="material-symbols-outlined icon-md mr-3">warning</span>
         <span th:text="${error}" class="font-medium"></span>
     </div>
 
@@ -93,7 +135,7 @@
         <!-- Personal Information -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200">
             <h2 class="text-xl font-semibold text-blue-800 mb-6 flex items-center">
-                <i class="fas fa-user-circle mr-3 text-blue-600"></i>Personal Information
+                <span class="material-symbols-outlined icon-md mr-3 text-blue-600">person</span>Personal Information
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -149,7 +191,7 @@
         <!-- Academic Information -->
         <div class="bg-green-50 p-6 rounded-xl border border-green-200">
             <h2 class="text-xl font-semibold text-green-800 mb-6 flex items-center">
-                <i class="fas fa-graduation-cap mr-3 text-green-600"></i>Academic Information
+                <span class="material-symbols-outlined icon-md mr-3 text-green-600">school</span>Academic Information
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -186,7 +228,7 @@
                 <!-- Specialty Field Container -->
                 <div id="specialty-container" class="hidden">
                     <label id="specialty-label" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-tag mr-2"></i>Specialty
+                        <span class="material-symbols-outlined icon-sm mr-2">sell</span>Specialty
                     </label>
                     <select th:field="*{specialty}" id="specialty"
                             class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
@@ -196,7 +238,7 @@
                                 th:text="${specialty}"></option>
                     </select>
                     <div id="specialty-help" class="text-sm mt-2">
-                        <i class="fas fa-info-circle mr-1"></i>Select a class and department first
+                        <span class="material-symbols-outlined icon-sm mr-1">info</span>Select a class and department first
                     </div>
                 </div>
 
@@ -232,18 +274,20 @@
         <!-- Subject Selection with Checkboxes -->
         <div class="bg-purple-50 p-6 rounded-xl border border-purple-200">
             <h2 class="text-xl font-semibold text-purple-800 mb-6 flex items-center">
-                <i class="fas fa-book-open mr-3 text-purple-600"></i>Subject Selection
+                <span class="material-symbols-outlined icon-md mr-3 text-purple-600">menu_book</span>Subject Selection
             </h2>
 
             <div class="mb-6 p-4 bg-white rounded-lg border">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Available Subjects</h3>
                 <p class="text-sm text-gray-600">Select subjects for this student. Subjects are automatically filtered based on the selected class, department, and specialty.</p>
                 <div class="mt-3 flex items-center space-x-4">
-                    <button type="button" onclick="selectAllSubjects()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
-                        <i class="fas fa-check-square mr-2"></i>Select All
+                    <button type="button" onclick="selectAllSubjects()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm btn-icon">
+                        <span class="material-symbols-outlined icon-sm">check_box</span>
+                        <span>Select All</span>
                     </button>
-                    <button type="button" onclick="deselectAllSubjects()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm">
-                        <i class="fas fa-times-circle mr-2"></i>Deselect All
+                    <button type="button" onclick="deselectAllSubjects()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm btn-icon">
+                        <span class="material-symbols-outlined icon-sm">disabled_by_default</span>
+                        <span>Deselect All</span>
                     </button>
                     <span class="text-sm text-gray-600" id="selectionCount">0 subjects selected</span>
                 </div>
@@ -253,14 +297,14 @@
             <div id="subjectCheckboxes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4 border border-gray-200 rounded-lg bg-white">
                 <!-- Subjects will be loaded here dynamically -->
                 <div class="text-center text-gray-500 py-8 col-span-full" id="noSubjectsMessage">
-                    <i class="fas fa-book-open text-4xl mb-3 text-gray-300"></i>
+                    <span class="material-symbols-outlined icon-lg mb-3 text-gray-300">menu_book</span>
                     <p>Please select a class and department to see available subjects.</p>
                 </div>
             </div>
 
             <!-- Loading Indicator -->
             <div id="loadingSubjects" class="hidden text-center py-4">
-                <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mr-2"></i>
+                <span class="material-symbols-outlined icon-md text-blue-500 animate-spin mr-2">progress_activity</span>
                 <span class="text-gray-600">Loading subjects...</span>
             </div>
 
@@ -293,12 +337,12 @@
         </div>
 
         <div class="flex justify-between pt-6 border-t">
-            <a th:href="@{/students}" class="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
-                <i class="fas fa-arrow-left"></i>
+            <a th:href="@{/students}" class="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2 btn-icon">
+                <span class="material-symbols-outlined icon-sm">arrow_back</span>
                 <span>Cancel</span>
             </a>
-            <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
-                <i class="fas fa-save"></i>
+            <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2 btn-icon">
+                <span class="material-symbols-outlined icon-sm">save</span>
                 <span>Save Student</span>
             </button>
         </div>
@@ -383,66 +427,78 @@
         }
 
         // Set up event listeners for class and department changes
-        $('#classRoom, #department').on('change', function() {
-            const classCode = $('#classRoom option:selected').data('code');
-            const departmentCode = $('#department option:selected').data('code');
-            if (classCode && departmentCode) {
-                updateSpecialtyField(classCode, departmentCode);
-            }
-        });
+        const classRoomSelect = document.getElementById('classRoom');
+        const departmentSelect = document.getElementById('department');
+
+        if (classRoomSelect && departmentSelect) {
+            classRoomSelect.addEventListener('change', function() {
+                const classCode = this.options[this.selectedIndex]?.getAttribute('data-code');
+                const departmentCode = departmentSelect.options[departmentSelect.selectedIndex]?.getAttribute('data-code');
+                if (classCode && departmentCode) {
+                    updateSpecialtyField(classCode, departmentCode);
+                }
+            });
+
+            departmentSelect.addEventListener('change', function() {
+                const classCode = classRoomSelect.options[classRoomSelect.selectedIndex]?.getAttribute('data-code');
+                const departmentCode = this.options[this.selectedIndex]?.getAttribute('data-code');
+                if (classCode && departmentCode) {
+                    updateSpecialtyField(classCode, departmentCode);
+                }
+            });
+        }
     });
 
     function updateSpecialtyField(classCode, departmentCode) {
-        const specialtyField = $('#specialty');
-        const specialtyContainer = $('#specialty-container');
-        const specialtyLabel = $('#specialty-label');
-        const specialtyHelp = $('#specialty-help');
+        const specialtyField = document.getElementById('specialty');
+        const specialtyContainer = document.getElementById('specialty-container');
+        const specialtyLabel = document.getElementById('specialty-label');
+        const specialtyHelp = document.getElementById('specialty-help');
 
         if (!classCode || !departmentCode) {
-            specialtyContainer.hide();
+            specialtyContainer.classList.add('hidden');
             return;
         }
 
         // Check specialty requirements
-        $.ajax({
-            url: '/students/check-specialty-requirements',
-            data: {
-                classCode: classCode,
-                departmentCode: departmentCode
-            },
-            success: function(response) {
+        fetch(`/students/check-specialty-requirements?classCode=${encodeURIComponent(classCode)}&departmentCode=${encodeURIComponent(departmentCode)}`)
+            .then(response => response.json())
+            .then(response => {
                 console.log('Specialty requirements response:', response);
 
                 if (!response.hasSpecialties) {
                     // Hide specialty field for departments without specialties
-                    specialtyContainer.hide();
-                    specialtyField.prop('disabled', true);
-                    specialtyField.val('');
-                    specialtyLabel.html('<i class="fas fa-info-circle mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Not available for this department)</span>');
+                    specialtyContainer.classList.add('hidden');
+                    specialtyField.disabled = true;
+                    specialtyField.value = '';
+                    specialtyLabel.innerHTML = '<span class="material-symbols-outlined icon-sm mr-2">info</span>Specialty <span class="text-gray-500 text-sm">(Not available for this department)</span>';
                     currentSpecialty = '';
                 } else {
-                    specialtyContainer.show();
+                    specialtyContainer.classList.remove('hidden');
 
                     if (response.required) {
-                        specialtyField.prop('required', true);
-                        specialtyField.prop('disabled', false);
-                        specialtyLabel.html('<i class="fas fa-asterisk text-red-500 mr-2"></i>Specialty <span class="text-red-500">*</span> <span class="text-gray-500 text-sm">(Required)</span>');
-                        specialtyField.addClass('border-red-300 focus:border-red-500 focus:ring-red-500');
-                        specialtyHelp.html('<i class="fas fa-exclamation-circle mr-1"></i>Specialty is required for Sixth Form Science/Arts students');
-                        specialtyHelp.removeClass('text-gray-600').addClass('text-red-600');
+                        specialtyField.required = true;
+                        specialtyField.disabled = false;
+                        specialtyLabel.innerHTML = '<span class="material-symbols-outlined icon-sm text-red-500 mr-2">priority_high</span>Specialty <span class="text-red-500">*</span> <span class="text-gray-500 text-sm">(Required)</span>';
+                        specialtyField.classList.add('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
+                        specialtyHelp.innerHTML = '<span class="material-symbols-outlined icon-sm mr-1">error</span>Specialty is required for Sixth Form Science/Arts students';
+                        specialtyHelp.classList.remove('text-gray-600');
+                        specialtyHelp.classList.add('text-red-600');
                     } else if (response.allowed) {
-                        specialtyField.prop('required', false);
-                        specialtyField.prop('disabled', false);
-                        specialtyLabel.html('<i class="fas fa-tag mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Optional)</span>');
-                        specialtyField.removeClass('border-red-300 focus:border-red-500 focus:ring-red-500');
-                        specialtyHelp.html('<i class="fas fa-info-circle mr-1"></i>Specialty is optional');
-                        specialtyHelp.removeClass('text-red-600').addClass('text-gray-600');
+                        specialtyField.required = false;
+                        specialtyField.disabled = false;
+                        specialtyLabel.innerHTML = '<span class="material-symbols-outlined icon-sm mr-2">sell</span>Specialty <span class="text-gray-500 text-sm">(Optional)</span>';
+                        specialtyField.classList.remove('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
+                        specialtyHelp.innerHTML = '<span class="material-symbols-outlined icon-sm mr-1">info</span>Specialty is optional';
+                        specialtyHelp.classList.remove('text-red-600');
+                        specialtyHelp.classList.add('text-gray-600');
                     } else {
-                        specialtyField.prop('disabled', true);
-                        specialtyField.val('');
-                        specialtyLabel.html('<i class="fas fa-ban text-gray-400 mr-2"></i>Specialty <span class="text-gray-500 text-sm">(Not allowed for this class)</span>');
-                        specialtyHelp.html('<i class="fas fa-info-circle mr-1"></i>Specialty not allowed for this class/department combination');
-                        specialtyHelp.removeClass('text-red-600').addClass('text-gray-600');
+                        specialtyField.disabled = true;
+                        specialtyField.value = '';
+                        specialtyLabel.innerHTML = '<span class="material-symbols-outlined icon-sm text-gray-400 mr-2">block</span>Specialty <span class="text-gray-500 text-sm">(Not allowed for this class)</span>';
+                        specialtyHelp.innerHTML = '<span class="material-symbols-outlined icon-sm mr-1">info</span>Specialty not allowed for this class/department combination';
+                        specialtyHelp.classList.remove('text-red-600');
+                        specialtyHelp.classList.add('text-gray-600');
                     }
 
                     // Update specialty options
@@ -453,36 +509,39 @@
                 if (currentClassCode && currentDepartmentId) {
                     loadSubjects();
                 }
-            },
-            error: function(xhr, status, error) {
+            })
+            .catch(error => {
                 console.error('Error checking specialty requirements:', error);
-                specialtyHelp.html('<i class="fas fa-exclamation-triangle mr-1"></i>Error checking specialty requirements');
-                specialtyHelp.removeClass('text-gray-600').addClass('text-red-600');
-            }
-        });
+                specialtyHelp.innerHTML = '<span class="material-symbols-outlined icon-sm mr-1">warning</span>Error checking specialty requirements';
+                specialtyHelp.classList.remove('text-gray-600');
+                specialtyHelp.classList.add('text-red-600');
+            });
     }
 
     function updateSpecialtyOptions(specialties) {
-        const specialtySelect = $('#specialty');
-        specialtySelect.empty();
+        const specialtySelect = document.getElementById('specialty');
+        specialtySelect.innerHTML = '';
 
         if (specialties && specialties.length > 0) {
-            specialtySelect.append('<option value="">Select Specialty...</option>');
+            specialtySelect.innerHTML = '<option value="">Select Specialty...</option>';
             specialties.forEach(function(specialty) {
-                specialtySelect.append('<option value="' + specialty + '">' + specialty + '</option>');
+                const option = document.createElement('option');
+                option.value = specialty;
+                option.textContent = specialty;
+                specialtySelect.appendChild(option);
             });
         } else {
-            specialtySelect.append('<option value="">No specialties available</option>');
+            specialtySelect.innerHTML = '<option value="">No specialties available</option>';
         }
 
         // Restore current specialty if it exists
         if (currentSpecialty) {
-            specialtySelect.val(currentSpecialty);
+            specialtySelect.value = currentSpecialty;
         }
 
         // Add change event listener for specialty
-        specialtySelect.off('change').on('change', function() {
-            currentSpecialty = $(this).val();
+        specialtySelect.addEventListener('change', function() {
+            currentSpecialty = this.value;
             console.log('Specialty changed to:', currentSpecialty);
             if (currentClassCode && currentDepartmentId) {
                 loadSubjects();
@@ -523,7 +582,6 @@
         }
     }
 
-    // FIXED: Properly handle grouped subjects structure
     function displaySubjects(groupedSubjects) {
         const container = document.getElementById('subjectCheckboxes');
         container.innerHTML = '';
@@ -636,7 +694,7 @@
         const container = document.getElementById('subjectCheckboxes');
         container.innerHTML = `
             <div class="col-span-full text-center text-gray-500 py-8">
-                <i class="fas fa-book-open text-4xl mb-3 text-gray-300"></i>
+                <span class="material-symbols-outlined icon-lg mb-3 text-gray-300">menu_book</span>
                 <p>${message}</p>
             </div>
         `;
@@ -756,13 +814,12 @@
         }
 
         // Validate specialty requirements
-        const specialtyField = $('#specialty');
-        const specialtyContainer = $('#specialty-container');
-        const specialtyLabel = $('#specialty-label');
+        const specialtyField = document.getElementById('specialty');
+        const specialtyContainer = document.getElementById('specialty-container');
 
-        if (specialtyContainer.is(':visible') &&
-            specialtyField.prop('required') &&
-            !specialtyField.val()) {
+        if (specialtyContainer && !specialtyContainer.classList.contains('hidden') &&
+            specialtyField.required &&
+            !specialtyField.value) {
             e.preventDefault();
             alert('Specialty is required for the selected class and department combination.');
             return false;

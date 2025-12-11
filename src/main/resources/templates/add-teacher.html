@@ -4,8 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Teacher - Student Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="/css/material-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/icons/bootstrap-icons/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .material-symbols-outlined.icon-sm {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-md {
+            font-size: 24px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
 <div class="flex">
@@ -16,35 +48,45 @@
             <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
         </div>
         <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">dashboard</span>
+                <span>Dashboard</span>
             </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">group</span>
+                <span>Students</span>
             </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">person</span>
+                <span>Teachers</span>
             </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">menu_book</span>
+                <span>Subjects</span>
             </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
+            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">school</span>
+                <span>Classrooms</span>
             </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-file-alt mr-2"></i>Exams
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">assignment</span>
+                <span>Exams</span>
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">bar_chart</span>
+                <span>Exam Results</span>
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">campaign</span>
+                <span>Notices</span>
             </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">edit</span>
+                <span>Enter Assessments</span>
             </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">pie_chart</span>
+                <span>Reports</span>
             </a>
         </nav>
     </div>
@@ -63,11 +105,14 @@
                 <form th:action="@{/teachers/add}" th:object="${teacher}" method="post" class="space-y-6">
                     <!-- Personal Information -->
                     <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined icon-md mr-2">person</span>
+                            Personal Information
+                        </h2>
 
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             <div class="flex items-center">
-                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                <span class="material-symbols-outlined icon-md text-blue-500 mr-2">info</span>
                                 <span class="text-blue-700 font-medium">Teacher ID will be auto-generated</span>
                             </div>
                         </div>
@@ -116,7 +161,10 @@
 
                     <!-- Contact Information -->
                     <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined icon-md mr-2">contact_phone</span>
+                            Contact Information
+                        </h2>
 
                         <div class="mt-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
@@ -128,7 +176,10 @@
 
                     <!-- Subjects Assignment -->
                     <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Subjects Assignment</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined icon-md mr-2">menu_book</span>
+                            Subjects Assignment
+                        </h2>
                         <p class="text-sm text-gray-600 mb-3">Select one or more subjects that this teacher can teach:</p>
 
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
@@ -144,7 +195,10 @@
 
                     <!-- Classroom Assignment -->
                     <div class="border-b pb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Classroom Assignment</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined icon-md mr-2">school</span>
+                            Classroom Assignment
+                        </h2>
                         <p class="text-sm text-gray-600 mb-3">Select one or more classrooms that this teacher is assigned to:</p>
 
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
@@ -160,7 +214,10 @@
 
                     <!-- Skills -->
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Skills & Qualifications</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined icon-md mr-2">psychology</span>
+                            Skills & Qualifications
+                        </h2>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Skills</label>
                         <textarea th:field="*{skills}"
                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -169,11 +226,13 @@
                     </div>
 
                     <div class="flex justify-between pt-4">
-                        <a th:href="@{/teachers}" class="text-blue-600 hover:underline flex items-center">
-                            <i class="fas fa-arrow-left mr-2"></i>Back to Teachers
+                        <a th:href="@{/teachers}" class="text-blue-600 hover:underline flex items-center btn-icon">
+                            <span class="material-symbols-outlined icon-sm">arrow_back</span>
+                            <span>Back to Teachers</span>
                         </a>
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-                            <i class="fas fa-save mr-2"></i>Add Teacher
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition btn-icon">
+                            <span class="material-symbols-outlined icon-sm">save</span>
+                            <span>Add Teacher</span>
                         </button>
                     </div>
                 </form>

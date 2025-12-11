@@ -4,9 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title th:text="${classRoom.name + ' - Term ' + term + ' Reports'}">Class Term Reports</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="/css/material-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/icons/bootstrap-icons/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="/css/style.css">
+
     <style>
+        /* Custom styles with Roboto font */
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* Material Icons custom styling */
+        .material-symbols-outlined.icon-sm {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-md {
+            font-size: 24px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-lg {
+            font-size: 36px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Grade colors */
         .grade-a { background-color: #10B981; color: white; }
         .grade-b { background-color: #3B82F6; color: white; }
         .grade-c { background-color: #F59E0B; color: white; }
@@ -67,8 +106,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center space-x-4">
-                    <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
-                        <i class="fas fa-arrow-left"></i>
+                    <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors btn-icon">
+                        <span class="material-symbols-outlined icon-sm">arrow_back</span>
                         <span class="font-medium">Back to Reports</span>
                     </a>
                     <div class="h-6 w-px bg-gray-300"></div>
@@ -82,8 +121,9 @@
                 </div>
                 <div class="flex items-center space-x-3">
                     <span class="term-badge" th:classappend="${'term-' + term}">Term <span th:text="${term}"></span></span>
-                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
-                        <i class="fas fa-print mr-1"></i>Print
+                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50 btn-icon">
+                        <span class="material-symbols-outlined icon-sm">print</span>
+                        <span>Print</span>
                     </button>
                 </div>
             </div>
@@ -99,7 +139,7 @@
         (term == 2 ? 'from-green-600 to-emerald-600' :
                      'from-purple-600 to-indigo-600'))}">
                 <h2 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-chart-pie mr-2"></i>Term <span th:text="${term}"></span> Performance Summary
+                    <span class="material-symbols-outlined icon-md mr-2">pie_chart</span>Term <span th:text="${term}"></span> Performance Summary
                 </h2>
             </div>
 
@@ -131,10 +171,11 @@
                 <!-- Performance Distribution -->
                 <div class="mt-8">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-chart-bar mr-2"
-                           th:classappend="${term == 1 ? ' text-blue-600' :
+                        <span class="material-symbols-outlined icon-md mr-2"
+                              th:classappend="${term == 1 ? ' text-blue-600' :
                    (term == 2 ? ' text-green-600' : ' text-purple-600')}">
-                        </i>
+                            bar_chart
+                        </span>
                         Performance Distribution
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -188,13 +229,13 @@
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-trophy mr-2"></i>Student Ranking & Performance
+                        <span class="material-symbols-outlined icon-md mr-2">trophy</span>Student Ranking & Performance
                     </h2>
                     <div class="flex items-center space-x-2">
                         <input type="text" id="searchInput" placeholder="Search students..."
                                class="px-3 py-1 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <button onclick="filterTable()" class="text-white hover:text-green-200">
-                            <i class="fas fa-search"></i>
+                        <button onclick="filterTable()" class="text-white hover:text-green-200 btn-icon">
+                            <span class="material-symbols-outlined icon-sm">search</span>
                         </button>
                     </div>
                 </div>
@@ -294,12 +335,12 @@
                                                ((report.remarks != null && report.remarks.contains('Very Good')) ? 'bg-blue-100 text-blue-800' :
                                                ((report.remarks != null && report.remarks.contains('Good')) ? 'bg-yellow-100 text-yellow-800'
                                                                             : 'bg-red-100 text-red-800')))}">
-                                    <i th:classappend="${'mr-1 ' +
-                                                   ((report.remarks != null && report.remarks.contains('Excellent')) ? 'fas fa-star' :
-                                                   ((report.remarks != null && report.remarks.contains('Very Good')) ? 'fas fa-thumbs-up' :
-                                                   ((report.remarks != null && report.remarks.contains('Good')) ? 'fas fa-check'
-                                                                                  : 'fas fa-exclamation-triangle')))}">
-                                    </i>
+                                    <span th:classappend="${'material-symbols-outlined icon-sm mr-1 ' +
+                                                   ((report.remarks != null && report.remarks.contains('Excellent')) ? 'star' :
+                                                   ((report.remarks != null && report.remarks.contains('Very Good')) ? 'thumb_up' :
+                                                   ((report.remarks != null && report.remarks.contains('Good')) ? 'check'
+                                                                                  : 'warning')))}">
+                                    </span>
                                     <span th:text="${report.remarks}"></span>
                                 </span>
                             </td>
@@ -317,12 +358,14 @@
                             <td class="px-6 py-4">
                                 <div class="flex space-x-2">
                                     <a th:href="@{'/reports/student/' + ${report.student.id} + '?term=' + ${term}}"
-                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center">
-                                        <i class="fas fa-eye mr-1"></i>View
+                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center btn-icon">
+                                        <span class="material-symbols-outlined icon-sm">visibility</span>
+                                        <span>View</span>
                                     </a>
                                     <a th:href="@{'/reports/student/yearly/' + ${report.student.id}}"
-                                       class="text-green-600 hover:text-green-800 text-sm font-medium px-2 py-1 rounded hover:bg-green-50 flex items-center">
-                                        <i class="fas fa-calendar-alt mr-1"></i>Yearly
+                                       class="text-green-600 hover:text-green-800 text-sm font-medium px-2 py-1 rounded hover:bg-green-50 flex items-center btn-icon">
+                                        <span class="material-symbols-outlined icon-sm">calendar_month</span>
+                                        <span>Yearly</span>
                                     </a>
                                 </div>
                             </td>
@@ -371,7 +414,7 @@
         <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
             <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-chalkboard-teacher mr-2"></i>Class Teacher's Analysis
+                    <span class="material-symbols-outlined icon-md mr-2">school</span>Class Teacher's Analysis
                 </h2>
             </div>
 
@@ -380,7 +423,7 @@
                     <!-- Top Performers -->
                     <div>
                         <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-crown mr-2 text-yellow-600"></i>Top Performers (Term <span th:text="${term}"></span>)
+                            <span class="material-symbols-outlined icon-md mr-2 text-yellow-600">military_tech</span>Top Performers (Term <span th:text="${term}"></span>)
                         </h3>
                         <div class="space-y-3">
                             <div th:each="report, stat : ${reports}" th:if="${stat.index < 5}">
@@ -413,7 +456,7 @@
                     <!-- Need Improvement -->
                     <div>
                         <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-exclamation-triangle mr-2 text-red-600"></i>Need Improvement
+                            <span class="material-symbols-outlined icon-md mr-2 text-red-600">warning</span>Need Improvement
                         </h3>
                         <div class="space-y-3">
                             <div th:each="report : ${reports}" th:if="${report.termAverage != null and report.termAverage < 10}">
@@ -437,7 +480,7 @@
                             </div>
                             <div th:if="${#lists.size(reports.?[termAverage != null and termAverage lt 10]) == 0}"
                                  class="text-center py-4 text-gray-500">
-                                <i class="fas fa-check-circle text-2xl text-green-500 mb-2"></i>
+                                <span class="material-symbols-outlined icon-lg text-green-500 mb-2">check_circle</span>
                                 <p>All students are performing well! No one scored below 10.</p>
                             </div>
 
@@ -448,7 +491,7 @@
                 <!-- Recommendations -->
                 <div class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-200">
                     <h4 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
-                        <i class="fas fa-lightbulb mr-2"></i>Recommendations for Term <span th:text="${term + 1}"></span>
+                        <span class="material-symbols-outlined icon-md mr-2">lightbulb</span>Recommendations for Term <span th:text="${term + 1}"></span>
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div class="bg-white p-4 rounded-lg shadow-sm">
@@ -490,18 +533,18 @@
             </div>
             <div class="flex space-x-3">
                 <a th:href="@{/reports/select}"
-                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-arrow-left"></i>
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2 btn-icon">
+                    <span class="material-symbols-outlined icon-sm">arrow_back</span>
                     <span>Back to Reports</span>
                 </a>
                 <button onclick="window.print()"
-                        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-print"></i>
+                        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2 btn-icon">
+                    <span class="material-symbols-outlined icon-sm">print</span>
                     <span>Print Reports</span>
                 </button>
                 <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&page=0&size=20'}"
-                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-calendar-alt"></i>
+                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2 btn-icon">
+                    <span class="material-symbols-outlined icon-sm">calendar_month</span>
                     <span>View Yearly Reports</span>
                 </a>
             </div>

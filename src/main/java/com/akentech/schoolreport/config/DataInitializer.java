@@ -802,14 +802,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S1-CHEM"),
                         new SubjectSpec("Physics", 5, "L6-SCI-S1-PHY"),
-                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "L6-SCI-S1-MATH-MECH")
+                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "L6-SCI-S1-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S1-COMP")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S1", "Chemistry, Physics, Pure Mathematics with Mechanics",
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S1-CHEM"),
                         new SubjectSpec("Physics", 5, "U6-SCI-S1-PHY"),
-                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "U6-SCI-S1-MATH-MECH")
+                        new SubjectSpec("Pure Mathematics with Mechanics", 5, "U6-SCI-S1-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S1-COMP")
                 ));
 
         // S2: Chemistry, Physics, Biology
@@ -817,14 +819,18 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S2-CHEM"),
                         new SubjectSpec("Physics", 5, "L6-SCI-S2-PHY"),
-                        new SubjectSpec("Biology", 5, "L6-SCI-S2-BIO")
+                        new SubjectSpec("Biology", 5, "L6-SCI-S2-BIO"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S2-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S2-ICT")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S2", "Chemistry, Physics, Biology",
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S2-CHEM"),
                         new SubjectSpec("Physics", 5, "U6-SCI-S2-PHY"),
-                        new SubjectSpec("Biology", 5, "U6-SCI-S2-BIO")
+                        new SubjectSpec("Biology", 5, "U6-SCI-S2-BIO"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S2-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S2-ICT")
                 ));
 
         // S3: Biology, Chemistry, Pure Mathematics with Statistics
@@ -832,14 +838,18 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Biology", 5, "L6-SCI-S3-BIO"),
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S3-CHEM"),
-                        new SubjectSpec("Pure Mathematics with Statistics", 5, "L6-SCI-S3-MATH-STAT")
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "L6-SCI-S3-MATH-STAT"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S3-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S3-ICT")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S3", "Biology, Chemistry, Pure Mathematics with Statistics",
                 Arrays.asList(
                         new SubjectSpec("Biology", 5, "U6-SCI-S3-BIO"),
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S3-CHEM"),
-                        new SubjectSpec("Pure Mathematics with Statistics", 5, "U6-SCI-S3-MATH-STAT")
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "U6-SCI-S3-MATH-STAT"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S3-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S3-ICT")
                 ));
 
         // S4: Biology, Chemistry, Geology
@@ -847,14 +857,18 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Biology", 5, "L6-SCI-S4-BIO"),
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S4-CHEM"),
-                        new SubjectSpec("Geology", 5, "L6-SCI-S4-GEOL")
+                        new SubjectSpec("Geology", 5, "L6-SCI-S4-GEOL"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S4-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S4-ICT")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S4", "Biology, Chemistry, Geology",
                 Arrays.asList(
                         new SubjectSpec("Biology", 5, "U6-SCI-S4-BIO"),
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S4-CHEM"),
-                        new SubjectSpec("Geology", 5, "U6-SCI-S4-GEOL")
+                        new SubjectSpec("Geology", 5, "U6-SCI-S4-GEOL"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S4-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S4-ICT")
                 ));
 
         // S5: Chemistry, Biology, Mathematics with Mechanics
@@ -862,14 +876,18 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S5-CHEM"),
                         new SubjectSpec("Biology", 5, "L6-SCI-S5-BIO"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S5-MATH-MECH")
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S5-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S5-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S5-ICT")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S5", "Chemistry, Biology, Mathematics with Mechanics",
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S5-CHEM"),
                         new SubjectSpec("Biology", 5, "U6-SCI-S5-BIO"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S5-MATH-MECH")
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S5-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S5-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S5-ICT")
                 ));
 
         // S6: Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
@@ -878,7 +896,10 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S6-CHEM"),
                         new SubjectSpec("Physics", 5, "L6-SCI-S6-PHY"),
                         new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S6-MATH-MECH"),
-                        new SubjectSpec("Further Mathematics", 4, "L6-SCI-S6-FMATH")
+                        new SubjectSpec("Further Mathematics", 4, "L6-SCI-S6-FMATH"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S6-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S6-ICT")
+
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S6", "Chemistry, Physics, Mathematics with Mechanics, Further Mathematics",
@@ -886,7 +907,9 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S6-CHEM"),
                         new SubjectSpec("Physics", 5, "U6-SCI-S6-PHY"),
                         new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S6-MATH-MECH"),
-                        new SubjectSpec("Further Mathematics", 4, "U6-SCI-S6-FMATH")
+                        new SubjectSpec("Further Mathematics", 4, "U6-SCI-S6-FMATH"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S6-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S6-ICT")
                 ));
 
         // S7: Chemistry, Biology, Physics, Mathematics with Mechanics
@@ -895,7 +918,9 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S7-CHEM"),
                         new SubjectSpec("Biology", 5, "L6-SCI-S7-BIO"),
                         new SubjectSpec("Physics", 5, "L6-SCI-S7-PHY"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S7-MATH-MECH")
+                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S7-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "L6-SCI-S7-COMP"),
+                        new SubjectSpec("ICT", 5, "L6-SCI-S7-ICT")
                 ));
 
         createScienceSpecialty(subjects, department, upperSixth, "S7", "Chemistry, Biology, Physics, Mathematics with Mechanics",
@@ -903,7 +928,9 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S7-CHEM"),
                         new SubjectSpec("Biology", 5, "U6-SCI-S7-BIO"),
                         new SubjectSpec("Physics", 5, "U6-SCI-S7-PHY"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S7-MATH-MECH")
+                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S7-MATH-MECH"),
+                        new SubjectSpec("Computer Science", 5, "U6-SCI-S7-COMP"),
+                        new SubjectSpec("ICT", 5, "U6-SCI-S7-ICT")
                 ));
 
         // S8: Biology, Chemistry, Physics, Mathematics with Mechanics, Further Mathematics
@@ -959,14 +986,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "L6-ART-A1-LIT"),
                         new SubjectSpec("History", 5, "L6-ART-A1-HIST"),
-                        new SubjectSpec("French", 5, "L6-ART-A1-FREN")
+                        new SubjectSpec("French", 5, "L6-ART-A1-FREN"),
+                        new SubjectSpec("ICT", 5, "L6-ART-A1-ICT")
                 ));
 
         createArtsSpecialty(subjects, department, upperSixth, "A1", "Literature, History, French",
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "U6-ART-A1-LIT"),
                         new SubjectSpec("History", 5, "U6-ART-A1-HIST"),
-                        new SubjectSpec("French", 5, "U6-ART-A1-FREN")
+                        new SubjectSpec("French", 5, "U6-ART-A1-FREN"),
+                        new SubjectSpec("ICT", 5, "U6-ART-A1-ICT")
                 ));
 
         // A2: History, Geography, Economics
@@ -974,14 +1003,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("History", 5, "L6-ART-A2-HIST"),
                         new SubjectSpec("Geography", 5, "L6-ART-A2-GEO"),
-                        new SubjectSpec("Economics", 5, "L6-ART-A2-ECO")
+                        new SubjectSpec("Economics", 5, "L6-ART-A2-ECO"),
+                        new SubjectSpec("ICT", 5, "L6-ART-A2-ICT")
                 ));
 
         createArtsSpecialty(subjects, department, upperSixth, "A2", "History, Geography, Economics",
                 Arrays.asList(
                         new SubjectSpec("History", 5, "U6-ART-A2-HIST"),
                         new SubjectSpec("Geography", 5, "U6-ART-A2-GEO"),
-                        new SubjectSpec("Economics", 5, "U6-ART-A2-ECO")
+                        new SubjectSpec("Economics", 5, "U6-ART-A2-ECO"),
+                        new SubjectSpec("ICT", 5, "U6-ART-A2-ICT")
                 ));
 
         // A3: Literature, Economics, History
@@ -989,14 +1020,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "L6-ART-A3-LIT"),
                         new SubjectSpec("Economics", 5, "L6-ART-A3-ECO"),
-                        new SubjectSpec("History", 5, "L6-ART-A3-HIST")
+                        new SubjectSpec("History", 5, "L6-ART-A3-HIST"),
+                        new SubjectSpec("ICT", 5, "L6-ART-A3-ICT")
                 ));
 
         createArtsSpecialty(subjects, department, upperSixth, "A3", "Literature, Economics, History",
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "U6-ART-A3-LIT"),
                         new SubjectSpec("Economics", 5, "U6-ART-A3-ECO"),
-                        new SubjectSpec("History", 5, "U6-ART-A3-HIST")
+                        new SubjectSpec("History", 5, "U6-ART-A3-HIST"),
+                        new SubjectSpec("ICT", 5, "U6-ART-A3-ICT")
                 ));
 
         // A4: Economics, Geography, Pure Mathematics
@@ -1004,16 +1037,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Economics", 5, "L6-ART-A4-ECO"),
                         new SubjectSpec("Geography", 5, "L6-ART-A4-GEO"),
-                        new SubjectSpec("Pure Mathematics (Mechanics)", 5, "L6-ART-A4-MATH-MECH"),
-                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "L6-ART-A4-MATH-STAT")
+                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "L6-ART-A4-MATH-STAT"),
+                        new SubjectSpec("ICT", 5, "L6-ART-A4-ICT")
                 ));
 
         createArtsSpecialty(subjects, department, upperSixth, "A4", "Economics, Geography, Pure Mathematics",
                 Arrays.asList(
                         new SubjectSpec("Economics", 5, "U6-ART-A4-ECO"),
                         new SubjectSpec("Geography", 5, "U6-ART-A4-GEO"),
-                        new SubjectSpec("Pure Mathematics (Mechanics)", 5, "U6-ART-A4-MATH-MECH"),
-                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "U6-ART-A4-MATH-STAT")
+                        new SubjectSpec("Pure Mathematics (Statistics)", 5, "U6-ART-A4-MATH-STAT"),
+                        new SubjectSpec("ICT", 5, "U6-ART-A4-ICT")
                 ));
 
         // A5: Literature, History, Philosophy
@@ -1021,14 +1054,16 @@ public class DataInitializer implements CommandLineRunner {
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "L6-ART-A5-LIT"),
                         new SubjectSpec("History", 5, "L6-ART-A5-HIST"),
-                        new SubjectSpec("Philosophy", 5, "L6-ART-A5-PHIL")
+                        new SubjectSpec("Philosophy", 5, "L6-ART-A5-PHIL"),
+                        new SubjectSpec("ICT", 5, "L6-ART-A5-ICT")
                 ));
 
         createArtsSpecialty(subjects, department, upperSixth, "A5", "Literature, History, Philosophy",
                 Arrays.asList(
                         new SubjectSpec("Literature", 5, "U6-ART-A5-LIT"),
                         new SubjectSpec("History", 5, "U6-ART-A5-HIST"),
-                        new SubjectSpec("Philosophy", 5, "U6-ART-A5-PHIL")
+                        new SubjectSpec("Philosophy", 5, "U6-ART-A5-PHIL"),
+                        new SubjectSpec("ICT", 5, "U6-ART-A5-ICT")
                 ));
     }
 
@@ -1229,7 +1264,8 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Entrepreneurship", 5, "L6-COM-ACC-ENT"),
                     new SubjectSpec("Economics", 5, "L6-COM-ACC-ECONS"),
                     new SubjectSpec("Commerce and Finance", 5, "L6-COM-ACC-FIN"),
-                    new SubjectSpec("Business Management", 5, "L6-COM-ACC-MGMT")
+                    new SubjectSpec("Business Management", 5, "L6-COM-ACC-MGMT"),
+                    new SubjectSpec("Food Science", 5, "L6-COM-ACC-FS")
             ));
         }
 
@@ -1243,7 +1279,8 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Advanced Entrepreneurship", 5, "U6-COM-ACC-ENT"),
                     new SubjectSpec("Advanced Economics", 5, "U6-COM-ACC-ECONS"),
                     new SubjectSpec("International Finance", 5, "U6-COM-ACC-FIN"),
-                    new SubjectSpec("Strategic Business Management", 5, "U6-COM-ACC-MGMT")
+                    new SubjectSpec("Strategic Business Management", 5, "U6-COM-ACC-MGMT"),
+                    new SubjectSpec("Food Science", 5, "U6-COM-ACC-FS")
             ));
         }
 
@@ -1261,7 +1298,8 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Office Technology", 5, "L6-COM-ACT-OFFTECH"),
                     new SubjectSpec("Information Processing", 5, "L6-COM-ACT-INFO"),
                     new SubjectSpec("Professional Communication Technique", 5, "L6-COM-ACT-PCT"),
-                    new SubjectSpec("Business Finance for Administrators", 5, "L6-COM-ACT-FIN")
+                    new SubjectSpec("Business Finance for Administrators", 5, "L6-COM-ACT-FIN"),
+                    new SubjectSpec("Food Science", 5, "L6-COM-ACT-FS")
             ));
         }
 
@@ -1275,7 +1313,8 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Advanced Office Technology", 5, "U6-COM-ACT-OFFTECH"),
                     new SubjectSpec("Advanced Information Processing", 5, "U6-COM-ACT-INFO"),
                     new SubjectSpec("Advanced Professional Communication Technique", 5, "U6-COM-ACT-PCT"),
-                    new SubjectSpec("Corporate Finance Management", 5, "U6-COM-ACT-FIN")
+                    new SubjectSpec("Corporate Finance Management", 5, "U6-COM-ACT-FIN"),
+                    new SubjectSpec("Food Science", 5, "U6-COM-ACT-FS")
             ));
         }
     }
@@ -1331,7 +1370,9 @@ public class DataInitializer implements CommandLineRunner {
                             new SubjectSpec("Applied Mechanics", 3, "L6-BC-AM"),
                             new SubjectSpec("Construction Processes", 3, "L6-BC-CP"),
                             new SubjectSpec("Project Management", 3, "L6-BC-PM"),
-                            new SubjectSpec("Trade and Training", 3, "L6-BC-TT")
+                            new SubjectSpec("Trade and Training", 3, "L6-BC-TT"),
+                            new SubjectSpec("Mathematics With Mechanics", 5, "L6-BC-MATH-MECH"),
+                            new SubjectSpec("Industrial Computing", 5, "L6-BC-INT-COMP")
                     ));
         }
 
@@ -1348,7 +1389,9 @@ public class DataInitializer implements CommandLineRunner {
                             new SubjectSpec("Applied Mechanics", 3, "U6-BC-AM"),
                             new SubjectSpec("Construction Processes", 3, "U6-BC-CP"),
                             new SubjectSpec("Project Management", 3, "U6-BC-PM"),
-                            new SubjectSpec("Trade and Training", 3, "U6-BC-TT")
+                            new SubjectSpec("Trade and Training", 3, "U6-BC-TT"),
+                            new SubjectSpec("Mathematics With Mechanics", 5, "U6-BC-MATH-MECH"),
+                            new SubjectSpec("Industrial Computing", 5, "U6-BC-INT-COMP")
                     ));
         }
 
@@ -1401,57 +1444,61 @@ public class DataInitializer implements CommandLineRunner {
                             new SubjectSpec("Economic Geography", 2, levelCode + "-HE-ECOGEO"),
                             new SubjectSpec("Law and Government", 2, levelCode + "-HE-LAW"),
                             new SubjectSpec("Citizenship", 2, levelCode + "-HE-CIT"),
-                            new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP")
+                            new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP"),
+                            new SubjectSpec("Computer Science", 2, levelCode + "-HE-COMP"),
+                            new SubjectSpec("ICT", 2, levelCode + "-HE-ICT")
 
                     )
             );
         }
     }
-        private void createHomeEconomicsSixthFormSubjects(
-                List<Subject> subjects,
-                Department department,
-                Map<ClassLevel, ClassRoom> classRoomMap) {
+    private void createHomeEconomicsSixthFormSubjects(
+            List<Subject> subjects,
+            Department department,
+            Map<ClassLevel, ClassRoom> classRoomMap) {
 
-            for (ClassLevel level : Arrays.asList(
-                    ClassLevel.LOWER_SIXTH,
-                    ClassLevel.UPPER_SIXTH)) {
+        for (ClassLevel level : Arrays.asList(
+                ClassLevel.LOWER_SIXTH,
+                ClassLevel.UPPER_SIXTH)) {
 
-                if (!classRoomMap.containsKey(level)) {
-                    continue;
-                }
-
-                String levelCode = level == ClassLevel.LOWER_SIXTH ? "L6" : "U6";
-
-                createFormSubjects(
-                        subjects,
-                        department,
-                        classRoomMap,
-                        level,
-                        levelCode + "-HE",
-                        Arrays.asList(
-
-                                // 🟩 PROFESSIONAL SUBJECTS
-                                new SubjectSpec("Catering Management and Dietetics", 5, levelCode + "-HE-CMD"),
-                                new SubjectSpec("Culinary Practicals on Catering Management and Dietetics", 3, levelCode + "-HE-CMD-PRAC"),
-                                new SubjectSpec("Family Life Education and Gerontology (Theory)", 5, levelCode + "-HE-FLEG"),
-                                new SubjectSpec("Family Life Education and Gerontology (Practicals)", 3, levelCode + "-HE-FLEG-PRAC"),
-                                new SubjectSpec("Resource Management on Home Studies (RMHS)", 5, levelCode + "-HE-RMHS"),
-                                new SubjectSpec("Practicals on RMHS", 3, levelCode + "-HE-RMHS-PRAC"),
-
-                                // 🟦 RELATED PROFESSIONAL SUBJECTS
-                                new SubjectSpec("Social Life", 2, levelCode + "-HE-SLIFE"),
-                                new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
-                                new SubjectSpec("Natural Science", 3, levelCode + "-HE-NSCI"),
-                                new SubjectSpec("Economics", 3, levelCode + "-HE-ECON"),
-
-                                // 🟧 GENERAL / SUPPORTING SUBJECTS
-                                new SubjectSpec("Professional English", 4, levelCode + "-HE-PENG"),
-                                new SubjectSpec("Management Aided in Computer", 1, levelCode + "-HE-MGT-COMP")
-
-                        )
-                );
+            if (!classRoomMap.containsKey(level)) {
+                continue;
             }
+
+            String levelCode = level == ClassLevel.LOWER_SIXTH ? "L6" : "U6";
+
+            createFormSubjects(
+                    subjects,
+                    department,
+                    classRoomMap,
+                    level,
+                    levelCode + "-HE",
+                    Arrays.asList(
+
+                            // 🟩 PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Catering Management and Dietetics", 5, levelCode + "-HE-CMD"),
+                            new SubjectSpec("Culinary Practicals on Catering Management and Dietetics", 3, levelCode + "-HE-CMD-PRAC"),
+                            new SubjectSpec("Family Life Education and Gerontology (Theory)", 5, levelCode + "-HE-FLEG"),
+                            new SubjectSpec("Family Life Education and Gerontology (Practicals)", 3, levelCode + "-HE-FLEG-PRAC"),
+                            new SubjectSpec("Resource Management on Home Studies (RMHS)", 5, levelCode + "-HE-RMHS"),
+                            new SubjectSpec("Practicals on RMHS", 3, levelCode + "-HE-RMHS-PRAC"),
+
+                            // 🟦 RELATED PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Social Life", 2, levelCode + "-HE-SLIFE"),
+                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
+                            new SubjectSpec("Natural Science", 3, levelCode + "-HE-NSCI"),
+                            new SubjectSpec("Economics", 3, levelCode + "-HE-ECON"),
+
+                            // 🟧 GENERAL / SUPPORTING SUBJECTS
+                            new SubjectSpec("Professional English", 4, levelCode + "-HE-PENG"),
+                            new SubjectSpec("Management Aided in Computer", 1, levelCode + "-HE-MGT-COMP"),
+                            new SubjectSpec("Advanced Computer Science", 2, levelCode + "-HE-ADV-COMP"),
+                            new SubjectSpec("Advanced ICT", 2, levelCode + "-HE-ADV-ICT")
+
+                    )
+            );
         }
+    }
 
     private void createEPSSubjects(List<Subject> subjects, Department department,
                                    Map<ClassLevel, ClassRoom> classRoomMap) {
@@ -1524,7 +1571,7 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Citizenship", 2, "F4-EPS-CIT"),
                     new SubjectSpec("Human And Economic Geography", 2, "F4-EPS-GEO"),
                     new SubjectSpec("Engineering Science", 2, "F4-EPS-ENG-SCI"),  // Changed from "F4-EPS-ENG"
-                    new SubjectSpec("Computer Science", 3, "F4-EPS-COMP"),
+                    new SubjectSpec("Industrial Computing", 3, "F4-EPS-INT-COMP"),
                     new SubjectSpec("Law And Government", 2, "F4-EPS-LAW-GOV"),
                     new SubjectSpec("Entrepreneurship", 2, "F4-EPS-ENT"),
                     new SubjectSpec("Electrical Technology", 2, "F4-EPS-ELEC-TECH"),
@@ -1555,6 +1602,7 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Engineering Drawing", 4, "F5-EPS-ENG-DRAW"),
                     new SubjectSpec("Electrical Circuit", 2, "F5-EPS-ELEC-CIR"),
                     new SubjectSpec("Electrical Machine", 2, "F5-EPS-ELEC-MACH"),
+                    new SubjectSpec("Industrial Computing", 3, "F5-EPS-INT-COMP"),
                     new SubjectSpec("Test and Measurement", 2, "F5-EPS-TEST-MEA")
             ));
         }
@@ -1597,7 +1645,8 @@ public class DataInitializer implements CommandLineRunner {
                     new SubjectSpec("Professional English", 4, "U6-EPS-PENG"),
                     new SubjectSpec("Advanced Professional Mathematics", 4, "U6-EPS-ADV-PMATH"),
                     new SubjectSpec("Advanced Engineering Science", 4, "U6-EPS-ADV-ENG-SCI"),
-                    new SubjectSpec("Advanced Entrepreneurship", 3, "U6-EPS-ADV-ENT")
+                    new SubjectSpec("Advanced Entrepreneurship", 3, "U6-EPS-ADV-ENT"),
+                    new SubjectSpec("Computer Applications", 3, "U6-EPS-COMP-APP")
             ));
         }
     }

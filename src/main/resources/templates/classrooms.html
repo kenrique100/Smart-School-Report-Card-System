@@ -4,316 +4,575 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classrooms - Student Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="/css/material-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/icons/bootstrap-icons/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="/css/style.css">
+
     <style>
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+        /* Custom styles with Roboto font */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
         }
+
+        /* Material Icons custom styling */
+        .material-symbols-outlined.icon-sm {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-md {
+            font-size: 24px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-lg {
+            font-size: 36px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Custom styles for classroom page */
+        .classroom-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #1e40af;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-x: hidden;
+        }
+
+        .classroom-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+
+        .classroom-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .ordinary-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #86efac;
+        }
+
+        .advanced-card {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-color: #d8b4fe;
+        }
+
+        .level-badge {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .ordinary-badge {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .advanced-badge {
+            background-color: #8b5cf6;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .classroom-card {
-            transition: all 0.3s ease;
+
+        /* Filter buttons */
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 0.875rem;
         }
-        .classroom-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+        .filter-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.active {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            opacity: 1;
+        }
+
+        /* Custom sidebar styles */
+        .sidebar a {
+            display: block;
+            padding: 12px 16px;
+            color: white;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover, .sidebar a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #60a5fa;
+        }
+
+        .progress-thin {
+            height: 6px;
+            background-color: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #3b82f6;
+            border-radius: 3px;
+        }
+
+        /* Responsive grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Alert styles */
+        .alert-custom {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #059669;
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-info {
+            background-color: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        /* Button styles */
+        .btn-custom {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .btn-purple {
+            background-color: #8b5cf6;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background-color: #7c3aed;
+            color: white;
         }
     </style>
 </head>
-<body class="bg-gray-50">
-<div class="flex">
+<body>
+<div class="classroom-container">
     <!-- Sidebar -->
-    <div class="w-64 bg-blue-800 text-white min-h-screen">
-        <div class="p-4">
-            <h1 class="text-xl font-bold">School Management</h1>
-            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
+    <div class="sidebar">
+        <div style="padding: 20px;">
+            <h1 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 5px;">School Management</h1>
+            <p style="color: #93c5fd; font-size: 0.875rem; margin: 0;">Comprehensive System</p>
         </div>
-        <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+
+        <nav style="margin-top: 30px;">
+            <a th:href="@{/dashboard}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">dashboard</span>
+                <span>Dashboard</span>
             </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
+            <a th:href="@{/students}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">group</span>
+                <span>Students</span>
             </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            <a th:href="@{/teachers}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">person</span>
+                <span>Teachers</span>
             </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
+            <a th:href="@{/classroom}" class="active btn-icon">
+                <span class="material-symbols-outlined icon-sm">school</span>
+                <span>Classrooms</span>
             </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
+            <a th:href="@{/subjects}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">menu_book</span>
+                <span>Subjects</span>
             </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-file-alt mr-2"></i>Exams
+            <a th:href="@{/exams}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">assignment</span>
+                <span>Exams</span>
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            <a th:href="@{/exams/results}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">bar_chart</span>
+                <span>Exam Results</span>
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
+            <a th:href="@{/notices}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">campaign</span>
+                <span>Notices</span>
             </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            <a th:href="@{/assessments/entry}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">edit</span>
+                <span>Enter Assessments</span>
             </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
+            <a th:href="@{/reports/select}" class="btn-icon">
+                <span class="material-symbols-outlined icon-sm">pie_chart</span>
+                <span>Reports</span>
             </a>
         </nav>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1">
-        <div class="bg-white shadow px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <a th:href="@{/dashboard}" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-                <h1 class="text-2xl font-bold text-gray-800">Classroom Management</h1>
-            </div>
-            <div class="text-sm text-gray-600">
-                Total Classrooms: <span class="font-bold" th:text="${classrooms.size()}">0</span>
+    <div class="main-content">
+        <!-- Header -->
+        <div style="background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb;">
+            <div style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <a th:href="@{/dashboard}" style="color: #3b82f6; text-decoration: none; margin-right: 15px;" class="btn-icon">
+                            <span class="material-symbols-outlined icon-sm">arrow_back</span>
+                            <span>Back to Dashboard</span>
+                        </a>
+                        <h1 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin: 0;">Classroom Management</h1>
+                    </div>
+                    <div style="font-size: 0.875rem; color: #6b7280;">
+                        Total Classrooms: <span style="font-weight: bold;" th:text="${classrooms.size()}">0</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <main class="p-6 fade-in">
+        <main style="padding: 20px;" class="fade-in">
             <!-- Success/Error Messages -->
-            <div th:if="${param.success}" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                <i class="fas fa-check-circle mr-2"></i>
-                <span th:text="${param.success}">Operation completed successfully!</span>
+            <div th:if="${param.success}" class="alert-custom alert-success">
+                <span class="material-symbols-outlined icon-sm">check_circle</span>
+                <span th:text="${param.success}" style="margin-left: 8px;">Operation completed successfully!</span>
             </div>
 
-            <div th:if="${param.error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                <span th:if="${param.error == 'classroom_not_found'}">Classroom not found!</span>
-                <span th:if="${param.error == 'server_error'}">Server error occurred!</span>
+            <div th:if="${param.error}" class="alert-custom alert-danger">
+                <span class="material-symbols-outlined icon-sm">error</span>
+                <span style="margin-left: 8px;">
+                    <span th:if="${param.error == 'classroom_not_found'}">Classroom not found!</span>
+                    <span th:if="${param.error == 'server_error'}">Server error occurred!</span>
+                </span>
             </div>
 
-            <div th:if="${error}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                <span th:text="${error}"></span>
+            <div th:if="${error}" class="alert-custom alert-danger">
+                <span class="material-symbols-outlined icon-sm">error</span>
+                <span style="margin-left: 8px;" th:text="${error}"></span>
             </div>
 
             <!-- Classroom Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
-                    <div class="flex items-center justify-between">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                <div class="classroom-card" style="border-left: 4px solid #3b82f6;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-600">Total Classrooms</h3>
-                            <p class="text-3xl font-bold text-gray-900" th:text="${classrooms.size()}">0</p>
+                            <h3 style="font-size: 0.875rem; color: #6b7280; margin: 0 0 8px 0;">Total Classrooms</h3>
+                            <p class="stat-number text-primary" th:text="${classrooms.size()}">0</p>
                         </div>
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-school text-blue-600 text-2xl"></i>
+                        <div style="background-color: #dbeafe; padding: 12px; border-radius: 8px;">
+                            <span class="material-symbols-outlined icon-md" style="color: #3b82f6;">school</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
-                    <div class="flex items-center justify-between">
+                <div class="classroom-card" style="border-left: 4px solid #10b981;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-600">Ordinary Level</h3>
-                            <p class="text-3xl font-bold text-gray-900"
+                            <h3 style="font-size: 0.875rem; color: #6b7280; margin: 0 0 8px 0;">Ordinary Level</h3>
+                            <p class="stat-number text-success"
                                th:text="${#lists.size(classrooms.?[code.isFormLevel()])}">0</p>
                         </div>
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-graduation-cap text-green-600 text-2xl"></i>
+                        <div style="background-color: #d1fae5; padding: 12px; border-radius: 8px;">
+                            <span class="material-symbols-outlined icon-md" style="color: #10b981;">school</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
-                    <div class="flex items-center justify-between">
+                <div class="classroom-card" style="border-left: 4px solid #8b5cf6;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-600">Advanced Level</h3>
-                            <p class="text-3xl font-bold text-gray-900"
+                            <h3 style="font-size: 0.875rem; color: #6b7280; margin: 0 0 8px 0;">Advanced Level</h3>
+                            <p class="stat-number text-purple"
                                th:text="${#lists.size(classrooms.?[code.isSixthForm()])}">0</p>
                         </div>
-                        <div class="p-3 bg-purple-100 rounded-lg">
-                            <i class="fas fa-user-graduate text-purple-600 text-2xl"></i>
+                        <div style="background-color: #f3e8ff; padding: 12px; border-radius: 8px;">
+                            <span class="material-symbols-outlined icon-md" style="color: #8b5cf6;">school</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-orange-500">
-                    <div class="flex items-center justify-between">
+                <div class="classroom-card" style="border-left: 4px solid #f59e0b;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-600">Total Students</h3>
-                            <p class="text-3xl font-bold text-gray-900" th:text="${totalStudents}">0</p>
+                            <h3 style="font-size: 0.875rem; color: #6b7280; margin: 0 0 8px 0;">Total Students</h3>
+                            <p class="stat-number text-warning" th:text="${totalStudents}">0</p>
                         </div>
-                        <div class="p-3 bg-orange-100 rounded-lg">
-                            <i class="fas fa-users text-orange-600 text-2xl"></i>
+                        <div style="background-color: #ffedd5; padding: 12px; border-radius: 8px;">
+                            <span class="material-symbols-outlined icon-md" style="color: #f59e0b;">group</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Classrooms Grid -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-lg font-bold text-gray-800">All Classrooms</h2>
-                        <div class="flex space-x-2">
-                            <button onclick="filterClassrooms('all')" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors">
-                                All Classes
-                            </button>
-                            <button onclick="filterClassrooms('ordinary')" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors">
-                                Ordinary Level
-                            </button>
-                            <button onclick="filterClassrooms('advanced')" class="bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700 transition-colors">
-                                Advanced Level
-                            </button>
-                        </div>
+            <div class="classroom-card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.125rem; font-weight: bold; color: #1f2937; margin: 0;">All Classrooms</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="filterClassrooms('all')"
+                                class="filter-btn active" style="background-color: #3b82f6;" class="btn-icon">
+                            <span class="material-symbols-outlined icon-sm">all_inclusive</span>
+                            <span>All Classes</span>
+                        </button>
+                        <button onclick="filterClassrooms('ordinary')"
+                                class="filter-btn" style="background-color: #10b981;" class="btn-icon">
+                            <span class="material-symbols-outlined icon-sm">school</span>
+                            <span>Ordinary Level</span>
+                        </button>
+                        <button onclick="filterClassrooms('advanced')"
+                                class="filter-btn" style="background-color: #8b5cf6;" class="btn-icon">
+                            <span class="material-symbols-outlined icon-sm">school</span>
+                            <span>Advanced Level</span>
+                        </button>
                     </div>
+                </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="classroomsGrid">
-                        <!-- Ordinary Level Classrooms -->
-                        <div th:each="classroom : ${classrooms}"
-                             th:if="${classroom.code.isFormLevel()}"
-                             class="classroom-card bg-gradient-to-br from-green-50 to-blue-50 rounded-lg shadow border border-green-200 p-6">
-                            <div class="flex justify-between items-start mb-4">
+                <div class="grid-container" id="classroomsGrid">
+                    <!-- Ordinary Level Classrooms -->
+                    <div th:each="classroom : ${classrooms}"
+                         th:if="${classroom.code.isFormLevel()}"
+                         class="classroom-item ordinary">
+                        <div class="classroom-card ordinary-card">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                                 <div>
-                                    <h3 class="text-xl font-bold text-gray-800" th:text="${classroom.name}">Form 1</h3>
-                                    <p class="text-sm text-gray-600" th:text="${classroom.code.displayName}">Form 1</p>
+                                    <h3 style="font-size: 1.125rem; font-weight: bold; color: #1f2937; margin: 0 0 5px 0;"
+                                        th:text="${classroom.name}">Form 1</h3>
+                                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0;"
+                                       th:text="${classroom.code.displayName}">Form 1</p>
                                 </div>
-                                <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">Ordinary</span>
+                                <span class="level-badge ordinary-badge">Ordinary</span>
                             </div>
 
-                            <div class="space-y-2 mb-4">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Academic Year:</span>
-                                    <span class="font-medium" th:text="${classroom.academicYear}">2024/2025</span>
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Academic Year:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500;" th:text="${classroom.academicYear}">2024/2025</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Class Code:</span>
-                                    <span class="font-mono font-medium" th:text="${classroom.code}">F1</span>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Class Code:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; font-family: monospace;"
+                                          th:text="${classroom.code}">F1</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Total Students:</span>
-                                    <span class="font-bold text-blue-600"
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Total Students:</span>
+                                    <span style="font-size: 0.875rem; font-weight: bold; color: #3b82f6;"
                                           th:text="${@studentService.getStudentsByClass(classroom).size()}">0</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Male:</span>
-                                    <span class="font-medium text-green-600"
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Male:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; color: #10b981;"
                                           th:text="${classroomStats[classroom.id]?.get('MALE') ?: 0}">0</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Female:</span>
-                                    <span class="font-medium text-pink-600"
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Female:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; color: #ec4899;"
                                           th:text="${classroomStats[classroom.id]?.get('FEMALE') ?: 0}">0</span>
                                 </div>
                             </div>
 
-                            <div class="flex space-x-2">
+                            <div style="display: flex;">
                                 <a th:href="@{'/classroom/students/' + ${classroom.id}}"
-                                   class="flex-1 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors text-sm">
-                                    <i class="fas fa-users mr-1"></i> View Students
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- Advanced Level Classrooms -->
-                        <div th:each="classroom : ${classrooms}"
-                             th:if="${classroom.code.isSixthForm()}"
-                             class="classroom-card bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow border border-purple-200 p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-800" th:text="${classroom.name}">Lower Sixth</h3>
-                                    <p class="text-sm text-gray-600" th:text="${classroom.code.displayName}">Lower Sixth</p>
-                                </div>
-                                <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">Advanced</span>
-                            </div>
-
-                            <div class="space-y-2 mb-4">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Academic Year:</span>
-                                    <span class="font-medium" th:text="${classroom.academicYear}">2024/2025</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Class Code:</span>
-                                    <span class="font-mono font-medium" th:text="${classroom.code}">LSX</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Total Students:</span>
-                                    <span class="font-bold text-purple-600"
-                                          th:text="${@studentService.getStudentsByClass(classroom).size()}">0</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Male:</span>
-                                    <span class="font-medium text-green-600"
-                                          th:text="${classroomStats[classroom.id]?.get('MALE') ?: 0}">0</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Female:</span>
-                                    <span class="font-medium text-pink-600"
-                                          th:text="${classroomStats[classroom.id]?.get('FEMALE') ?: 0}">0</span>
-                                </div>
-                            </div>
-
-                            <div class="flex space-x-2">
-                                <a th:href="@{'/classroom/students/' + ${classroom.id}}"
-                                   class="flex-1 bg-purple-600 text-white text-center py-2 rounded hover:bg-purple-700 transition-colors text-sm">
-                                    <i class="fas fa-users mr-1"></i> View Students
+                                   class="btn-custom btn-primary" style="flex: 1; text-decoration: none;" class="btn-icon">
+                                    <span class="material-symbols-outlined icon-sm">group</span>
+                                    <span>View Students</span>
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Empty State -->
-                    <div th:if="${classrooms.empty}" class="text-center py-12">
-                        <i class="fas fa-school text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-500 mb-2">No Classrooms Found</h3>
-                        <p class="text-gray-400">There are no classrooms configured in the system.</p>
+                    <!-- Advanced Level Classrooms -->
+                    <div th:each="classroom : ${classrooms}"
+                         th:if="${classroom.code.isSixthForm()}"
+                         class="classroom-item advanced">
+                        <div class="classroom-card advanced-card">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                <div>
+                                    <h3 style="font-size: 1.125rem; font-weight: bold; color: #1f2937; margin: 0 0 5px 0;"
+                                        th:text="${classroom.name}">Lower Sixth</h3>
+                                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0;"
+                                       th:text="${classroom.code.displayName}">Lower Sixth</p>
+                                </div>
+                                <span class="level-badge advanced-badge">Advanced</span>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Academic Year:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500;" th:text="${classroom.academicYear}">2024/2025</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Class Code:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; font-family: monospace;"
+                                          th:text="${classroom.code}">LSX</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Total Students:</span>
+                                    <span style="font-size: 0.875rem; font-weight: bold; color: #8b5cf6;"
+                                          th:text="${@studentService.getStudentsByClass(classroom).size()}">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Male:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; color: #10b981;"
+                                          th:text="${classroomStats[classroom.id]?.get('MALE') ?: 0}">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 0.875rem; color: #6b7280;">Female:</span>
+                                    <span style="font-size: 0.875rem; font-weight: 500; color: #ec4899;"
+                                          th:text="${classroomStats[classroom.id]?.get('FEMALE') ?: 0}">0</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex;">
+                                <a th:href="@{'/classroom/students/' + ${classroom.id}}"
+                                   class="btn-custom btn-purple" style="flex: 1; text-decoration: none;" class="btn-icon">
+                                    <span class="material-symbols-outlined icon-sm">group</span>
+                                    <span>View Students</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${classrooms.empty}" style="text-align: center; padding: 40px 20px;">
+                    <span class="material-symbols-outlined icon-lg" style="color: #e5e7eb; margin-bottom: 15px;">school</span>
+                    <h3 style="font-size: 1.125rem; font-weight: 500; color: #6b7280; margin: 0 0 10px 0;">No Classrooms Found</h3>
+                    <p style="color: #9ca3af; margin: 0;">There are no classrooms configured in the system.</p>
                 </div>
             </div>
 
             <!-- Level Distribution -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">Classroom Distribution</h3>
-                    <div class="space-y-4">
-                        <div th:each="classroom : ${classrooms}">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-gray-700" th:text="${classroom.name}">Class Name</span>
-                                <span class="text-sm font-bold text-blue-600"
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="classroom-card">
+                    <h3 style="font-size: 1.125rem; font-weight: bold; color: #1f2937; margin: 0 0 15px 0;">Classroom Distribution</h3>
+                    <div th:if="${totalStudents > 0}">
+                        <div th:each="classroom : ${classrooms}" style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 0.875rem; font-weight: 500; color: #4b5563;"
+                                      th:text="${classroom.name}">Class Name</span>
+                                <span style="font-size: 0.875rem; font-weight: bold; color: #3b82f6;"
                                       th:text="${@studentService.getStudentsByClass(classroom).size()}">0</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full"
-                                     th:style="'width: ' + ${(@studentService.getStudentsByClass(classroom).size() / totalStudents) * 100} + '%;'"
-                                     th:if="${totalStudents > 0}"></div>
+                            <div class="progress-thin">
+                                <div class="progress-fill"
+                                     th:style="'width: ' + ${(@studentService.getStudentsByClass(classroom).size() / totalStudents) * 100} + '%;'"></div>
                             </div>
                         </div>
                     </div>
+                    <div th:unless="${totalStudents > 0}" style="text-align: center; padding: 20px; color: #9ca3af;">
+                        <p style="margin: 0;">No student data available</p>
+                    </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">Level Statistics</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                            <div class="flex items-center">
-                                <i class="fas fa-graduation-cap text-green-600 mr-3"></i>
-                                <span class="font-medium text-green-800">Ordinary Level</span>
+                <div class="classroom-card">
+                    <h3 style="font-size: 1.125rem; font-weight: bold; color: #1f2937; margin: 0 0 15px 0;">Level Statistics</h3>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f0fdf4; border-radius: 8px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center;">
+                                <span class="material-symbols-outlined icon-md" style="color: #10b981; margin-right: 12px;">school</span>
+                                <span style="font-weight: 500; color: #065f46;">Ordinary Level</span>
                             </div>
-                            <div class="text-right">
-                                <div class="font-bold text-green-600"
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: #10b981;"
                                      th:text="${#lists.size(classrooms.?[code.isFormLevel()])}">0</div>
-                                <div class="text-xs text-green-600">Classrooms</div>
+                                <div style="font-size: 0.75rem; color: #10b981;">Classrooms</div>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                            <div class="flex items-center">
-                                <i class="fas fa-user-graduate text-purple-600 mr-3"></i>
-                                <span class="font-medium text-purple-800">Advanced Level</span>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #faf5ff; border-radius: 8px;">
+                            <div style="display: flex; align-items: center;">
+                                <span class="material-symbols-outlined icon-md" style="color: #8b5cf6; margin-right: 12px;">school</span>
+                                <span style="font-weight: 500; color: #5b21b6;">Advanced Level</span>
                             </div>
-                            <div class="text-right">
-                                <div class="font-bold text-purple-600"
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: #8b5cf6;"
                                      th:text="${#lists.size(classrooms.?[code.isSixthForm()])}">0</div>
-                                <div class="text-xs text-purple-600">Classrooms</div>
+                                <div style="font-size: 0.75rem; color: #8b5cf6;">Classrooms</div>
                             </div>
                         </div>
                     </div>
@@ -321,34 +580,51 @@
             </div>
         </main>
 
-        <footer class="bg-white border-t mt-8">
-            <div class="px-6 py-4 text-center text-gray-600">
-                <p>© 2024 School Management System. All rights reserved.</p>
+        <footer style="background: white; border-top: 1px solid #e5e7eb; margin-top: 30px;">
+            <div style="padding: 20px;">
+                <p style="text-align: center; color: #6b7280; margin: 0;">
+                    © 2024 School Management System. All rights reserved.
+                </p>
             </div>
         </footer>
     </div>
 </div>
 
+<!-- LOCAL JAVASCRIPT FILES -->
+<script src="/js/jquery-3.6.0.min.js"></script>
+<script src="/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterClassrooms(level) {
-        const classrooms = document.querySelectorAll('.classroom-card');
+        const classrooms = document.querySelectorAll('.classroom-item');
+        const filterButtons = document.querySelectorAll('.filter-btn');
 
+        // Update active button
+        filterButtons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.opacity = '0.8';
+        });
+
+        const activeButton = document.querySelector(`.filter-btn[onclick="filterClassrooms('${level}')"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+            activeButton.style.opacity = '1';
+        }
+
+        // Filter classrooms
         classrooms.forEach(classroom => {
             switch(level) {
                 case 'all':
                     classroom.style.display = 'block';
                     break;
                 case 'ordinary':
-                    if (classroom.classList.contains('bg-gradient-to-br') &&
-                        classroom.classList.contains('from-green-50')) {
+                    if (classroom.classList.contains('ordinary')) {
                         classroom.style.display = 'block';
                     } else {
                         classroom.style.display = 'none';
                     }
                     break;
                 case 'advanced':
-                    if (classroom.classList.contains('bg-gradient-to-br') &&
-                        classroom.classList.contains('from-purple-50')) {
+                    if (classroom.classList.contains('advanced')) {
                         classroom.style.display = 'block';
                     } else {
                         classroom.style.display = 'none';
@@ -356,33 +632,19 @@
                     break;
             }
         });
-
-        // Update active button state
-        document.querySelectorAll('button').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'bg-green-600', 'bg-purple-600');
-            btn.classList.add('bg-gray-400');
-        });
-
-        const activeButton = document.querySelector(`button[onclick="filterClassrooms('${level}')"]`);
-        if (activeButton) {
-            activeButton.classList.remove('bg-gray-400');
-            switch(level) {
-                case 'all':
-                    activeButton.classList.add('bg-blue-600');
-                    break;
-                case 'ordinary':
-                    activeButton.classList.add('bg-green-600');
-                    break;
-                case 'advanced':
-                    activeButton.classList.add('bg-purple-600');
-                    break;
-            }
-        }
     }
 
     // Initialize with all classrooms visible
     document.addEventListener('DOMContentLoaded', function() {
         filterClassrooms('all');
+
+        // Auto dismiss alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert-custom');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
     });
 </script>
 </body>

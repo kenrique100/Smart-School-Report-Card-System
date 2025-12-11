@@ -1,0 +1,153 @@
+/* material-icons.css */
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 100 700;
+    src: url('../icons/material-icons/MaterialSymbolsOutlined.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    font-weight: 100 700;
+    src: url('../icons/material-icons/MaterialSymbolsRounded.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Material Symbols Sharp';
+    font-style: normal;
+    font-weight: 100 700;
+    src: url('../icons/material-icons/MaterialSymbolsSharp.ttf') format('truetype');
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-rounded {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-sharp {
+    font-family: 'Material Symbols Sharp';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-icons {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+.material-icons.rounded {
+    font-family: 'Material Symbols Rounded';
+}
+
+.material-icons.sharp {
+    font-family: 'Material Symbols Sharp';
+}
+
+/* Font weight classes */
+.material-icons.w100 { font-weight: 100; }
+.material-icons.w200 { font-weight: 200; }
+.material-icons.w300 { font-weight: 300; }
+.material-icons.w400 { font-weight: 400; }
+.material-icons.w500 { font-weight: 500; }
+.material-icons.w600 { font-weight: 600; }
+.material-icons.w700 { font-weight: 700; }
+
+/* Font size classes */
+.material-icons.xs { font-size: 18px; }
+.material-icons.sm { font-size: 20px; }
+.material-icons.md { font-size: 24px; }
+.material-icons.lg { font-size: 28px; }
+.material-icons.xl { font-size: 32px; }
+.material-icons.xxl { font-size: 40px; }
+
+/* Size variations */
+.material-symbols-sm {
+    font-size: 18px;
+}
+
+.material-symbols-md {
+    font-size: 24px;
+}
+
+.material-symbols-lg {
+    font-size: 36px;
+}
+
+.material-symbols-xl {
+    font-size: 48px;
+}
+
+/* Weight variations */
+.material-symbols-light {
+    font-variation-settings: 'wght' 300;
+}
+
+.material-symbols-regular {
+    font-variation-settings: 'wght' 400;
+}
+
+.material-symbols-medium {
+    font-variation-settings: 'wght' 500;
+}
+
+.material-symbols-bold {
+    font-variation-settings: 'wght' 700;
+}
+
+/* Fill variations */
+.material-symbols-filled {
+    font-variation-settings: 'FILL' 1;
+}
+

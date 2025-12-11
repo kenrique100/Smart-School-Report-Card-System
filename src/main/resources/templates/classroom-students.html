@@ -4,9 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Students - Student Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="/css/material-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/icons/bootstrap-icons/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/custom.css">
+    <link rel="stylesheet" href="/css/style.css">
+
     <style>
+        /* Custom styles with Roboto font */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Material Icons custom styling */
+        .material-symbols-outlined.icon-sm {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-md {
+            font-size: 24px;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.icon-lg {
+            font-size: 36px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Animation */
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
@@ -25,35 +65,45 @@
             <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
         </div>
         <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            <a th:href="@{/dashboard}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">dashboard</span>
+                <span>Dashboard</span>
             </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
+            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">group</span>
+                <span>Students</span>
             </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
+            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">person</span>
+                <span>Teachers</span>
             </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
+            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">menu_book</span>
+                <span>Subjects</span>
             </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
+            <a th:href="@{/classroom}" class="block py-2 px-4 bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">school</span>
+                <span>Classrooms</span>
             </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-file-alt mr-2"></i>Exams
+            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">assignment</span>
+                <span>Exams</span>
             </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
+            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">bar_chart</span>
+                <span>Exam Results</span>
             </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
+            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">campaign</span>
+                <span>Notices</span>
             </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
+            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">edit</span>
+                <span>Enter Assessments</span>
             </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
+            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700 btn-icon">
+                <span class="material-symbols-outlined icon-sm">pie_chart</span>
+                <span>Reports</span>
             </a>
         </nav>
     </div>
@@ -62,8 +112,9 @@
     <div class="flex-1">
         <div class="bg-white shadow px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <a th:href="@{/classroom}" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-arrow-left"></i> Back to Classrooms
+                <a th:href="@{/classroom}" class="text-blue-600 hover:text-blue-800 btn-icon">
+                    <span class="material-symbols-outlined icon-sm">arrow_back</span>
+                    <span>Back to Classrooms</span>
                 </a>
                 <h1 class="text-2xl font-bold text-gray-800" th:text="${classroom.name + ' Students'}">Classroom Students</h1>
             </div>
@@ -112,20 +163,24 @@
 
                             <!-- Name Sort Button -->
                             <a th:href="@{|/classroom/students/${classroom.id}?sortBy=firstName&sortDir=${sortBy == 'firstName' ? (sortDir == 'asc' ? 'desc' : 'asc') : 'asc'}&departmentId=${departmentIdFilter}&specialty=${specialtyFilter}|}"
-                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700">
+                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700 btn-icon">
                                 <span>Name</span>
-                                <i th:if="${sortBy == 'firstName'}"
-                                   th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
-                                <i th:unless="${sortBy == 'firstName'}" class="fas fa-sort"></i>
+                                <span th:if="${sortBy == 'firstName'}"
+                                      class="material-symbols-outlined icon-sm">
+                                    <span th:text="${sortDir == 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'}"></span>
+                                </span>
+                                <span th:unless="${sortBy == 'firstName'}" class="material-symbols-outlined icon-sm">swap_vert</span>
                             </a>
 
                             <!-- Gender Sort Button -->
                             <a th:href="@{|/classroom/students/${classroom.id}?sortBy=gender&sortDir=${sortBy == 'gender' ? (sortDir == 'asc' ? 'desc' : 'asc') : 'asc'}&departmentId=${departmentIdFilter}&specialty=${specialtyFilter}|}"
-                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700">
+                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700 btn-icon">
                                 <span>Gender</span>
-                                <i th:if="${sortBy == 'gender'}"
-                                   th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
-                                <i th:unless="${sortBy == 'gender'}" class="fas fa-sort"></i>
+                                <span th:if="${sortBy == 'gender'}"
+                                      class="material-symbols-outlined icon-sm">
+                                    <span th:text="${sortDir == 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'}"></span>
+                                </span>
+                                <span th:unless="${sortBy == 'gender'}" class="material-symbols-outlined icon-sm">swap_vert</span>
                             </a>
                         </div>
 
@@ -163,11 +218,13 @@
                             </select>
                         </div>
                         <div class="flex items-end space-x-2">
-                            <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                Filter
+                            <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 btn-icon">
+                                <span class="material-symbols-outlined icon-sm">filter_alt</span>
+                                <span>Filter</span>
                             </button>
-                            <a th:href="@{'/classroom/students/' + ${classroom.id}}" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
-                                Clear Filters
+                            <a th:href="@{'/classroom/students/' + ${classroom.id}}" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 btn-icon">
+                                <span class="material-symbols-outlined icon-sm">close</span>
+                                <span>Clear Filters</span>
                             </a>
                         </div>
                     </form>
@@ -219,13 +276,21 @@
                                 <td class="px-4 py-3 font-medium" th:text="${student.firstName + ' ' + student.lastName}">Kasun Chamara</td>
                                 <td class="px-4 py-3 font-mono text-gray-600" th:text="${student.rollNumber}">F1-GEN-GEN-001</td>
                                 <td class="px-4 py-3">
-                                    <!-- FIXED: Correct gender display logic -->
                                     <span th:if="${student.gender?.name() == 'MALE'}"
-                                          class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Male</span>
+                                          class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full btn-icon">
+                                        <span class="material-symbols-outlined icon-sm">male</span>
+                                        <span>Male</span>
+                                    </span>
                                     <span th:if="${student.gender?.name() == 'FEMALE'}"
-                                          class="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full">Female</span>
+                                          class="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full btn-icon">
+                                        <span class="material-symbols-outlined icon-sm">female</span>
+                                        <span>Female</span>
+                                    </span>
                                     <span th:if="${student.gender == null}"
-                                          class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Not Set</span>
+                                          class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full btn-icon">
+                                        <span class="material-symbols-outlined icon-sm">question_mark</span>
+                                        <span>Not Set</span>
+                                    </span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span th:if="${student.department}"
@@ -247,21 +312,23 @@
                                 <td class="px-4 py-3">
                                     <div class="flex space-x-3">
                                         <a th:href="@{'/students/view/' + ${student.id}}"
-                                           class="text-green-600 hover:text-green-800 transition-colors"
+                                           class="text-green-600 hover:text-green-800 transition-colors btn-icon"
                                            title="View Student">
-                                            <i class="fas fa-eye"></i> View
+                                            <span class="material-symbols-outlined icon-sm">visibility</span>
+                                            <span>View</span>
                                         </a>
                                         <a th:href="@{'/students/edit/' + ${student.id}}"
-                                           class="text-blue-600 hover:text-blue-800 transition-colors"
+                                           class="text-blue-600 hover:text-blue-800 transition-colors btn-icon"
                                            title="Edit Student">
-                                            <i class="fas fa-edit"></i> Edit
+                                            <span class="material-symbols-outlined icon-sm">edit</span>
+                                            <span>Edit</span>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                             <tr th:if="${students.empty}">
                                 <td colspan="8" class="px-4 py-8 text-center text-gray-500">
-                                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-300"></i>
+                                    <span class="material-symbols-outlined icon-lg mb-3 block text-gray-300">group_off</span>
                                     No students found in this classroom
                                     <div class="text-sm mt-2" th:if="${departmentIdFilter != null or specialtyFilter != null}">
                                         Try adjusting your filters
@@ -280,13 +347,15 @@
                         <div class="flex space-x-2">
                             <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=0&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
                                th:class="${currentPage == 0} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                               class="px-3 py-1 text-white rounded text-sm">
-                                First
+                               class="px-3 py-1 text-white rounded text-sm btn-icon">
+                                <span class="material-symbols-outlined icon-sm">first_page</span>
+                                <span>First</span>
                             </a>
                             <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (currentPage - 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
                                th:class="${currentPage == 0} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                               class="px-3 py-1 text-white rounded text-sm">
-                                Previous
+                               class="px-3 py-1 text-white rounded text-sm btn-icon">
+                                <span class="material-symbols-outlined icon-sm">chevron_left</span>
+                                <span>Previous</span>
                             </a>
 
                             <!-- Page numbers -->
@@ -302,13 +371,15 @@
 
                             <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (currentPage + 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
                                th:class="${currentPage >= totalPages - 1} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                               class="px-3 py-1 text-white rounded text-sm">
-                                Next
+                               class="px-3 py-1 text-white rounded text-sm btn-icon">
+                                <span class="material-symbols-outlined icon-sm">chevron_right</span>
+                                <span>Next</span>
                             </a>
                             <a th:href="@{'/classroom/students/' + ${classroom.id} + '?page=' + (totalPages - 1) + '&size=' + ${pageSize} + '&sortBy=' + ${sortBy} + '&sortDir=' + ${sortDir} + '&departmentId=' + ${departmentIdFilter} + '&specialty=' + ${specialtyFilter}}"
                                th:class="${currentPage >= totalPages - 1} ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                               class="px-3 py-1 text-white rounded text-sm">
-                                Last
+                               class="px-3 py-1 text-white rounded text-sm btn-icon">
+                                <span class="material-symbols-outlined icon-sm">last_page</span>
+                                <span>Last</span>
                             </a>
                         </div>
                     </div>

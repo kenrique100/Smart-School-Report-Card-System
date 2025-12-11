@@ -7,22 +7,22 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Additional MVC configuration (static resources, converters, etc.)
- */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve static resources from /static (classpath)
-        registry.addResourceHandler("/static/**")
+        // Serve all static resources from /static
+        registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/");
+
+        // Also serve icons specifically
+        registry.addResourceHandler("/icons/**")
+                .addResourceLocations("classpath:/static/icons/");
     }
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
-
         // String → Long
         registry.addConverter(new Converter<String, Long>() {
             @Override
