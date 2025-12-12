@@ -14,7 +14,6 @@ public class StudentTermReportDTO {
     private String studentFullName;
     private Integer term;
     private String academicYear;
-    private String classTeacher;
     private Double termAverage;
     private String formattedAverage;
     private Integer rankInClass;

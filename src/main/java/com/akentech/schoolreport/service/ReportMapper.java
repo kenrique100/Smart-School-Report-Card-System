@@ -5,6 +5,7 @@ import com.akentech.schoolreport.dto.SubjectReport;
 import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.Subject;
+import com.akentech.schoolreport.model.enums.AssessmentType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -45,11 +46,14 @@ public class ReportMapper {
 
     public SubjectReport toSubjectReport(Subject subject, List<Assessment> assessments,
                                          Integer term, String className) {
-        Double assessment1 = extractAssessmentScore(assessments, "Assessment1");
-        Double assessment2 = extractAssessmentScore(assessments, "Assessment2");
-        Double exam = extractAssessmentScore(assessments, "Exam");
 
-        Double subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, exam, term);
+        AssessmentType[] types = AssessmentType.getAssessmentsForTerm(term);
+
+        Double assessment1 = extractAssessmentScore(assessments, types.length > 0 ? types[0] : null);
+        Double assessment2 = types.length > 1 ? extractAssessmentScore(assessments, types[1]) : null;
+
+        // Now call with correct parameters: assessment1, assessment2, term
+        Double subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, term);
         String letterGrade = gradeService.calculateLetterGrade(subjectAverage, className);
 
         return SubjectReport.builder()
@@ -57,19 +61,21 @@ public class ReportMapper {
                 .coefficient(subject.getCoefficient())
                 .assessment1(assessment1)
                 .assessment2(assessment2)
-                .exam(exam)
                 .subjectAverage(subjectAverage)
                 .letterGrade(letterGrade)
                 .build();
     }
 
-    private Double extractAssessmentScore(List<Assessment> assessments, String type) {
+    private Double extractAssessmentScore(List<Assessment> assessments, AssessmentType type) {
+        if (type == null) return null;
+
         return assessments.stream()
-                .filter(a -> type.equalsIgnoreCase(a.getType()))
+                .filter(a -> a.getType() == type)
                 .findFirst()
                 .map(Assessment::getScore)
                 .orElse(null);
     }
+
 
     private String formatScore(Double score) {
         return score != null ? String.format("%.2f/20", score) : "0.00/20";

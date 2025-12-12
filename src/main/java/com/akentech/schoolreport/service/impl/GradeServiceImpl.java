@@ -1,6 +1,7 @@
 package com.akentech.schoolreport.service.impl;
 
 import com.akentech.schoolreport.dto.SubjectReport;
+import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.service.GradeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,27 +13,68 @@ import java.util.List;
 public class GradeServiceImpl implements GradeService {
 
     @Override
-    public Double calculateSubjectAverage(Double assessment1, Double assessment2, Double exam, Integer term) {
+    public Double calculateSubjectAverage(Double a1, Double a2, Integer term) {
         // Handle null values
-        Double safeAssessment1 = getSafeScore(assessment1);
-        Double safeAssessment2 = getSafeScore(assessment2);
-        Double safeExam = getSafeScore(exam);
+        double safeA1 = a1 != null ? a1 : 0.0;
+        double safeA2 = a2 != null ? a2 : 0.0;
 
-        // All inputs are already on 20 marks scale
         switch (term) {
+            case 1, 2:
+                // Terms 1 & 2: average of 2 assessments
+                int count = 0;
+                double sum = 0.0;
+
+                if (a1 != null) {
+                    sum += safeA1;
+                    count++;
+                }
+                if (a2 != null) {
+                    sum += safeA2;
+                    count++;
+                }
+
+                return count > 0 ? sum / count : 0.0;
+            case 3:
+                // Term 3: only Assessment 5
+                return safeA1;
+            default:
+                throw new IllegalArgumentException("Invalid term: " + term);
+        }
+    }
+
+    @Override
+    public Double calculateSubjectAverageForTerm(List<Assessment> assessments, Integer term) {
+        if (assessments == null || assessments.isEmpty()) {
+            return 0.0;
+        }
+
+        return switch (term) {
             case 1, 2 -> {
-                // Terms 1 & 2: (Assessment1 + Assessment2) / 2
-                return (safeAssessment1 + safeAssessment2) / 2;
+                // For terms 1 & 2, average all assessments
+                double sum = assessments.stream()
+                        .mapToDouble(Assessment::getScore)
+                        .sum();
+                yield sum / assessments.size();
             }
-            case 3 -> {
-                // Term 3: Exam only
-                return safeExam;
-            }
+            case 3 ->
+                // For term 3, just return the first assessment score
+                    assessments.stream()
+                            .findFirst()
+                            .map(Assessment::getScore)
+                            .orElse(0.0);
             default -> {
                 log.warn("Invalid term: {}", term);
-                return 0.0;
+                yield 0.0;
             }
+        };
+    }
+
+    @Override
+    public Double calculateYearlyAverage(Double term1Avg, Double term2Avg, Double term3Avg) {
+        if (term1Avg == null || term2Avg == null || term3Avg == null) {
+            return 0.0;
         }
+        return (term1Avg + term2Avg + term3Avg) / 3.0;
     }
 
     @Override
@@ -50,18 +92,16 @@ public class GradeServiceImpl implements GradeService {
     }
 
     private String calculateAdvancedLevelGrade(Double scoreOutOf20) {
-        // A-Level grading (out of 20)
         if (scoreOutOf20 >= 18.0) return "A";
         if (scoreOutOf20 >= 16.0) return "B";
         if (scoreOutOf20 >= 14.0) return "C";
         if (scoreOutOf20 >= 12.0) return "D";
         if (scoreOutOf20 >= 10.0) return "E";
-        if (scoreOutOf20 >= 8.0) return "O"; // Complimentary
+        if (scoreOutOf20 >= 8.0) return "O";
         return "F";
     }
 
     private String calculateOrdinaryLevelGrade(Double scoreOutOf20) {
-        // Ordinary Level (out of 20)
         if (scoreOutOf20 >= 18.0) return "A";
         if (scoreOutOf20 >= 15.0) return "B";
         if (scoreOutOf20 >= 10.0) return "C";
@@ -71,7 +111,6 @@ public class GradeServiceImpl implements GradeService {
 
     @Override
     public boolean isPassing(Double averageOutOf20) {
-        // FIXED: Student passes if average ≥ 10/20
         return averageOutOf20 != null && averageOutOf20 >= 10.0;
     }
 
@@ -86,7 +125,6 @@ public class GradeServiceImpl implements GradeService {
 
         for (SubjectReport subject : subjectReports) {
             if (subject.getSubjectAverage() != null) {
-                // All subject averages are on 20 marks scale
                 totalWeightedScore += subject.getSubjectAverage() * subject.getCoefficient();
                 totalCoefficient += subject.getCoefficient();
             }
@@ -99,7 +137,6 @@ public class GradeServiceImpl implements GradeService {
     public String generateRemarks(Double averageOutOf20) {
         if (averageOutOf20 == null) return "No assessment data";
 
-        // All averages are on 20 marks scale
         if (averageOutOf20 >= 18.0) return "Excellent performance! Keep up the good work.";
         else if (averageOutOf20 >= 15.0) return "Very good performance. Continue with the good work.";
         else if (averageOutOf20 >= 10.0) return "Good performance. Room for improvement.";
@@ -107,7 +144,14 @@ public class GradeServiceImpl implements GradeService {
         else return "Needs significant improvement. Please seek additional help.";
     }
 
-    private Double getSafeScore(Double score) {
-        return score != null ? score : 0.0;
+    @Override
+    public String getPerformanceStatus(Double averageOutOf20) {
+        if (averageOutOf20 == null) return "No Data";
+
+        if (averageOutOf20 >= 18.0) return "Excellent";
+        else if (averageOutOf20 >= 15.0) return "Very Good";
+        else if (averageOutOf20 >= 10.0) return "Good";
+        else if (averageOutOf20 >= 5.0) return "Satisfactory";
+        else return "Needs Improvement";
     }
 }

@@ -1,5 +1,6 @@
 package com.akentech.schoolreport.model;
 
+import com.akentech.schoolreport.model.enums.AssessmentType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,17 +16,19 @@ import lombok.*;
 @Builder
 public class Assessment {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
     private Integer term;
 
     @Column(nullable = false)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private AssessmentType type; // Changed to enum
 
     @Column(nullable = false)
-    private Double score;
+    private Double score; // Score out of 20
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
@@ -35,4 +38,8 @@ public class Assessment {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
+    // Helper method to get assessment number
+    public Integer getAssessmentNumber() {
+        return type.getAssessmentNumber();
+    }
 }

@@ -29,40 +29,39 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
     @Transactional
     public void updateStudentSubjectScores(Long studentId, Integer term) {
         try {
-            // Get all assessments for the student in the term
             List<Assessment> assessments = assessmentRepository.findByStudentIdAndTerm(studentId, term);
 
-            // Group assessments by subject
             Map<Long, List<Assessment>> assessmentsBySubject = assessments.stream()
                     .collect(Collectors.groupingBy(a -> a.getSubject().getId()));
 
-            // Update each subject's performance
             for (Map.Entry<Long, List<Assessment>> entry : assessmentsBySubject.entrySet()) {
                 Long subjectId = entry.getKey();
                 List<Assessment> subjectAssessments = entry.getValue();
 
-                // Find student subject record
-                Optional<StudentSubject> studentSubjectOpt = studentSubjectRepository.findByStudentIdAndSubjectId(studentId, subjectId);
+                Optional<StudentSubject> studentSubjectOpt =
+                        studentSubjectRepository.findByStudentIdAndSubjectId(studentId, subjectId);
 
                 if (studentSubjectOpt.isPresent()) {
                     StudentSubject studentSubject = studentSubjectOpt.get();
 
-                    // Calculate subject performance
-                    SubjectPerformance performance = calculateSubjectPerformance(subjectAssessments, term);
+                    // Use the correct method from GradeService
+                    Double subjectAverage = gradeService.calculateSubjectAverageForTerm(subjectAssessments, term);
 
-                    // Update student subject record
+                    SubjectPerformance performance = new SubjectPerformance();
+                    performance.setScore(subjectAverage);
+                    performance.setPerformance(determinePerformanceLevel(subjectAverage));
+
                     studentSubject.setScore(performance.getScore());
                     studentSubject.setPerformance(performance.getPerformance());
-
                     studentSubjectRepository.save(studentSubject);
 
                     log.info("Updated subject {} for student {}: Score={}, Performance={}",
-                            subjectId, studentId, performance.getScore(),
-                            performance.getPerformance());
+                            subjectId, studentId, performance.getScore(), performance.getPerformance());
                 }
             }
 
             log.info("Updated subject scores for student {} in term {}", studentId, term);
+
         } catch (Exception e) {
             log.error("Error updating student subject scores for student {} term {}", studentId, term, e);
             throw new RuntimeException("Failed to update student subject scores", e);
@@ -73,39 +72,30 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
     public SubjectPerformance calculateSubjectPerformance(List<Assessment> assessments, Integer term) {
         SubjectPerformance performance = new SubjectPerformance();
 
-        // Separate assessments by type
-        Double assessment1 = null;
-        Double assessment2 = null;
-        Double exam = null;
-
-        for (Assessment assessment : assessments) {
-            switch (assessment.getType()) {
-                case "Assessment1" -> assessment1 = assessment.getScore();
-                case "Assessment2" -> assessment2 = assessment.getScore();
-                case "Exam" -> exam = assessment.getScore();
-            }
-        }
-
-        // Calculate subject average (on 20 marks scale)
-        Double subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, exam, term);
+        // Use the correct method from GradeService
+        Double subjectAverage = gradeService.calculateSubjectAverageForTerm(assessments, term);
         performance.setScore(subjectAverage);
-
-        // Determine performance level based on score (out of 20)
-        if (subjectAverage >= 18.0) {
-            performance.setPerformance(PerformanceLevel.EXCELLENT);
-        } else if (subjectAverage >= 16.0) {
-            performance.setPerformance(PerformanceLevel.VERY_GOOD);
-        } else if (subjectAverage >= 14.0) {
-            performance.setPerformance(PerformanceLevel.GOOD);
-        } else if (subjectAverage >= 12.0) {
-            performance.setPerformance(PerformanceLevel.FAIR);
-        } else if (subjectAverage >= 10.0) {
-            performance.setPerformance(PerformanceLevel.AVERAGE);
-        } else {
-            performance.setPerformance(PerformanceLevel.FAIL);
-        }
+        performance.setPerformance(determinePerformanceLevel(subjectAverage));
 
         return performance;
+    }
+
+    private PerformanceLevel determinePerformanceLevel(Double average) {
+        if (average == null) return PerformanceLevel.FAIL;
+
+        if (average >= 18.0) {
+            return PerformanceLevel.EXCELLENT;
+        } else if (average >= 16.0) {
+            return PerformanceLevel.VERY_GOOD;
+        } else if (average >= 14.0) {
+            return PerformanceLevel.GOOD;
+        } else if (average >= 12.0) {
+            return PerformanceLevel.FAIR;
+        } else if (average >= 10.0) {
+            return PerformanceLevel.AVERAGE;
+        } else {
+            return PerformanceLevel.FAIL;
+        }
     }
 
     @Override
