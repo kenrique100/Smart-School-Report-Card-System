@@ -29,9 +29,9 @@ public class StudentEnrollmentService {
     private static Map<ClassLevel, List<String>> createEnhancedCompulsoryMap() {
         Map<ClassLevel, List<String>> compulsoryMap = new HashMap<>();
 
-        compulsoryMap.put(ClassLevel.FORM_1, Arrays.asList("Mathematics", "English", "French"));
-        compulsoryMap.put(ClassLevel.FORM_2, Arrays.asList("Mathematics", "English", "French"));
-        compulsoryMap.put(ClassLevel.FORM_3, Arrays.asList("Mathematics", "English", "French"));
+        compulsoryMap.put(ClassLevel.FORM_1, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
+        compulsoryMap.put(ClassLevel.FORM_2, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
+        compulsoryMap.put(ClassLevel.FORM_3, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
         compulsoryMap.put(ClassLevel.FORM_4, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
         compulsoryMap.put(ClassLevel.FORM_5, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"));
         compulsoryMap.put(ClassLevel.LOWER_SIXTH, Collections.emptyList());

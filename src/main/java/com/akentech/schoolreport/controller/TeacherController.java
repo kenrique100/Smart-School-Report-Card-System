@@ -204,7 +204,7 @@ public class TeacherController {
                     .filter(t -> t.getSubjects() != null && !t.getSubjects().isEmpty())
                     .count();
             long withClassrooms = allTeachers.stream()
-                    .filter(t -> t.getClassrooms() != null && !t.getClassrooms().isEmpty())
+                    .filter(t -> t.getClassRooms() != null && !t.getClassRooms().isEmpty())
                     .count();
 
             Map<String, Object> stats = new HashMap<>();

@@ -19,10 +19,10 @@ public class SpecialtyService {
 
     private Map<String, List<String>> createDepartmentSpecialties() {
         Map<String, List<String>> specialties = new HashMap<>();
-        specialties.put("COM", Arrays.asList("Accounting", "Administration & Communication Techniques"));
+        specialties.put("COM", Arrays.asList("Accounting", "Administration & Communication Techniques", "Marketing"));
         specialties.put("EPS", new ArrayList<>()); // No specialties
         specialties.put("SCI", Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"));
-        specialties.put("ART", Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"));
+        specialties.put("ART", Arrays.asList("A1", "A2", "A3", "A4", "A5"));
         specialties.put("HE", new ArrayList<>()); // No specialty
         specialties.put("GEN", new ArrayList<>()); // No specialty
         specialties.put("CI", new ArrayList<>()); // No specialty
@@ -39,7 +39,7 @@ public class SpecialtyService {
     }
 
     public List<String> getCommercialSpecialties() {
-        return List.of("Accounting", "Administration & Communication Techniques");
+        return List.of("Accounting", "Administration & Communication Techniques", "Marketing");
     }
 
     public List<String> getScienceSpecialties() {
@@ -47,7 +47,7 @@ public class SpecialtyService {
     }
 
     public List<String> getArtsSpecialties() {
-        return List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8");
+        return List.of("A1", "A2", "A3", "A4", "A5");
     }
 
     public List<String> getAllSpecialties() {

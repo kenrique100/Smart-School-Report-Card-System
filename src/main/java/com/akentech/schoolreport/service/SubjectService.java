@@ -206,9 +206,7 @@ public class SubjectService {
         log.info("📚 Grouping subjects for enrollment - class: {}, department: {}, specialty: {}",
                 classCode, departmentId, specialty);
 
-        List<Subject> availableSubjects = getSubjectsByClassDepartmentAndSpecialty(classCode, departmentId, specialty);
         ClassLevel classLevel = ClassLevel.fromString(classCode);
-
         Map<String, List<Subject>> grouped = new LinkedHashMap<>();
         List<Subject> compulsory = new ArrayList<>();
         List<Subject> departmentCore = new ArrayList<>();
@@ -217,45 +215,143 @@ public class SubjectService {
 
         // Get department to check department-specific rules
         Optional<Department> departmentOpt = departmentRepository.findById(departmentId);
-        DepartmentCode deptCode = departmentOpt.map(Department::getCode).orElse(DepartmentCode.GEN);
+        if (departmentOpt.isEmpty()) {
+            log.warn("Department not found with ID: {}", departmentId);
+            grouped.put("compulsory", compulsory);
+            grouped.put("department", departmentCore);
+            grouped.put("specialty", specialtySubjects);
+            grouped.put("optional", optional);
+            return grouped;
+        }
+
+        DepartmentCode deptCode = departmentOpt.get().getCode();
 
         // Get compulsory subjects based on class level
         List<String> compulsorySubjectNames = getCompulsorySubjectNamesForClass(classLevel);
 
+        // Determine if we're dealing with Forms 1-2, Forms 3-5, or Sixth Form
+        boolean isForm1or2 = classLevel == ClassLevel.FORM_1 || classLevel == ClassLevel.FORM_2;
+        boolean isForm3to5 = classLevel == ClassLevel.FORM_3 || classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5;
+        boolean isSixthForm = classLevel.isSixthForm();
+
+        // CRITICAL FIX: Get ALL subjects for the class, department, and handle specialty properly
+        List<Subject> availableSubjects = new ArrayList<>();
+
+        if (isForm1or2) {
+            // Forms 1-2: Get all subjects for the department (no specialty)
+            availableSubjects = subjectRepository.findByClassRoomIdAndDepartmentId(
+                    getClassroomIdByClassLevel(classLevel), departmentId);
+            log.info("Forms 1-2: Found {} subjects for department {}", availableSubjects.size(), departmentId);
+        }
+        else if (isForm3to5) {
+            // Forms 3-5: Get subjects with matching specialty OR without specialty (compulsory subjects)
+            Long classroomId = getClassroomIdByClassLevel(classLevel);
+
+            // Get subjects with the specific specialty
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                List<Subject> specialtySubs = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialty(
+                        classroomId, departmentId, specialty);
+                availableSubjects.addAll(specialtySubs);
+                log.info("Forms 3-5: Found {} subjects for specialty {}", specialtySubs.size(), specialty);
+            }
+
+            // ALSO get subjects without specialty (these are the compulsory subjects)
+            List<Subject> noSpecialtySubs = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialtyIsNull(
+                    classroomId, departmentId);
+            availableSubjects.addAll(noSpecialtySubs);
+            log.info("Forms 3-5: Found {} subjects without specialty", noSpecialtySubs.size());
+        }
+        else if (isSixthForm) {
+            // Sixth Form: Get subjects with matching specialty
+            Long classroomId = getClassroomIdByClassLevel(classLevel);
+
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                availableSubjects = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialty(
+                        classroomId, departmentId, specialty);
+                log.info("Sixth Form: Found {} subjects for specialty {}", availableSubjects.size(), specialty);
+            } else {
+                // If no specialty selected for Sixth Form, get all department subjects
+                availableSubjects = subjectRepository.findByClassRoomIdAndDepartmentId(
+                        classroomId, departmentId);
+                log.info("Sixth Form: Found {} department subjects (no specialty)", availableSubjects.size());
+            }
+        }
+
+        // Remove duplicates
+        Set<Long> seenIds = new HashSet<>();
+        availableSubjects = availableSubjects.stream()
+                .filter(subject -> {
+                    if (subject.getId() == null) return true;
+                    if (seenIds.contains(subject.getId())) return false;
+                    seenIds.add(subject.getId());
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        log.info("Total unique subjects found: {}", availableSubjects.size());
+
+        // Group the subjects
         for (Subject subject : availableSubjects) {
+            String subjectName = subject.getName();
+            boolean hasSpecialty = subject.getSpecialty() != null && !subject.getSpecialty().trim().isEmpty();
+            boolean specialtyMatches = hasSpecialty && specialty != null && !specialty.trim().isEmpty() &&
+                    subject.getSpecialty().trim().equalsIgnoreCase(specialty.trim());
+
             // Check if subject is optional
             if (Boolean.TRUE.equals(subject.getOptional())) {
                 optional.add(subject);
                 continue;
             }
 
-            // Check if subject is compulsory based on name
-            if (compulsorySubjectNames.contains(subject.getName())) {
+            // Check if subject is compulsory
+            boolean isCompulsory = false;
+
+            // For Forms 1-2: Check against compulsory names
+            if (isForm1or2) {
+                isCompulsory = compulsorySubjectNames.contains(subjectName) ||
+                        subjectName.contains("Mathematics") ||
+                        subjectName.contains("English") ||
+                        subjectName.contains("French");
+            }
+            // For Forms 3-5: Subjects without specialty are compulsory
+            else if (isForm3to5) {
+                isCompulsory = !hasSpecialty;
+            }
+            // For Sixth Form: Core subjects (Math, English, French) are compulsory
+            else if (isSixthForm) {
+                isCompulsory = subjectName.contains("Mathematics") ||
+                        subjectName.contains("English") ||
+                        subjectName.contains("French") ||
+                        (subjectName.contains("A-Mathematics") || subjectName.contains("A-English") || subjectName.contains("A-French"));
+            }
+
+            if (isCompulsory) {
                 compulsory.add(subject);
                 continue;
             }
 
-            // Check if subject matches specialty (for sixth form only)
-            if (classLevel.isSixthForm() &&
-                    specialty != null && !specialty.trim().isEmpty() &&
-                    subject.getSpecialty() != null &&
-                    subject.getSpecialty().equals(specialty)) {
-                specialtySubjects.add(subject);
+            // Check specialty subjects
+            if (hasSpecialty) {
+                if (specialtyMatches) {
+                    specialtySubjects.add(subject);
+                } else if (specialty == null || specialty.trim().isEmpty()) {
+                    // If no specialty selected, specialty subjects become department core
+                    departmentCore.add(subject);
+                }
                 continue;
             }
 
-            // Check if subject belongs to the department (for all classes)
-            if (subject.getDepartment() != null &&
-                    subject.getDepartment().getId().equals(departmentId)) {
+            // Department core subjects (non-compulsory, non-specialty subjects)
+            boolean belongsToDepartment = subject.getDepartment() != null &&
+                    subject.getDepartment().getId().equals(departmentId);
+
+            if (belongsToDepartment) {
                 departmentCore.add(subject);
                 continue;
             }
 
-            // General subjects (no specific department or specialty) are compulsory
-            if (subject.getDepartment() == null ||
-                    subject.getDepartment().getCode() == DepartmentCode.GEN) {
-                compulsory.add(subject);
-            }
+            // General subjects fall into compulsory
+            compulsory.add(subject);
         }
 
         grouped.put("compulsory", compulsory);
@@ -263,22 +359,53 @@ public class SubjectService {
         grouped.put("specialty", specialtySubjects);
         grouped.put("optional", optional);
 
-        log.info("📊 Grouped subjects - Compulsory: {}, Department: {}, Specialty: {}, Optional: {}",
+        log.info("📊 FINAL Grouped subjects - Compulsory: {}, Department: {}, Specialty: {}, Optional: {}",
                 compulsory.size(), departmentCore.size(), specialtySubjects.size(), optional.size());
 
         return grouped;
     }
 
     private List<String> getCompulsorySubjectNamesForClass(ClassLevel classLevel) {
-        Map<ClassLevel, List<String>> compulsoryMap = Map.of(
-                ClassLevel.FORM_1, Arrays.asList("Mathematics", "English", "French"),
-                ClassLevel.FORM_2, Arrays.asList("Mathematics", "English", "French"),
-                ClassLevel.FORM_3, Arrays.asList("Mathematics", "English", "French"),
-                ClassLevel.FORM_4, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"),
-                ClassLevel.FORM_5, Arrays.asList("O-Mathematics", "O-English Language", "O-French Language"),
-                ClassLevel.LOWER_SIXTH, Collections.emptyList(),
-                ClassLevel.UPPER_SIXTH, Collections.emptyList()
-        );
+        Map<ClassLevel, List<String>> compulsoryMap = new HashMap<>();
+
+        if (classLevel.isSixthForm()) {
+            // ✅ Sixth Form - Use exact names from your data initialization
+            List<String> sixthFormSubjects = Arrays.asList(
+                    "Mathematics",      // Exact name from your data
+                    "English",          // Exact name from your data
+                    "French"           // Exact name from your data
+            );
+            compulsoryMap.put(ClassLevel.LOWER_SIXTH, sixthFormSubjects);
+            compulsoryMap.put(ClassLevel.UPPER_SIXTH, sixthFormSubjects);
+        } else {
+            // ✅ Forms 1-5 - Use exact names based on form level
+            if (classLevel == ClassLevel.FORM_1 || classLevel == ClassLevel.FORM_2) {
+                // Forms 1-2 use "O-" prefix subjects
+                List<String> form1_2Subjects = Arrays.asList(
+                        "O-Mathematics",          // F1-COM-MATH / F2-COM-MATH
+                        "O-English Language",     // F1-COM-ENG / F2-COM-ENG
+                        "O-French Language",      // F1-COM-FREN / F2-COM-FREN
+                        "O-Physics",              // F1-COM-PHY / F2-COM-PHY
+                        "O-Chemistry",            // F1-COM-CHEM / F2-COM-CHEM
+                        "O-Biology",              // F1-COM-BIO / F2-COM-BIO
+                        "O-Geography",            // F1-COM-GEO / F2-COM-GEO
+                        "O-History",              // F1-COM-HIS / F2-COM-HIS
+                        "O-Citizenship Education", // F1-COM-CIT / F2-COM-CIT
+                        "O-Physical Education"    // F1-COM-PE / F2-COM-PE
+                );
+                compulsoryMap.put(classLevel, form1_2Subjects);
+            } else {
+                // Forms 3-5 use simple names (no "O-" prefix)
+                List<String> form3_5Subjects = Arrays.asList(
+                        "Mathematics",            // F3-COM-MATH / F4-COM-MATH / F5-COM-MATH
+                        "English",                // F3-COM-ENG / F4-COM-ENG / F5-COM-ENG
+                        "French"                 // F3-COM-FREN / F4-COM-FREN / F5-COM-FREN
+                        // Note: Economics, Law, PE, Citizenship, Computer Science, ICT are OPTIONAL
+                );
+                compulsoryMap.put(classLevel, form3_5Subjects);
+            }
+        }
+
         return compulsoryMap.getOrDefault(classLevel, Collections.emptyList());
     }
 
@@ -500,4 +627,5 @@ public class SubjectService {
 
         return subjects;
     }
+
 }

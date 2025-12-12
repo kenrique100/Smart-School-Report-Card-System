@@ -35,6 +35,8 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
 
     List<Subject> findByNameIn(@Param("names") List<String> names);
 
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNull(Long classRoomId, Long departmentId);
+
     @Query("SELECT s FROM Subject s WHERE " +
             "(:name IS NULL OR s.name LIKE %:name%) AND " +
             "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +

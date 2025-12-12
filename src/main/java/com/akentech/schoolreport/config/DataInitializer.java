@@ -675,7 +675,7 @@ public class DataInitializer implements CommandLineRunner {
             // 4️⃣ COMMERCIAL DEPARTMENT SUBJECTS BY CLASS
             // ============================================================
             if (deptMap.containsKey(DepartmentCode.COM)) {
-                log.info("Creating Commercial department subjects...");
+                log.info("Creating Commercial department subject...");
                 createCommercialSubjects(subjects, deptMap.get(DepartmentCode.COM), classRoomMap);
             }
 
@@ -1135,39 +1135,43 @@ public class DataInitializer implements CommandLineRunner {
 
     private void createCommercialSubjects(List<Subject> subjects, Department department,
                                           Map<ClassLevel, ClassRoom> classRoomMap) {
-        // Forms 1-2 Commercial Subjects
+        log.info("Creating Commercial department subjects...");
+
+        // Forms 1-2 Commercial Subjects (no specialties)
         createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_1, "F1-COM", Arrays.asList(
                 // Core / Compulsory Subjects
-                new SubjectSpec("Mathematics", 5, "F1-COM-MATH"),
-                new SubjectSpec("English", 5, "F1-COM-ENG"),
-                new SubjectSpec("French", 5, "F1-COM-FREN"),
-                new SubjectSpec("Physics", 4, "F1-COM-PHY"),
-                new SubjectSpec("Chemistry", 4, "F1-COM-CHEM"),
-                new SubjectSpec("Biology", 3, "F1-COM-BIO"),
-                new SubjectSpec("Geography", 3, "F1-COM-GEO"),
-                new SubjectSpec("History", 3, "F1-COM-HIS"),
-                new SubjectSpec("Citizenship Education", 2, "F1-COM-CIT"),
-                new SubjectSpec("Physical Education", 2, "F1-COM-PE"),
+                new SubjectSpec("O-Mathematics", 5, "F1-COM-MATH"),
+                new SubjectSpec("O-English Language", 5, "F1-COM-ENG"),
+                new SubjectSpec("O-French Language", 5, "F1-COM-FREN"),
+                new SubjectSpec("O-Physics", 4, "F1-COM-PHY"),
+                new SubjectSpec("O-Chemistry", 4, "F1-COM-CHEM"),
+                new SubjectSpec("O-Biology", 3, "F1-COM-BIO"),
+                new SubjectSpec("O-Geography", 3, "F1-COM-GEO"),
+                new SubjectSpec("O-History", 3, "F1-COM-HIS"),
+                new SubjectSpec("O-Citizenship Education", 2, "F1-COM-CIT"),
+                new SubjectSpec("O-Physical Education", 2, "F1-COM-PE"),
 
                 // Trade / Commercial Subjects
                 new SubjectSpec("Accounting", 3, "F1-COM-ACC"),
                 new SubjectSpec("Commerce", 3, "F1-COM-COM"),
                 new SubjectSpec("Office and Administrative Management", 3, "F1-COM-OAM"),
-                new SubjectSpec("Information Technology", 2, "F1-COM-IT")
+                new SubjectSpec("Information Technology", 2, "F1-COM-IT"),
+                new SubjectSpec("Computer Science", 2, "F1-COM-COMP")
         ));
 
         createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_2, "F2-COM", Arrays.asList(
                 // Core / Compulsory Subjects
-                new SubjectSpec("Mathematics", 5, "F2-COM-MATH"),
-                new SubjectSpec("English", 5, "F2-COM-ENG"),
-                new SubjectSpec("French", 5, "F2-COM-FREN"),
-                new SubjectSpec("Physics", 4, "F2-COM-PHY"),
-                new SubjectSpec("Chemistry", 4, "F2-COM-CHEM"),
-                new SubjectSpec("Biology", 3, "F2-COM-BIO"),
-                new SubjectSpec("Geography", 3, "F2-COM-GEO"),
-                new SubjectSpec("History", 3, "F2-COM-HIS"),
-                new SubjectSpec("Citizenship Education", 2, "F2-COM-CIT"),
-                new SubjectSpec("Physical Education", 2, "F2-COM-PE"),
+                new SubjectSpec("O-Mathematics", 5, "F2-COM-MATH"),
+                new SubjectSpec("O-English Language", 5, "F2-COM-ENG"),
+                new SubjectSpec("O-French Language", 5, "F2-COM-FREN"),
+                new SubjectSpec("O-Physics", 4, "F2-COM-PHY"),
+                new SubjectSpec("O-Chemistry", 4, "F2-COM-CHEM"),
+                new SubjectSpec("O-Biology", 3, "F2-COM-BIO"),
+                new SubjectSpec("O-Geography", 3, "F2-COM-GEO"),
+                new SubjectSpec("O-History", 3, "F2-COM-HIS"),
+                new SubjectSpec("O-Citizenship Education", 2, "F2-COM-CIT"),
+                new SubjectSpec("O-Physical Education", 2, "F2-COM-PE"),
+                new SubjectSpec("Computer Science", 2, "F2-COM-COMP"),
 
                 // Trade / Commercial Subjects
                 new SubjectSpec("Accounting", 3, "F2-COM-ACC"),
@@ -1177,193 +1181,250 @@ public class DataInitializer implements CommandLineRunner {
         ));
 
         // ============================================================
-        // ACCOUNTING SPECIALTY (Forms 3-5)
+        // FORMS 3-5: CREATE COMPULSORY SUBJECTS WITHOUT SPECIALTY
         // ============================================================
+        for (ClassLevel level : Arrays.asList(ClassLevel.FORM_3, ClassLevel.FORM_4, ClassLevel.FORM_5)) {
+            if (classRoomMap.containsKey(level)) {
+                String formCode = level.name().replace("FORM_", "F");
 
-        // Form 3 Accounting - Compulsory Subjects
-        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACC-COMP", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F3-COM-ACC-MATH"),
-                new SubjectSpec("English", 5, "F3-COM-ACC-ENG"),
-                new SubjectSpec("French", 5, "F3-COM-ACC-FREN"),
-                new SubjectSpec("Economics", 3, "F3-COM-ACC-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F3-COM-ACC-LAW"),
-                new SubjectSpec("Physical Education", 2, "F3-COM-ACC-PE")
-        ));
+                // Create compulsory subjects WITHOUT specialty for Forms 3-5
+                createFormSubjects(subjects, department, classRoomMap, level, formCode + "-COM", Arrays.asList(
+                        // ✅ Core Compulsory Subjects (NO SPECIALTY)
+                        new SubjectSpec("Mathematics", 5, formCode + "-COM-MATH"),
+                        new SubjectSpec("English", 5, formCode + "-COM-ENG"),
+                        new SubjectSpec("French", 5, formCode + "-COM-FREN"),
 
-        // Specialty Subjects – Accounting
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACC", "Accounting", Arrays.asList(
-                new SubjectSpec("OHADA Financial Accounting", 3, "F3-COM-ACC-FA"),
-                new SubjectSpec("OHADA Financial Reporting", 3, "F3-COM-ACC-RE"),
-                new SubjectSpec("International Financial Accounting", 3, "F3-COM-ACC-INT-FA"),
-                new SubjectSpec("Business Mathematics", 2, "F3-COM-ACC-BUSMATH"),
-                new SubjectSpec("Commerce", 2, "F3-COM-ACC-COM"),
-                new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACC-PCT"),
-                new SubjectSpec("Entrepreneurship", 2, "F3-COM-ACC-ENT")
-        ));
-
-        // Form 4 Accounting - Compulsory Subjects
-        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACC-COMP", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F4-COM-ACC-MATH"),
-                new SubjectSpec("English", 5, "F4-COM-ACC-ENG"),
-                new SubjectSpec("French", 5, "F4-COM-ACC-FREN"),
-                new SubjectSpec("Economics", 3, "F4-COM-ACC-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F4-COM-ACC-LAW"),
-                new SubjectSpec("Physical Education", 2, "F4-COM-ACC-PE")
-        ));
-
-        // Specialty Subjects – Accounting
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACC", "Accounting", Arrays.asList(
-                new SubjectSpec("OHADA Financial Accounting", 3, "F4-COM-ACC-FA"),
-                new SubjectSpec("OHADA Financial Reporting", 3, "F4-COM-ACC-RE"),
-                new SubjectSpec("International Financial Accounting", 3, "F4-COM-ACC-INT-FA"),
-                new SubjectSpec("Business Mathematics", 2, "F4-COM-ACC-BUSMATH"),
-                new SubjectSpec("Commerce", 2, "F4-COM-ACC-COM"),
-                new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACC-PCT"),
-                new SubjectSpec("Entrepreneurship", 2, "F4-COM-ACC-ENT")
-        ));
-
-        // Form 5 Accounting - Compulsory Subjects
-        createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACC-COMP", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F5-COM-ACC-MATH"),
-                new SubjectSpec("English", 5, "F5-COM-ACC-ENG"),
-                new SubjectSpec("French", 5, "F5-COM-ACC-FREN"),
-                new SubjectSpec("Economics", 3, "F5-COM-ACC-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F5-COM-ACC-LAW"),
-                new SubjectSpec("Physical Education", 2, "F5-COM-ACC-PE")
-        ));
-
-        // Specialty Subjects – Accounting
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACC", "Accounting", Arrays.asList(
-                new SubjectSpec("OHADA Financial Accounting", 3, "F5-COM-ACC-FA"),
-                new SubjectSpec("OHADA Financial Reporting", 3, "F5-COM-ACC-RE"),
-                new SubjectSpec("International Financial Accounting", 3, "F5-COM-ACC-INT-FA"),
-                new SubjectSpec("Business Mathematics", 2, "F5-COM-ACC-BUSMATH"),
-                new SubjectSpec("Commerce", 2, "F5-COM-ACC-COM"),
-                new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACC-PCT"),
-                new SubjectSpec("Entrepreneurship", 2, "F5-COM-ACC-ENT")
-        ));
+                        // ✅ Optional Subjects (marked as optional)
+                        new SubjectSpec("Economics", 3, formCode + "-COM-ECONS", true),
+                        new SubjectSpec("Law and Government", 2, formCode + "-COM-LAW", true),
+                        new SubjectSpec("Physical Education", 2, formCode + "-COM-PE", true),
+                        new SubjectSpec("Citizenship", 2, formCode + "-COM-CIT", true),
+                        new SubjectSpec("Computer Science", 2, formCode + "-COM-COMP", true),
+                        new SubjectSpec("ICT", 2, formCode + "-COM-ICT", true)
+                ));
+            }
+        }
 
         // ============================================================
-        // ADMINISTRATION & COMMUNICATION TECHNIQUES (Forms 3-5)
+        // FORM 3 SPECIALTY SUBJECTS (ONLY SPECIALTY-SPECIFIC SUBJECTS)
         // ============================================================
+        if (classRoomMap.containsKey(ClassLevel.FORM_3)) {
+            // ACCOUNTING SPECIALTY (Form 3) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3,
+                    "F3-COM-ACC", "Accounting", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("OHADA Financial Accounting", 3, "F3-COM-ACC-FA"),
+                            new SubjectSpec("OHADA Financial Reporting", 3, "F3-COM-ACC-RE"),
+                            new SubjectSpec("International Financial Accounting", 3, "F3-COM-ACC-INT-FA"),
+                            new SubjectSpec("Business Mathematics", 2, "F3-COM-ACC-BUSMATH"),
+                            new SubjectSpec("Commerce", 2, "F3-COM-ACC-COM"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACC-PCT"),
+                            new SubjectSpec("Entrepreneurship", 2, "F3-COM-ACC-ENT")
+                    ));
 
-        // Form 3 ACT - Use unique codes for each subject
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F3-COM-ACT-MATH"),
-                new SubjectSpec("English", 5, "F3-COM-ACT-ENG"),
-                new SubjectSpec("French", 5, "F3-COM-ACT-FREN"),
-                new SubjectSpec("Economics", 3, "F3-COM-ACT-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F3-COM-ACT-LAW"),
-                new SubjectSpec("Physical Education", 2, "F3-COM-ACT-PE"),
-                new SubjectSpec("Office and Administration Management", 3, "F3-COM-ACT-OAM"),
-                new SubjectSpec("Information Processing", 3, "F3-COM-ACT-IP"),
-                new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACT-PCT"),
-                new SubjectSpec("Introduction to Accounting", 3, "F3-COM-ACT-ACC-INTRO"),
-                new SubjectSpec("Information Technology", 3, "F3-COM-ACT-IT"),
-                new SubjectSpec("Graphic Designing", 2, "F3-COM-ACT-GRAPHIC"),
-                new SubjectSpec("Business Mathematics", 2, "F3-COM-ACT-BUSMATH")  // Changed from "F3-COM-ACT-MATH"
-        ));
+            // ACT SPECIALTY (Form 3) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3,
+                    "F3-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Office and Administration Management", 3, "F3-COM-ACT-OAM"),
+                            new SubjectSpec("Information Processing", 3, "F3-COM-ACT-IP"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F3-COM-ACT-PCT"),
+                            new SubjectSpec("Introduction to Accounting", 3, "F3-COM-ACT-ACC-INTRO"),
+                            new SubjectSpec("Information Technology", 3, "F3-COM-ACT-IT"),
+                            new SubjectSpec("Graphic Designing", 2, "F3-COM-ACT-GRAPHIC"),
+                            new SubjectSpec("Business Mathematics", 2, "F3-COM-ACT-BUSMATH")
+                    ));
 
-        // Form 4 ACT - Use unique codes for each subject
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F4-COM-ACT-MATH"),
-                new SubjectSpec("English", 5, "F4-COM-ACT-ENG"),
-                new SubjectSpec("French", 5, "F4-COM-ACT-FREN"),
-                new SubjectSpec("Economics", 3, "F4-COM-ACT-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F4-COM-ACT-LAW"),
-                new SubjectSpec("Physical Education", 2, "F4-COM-ACT-PE"),
-                new SubjectSpec("Office and Administration Management", 3, "F4-COM-ACT-OAM"),
-                new SubjectSpec("Information Processing", 3, "F4-COM-ACT-IP"),
-                new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACT-PCT"),
-                new SubjectSpec("Financial Accounting for Administrators", 3, "F4-COM-ACT-FA"),
-                new SubjectSpec("Information Technology", 3, "F4-COM-ACT-IT"),
-                new SubjectSpec("Graphic Designing", 2, "F4-COM-ACT-GRAPHIC"),
-                new SubjectSpec("Business Mathematics", 2, "F4-COM-ACT-BUSMATH")  // Changed from "F4-COM-ACT-MATH"
-        ));
-
-        // Form 5 ACT - Use unique codes for each subject
-        createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
-                new SubjectSpec("Mathematics", 5, "F5-COM-ACT-MATH"),
-                new SubjectSpec("English", 5, "F5-COM-ACT-ENG"),
-                new SubjectSpec("French", 5, "F5-COM-ACT-FREN"),
-                new SubjectSpec("Economics", 3, "F5-COM-ACT-ECONS"),
-                new SubjectSpec("Law and Government", 2, "F5-COM-ACT-LAW"),
-                new SubjectSpec("Physical Education", 2, "F5-COM-ACT-PE"),
-                new SubjectSpec("Advanced Office and Administration Management", 3, "F5-COM-ACT-OAM"),
-                new SubjectSpec("Advanced Information Processing", 3, "F5-COM-ACT-IP"),
-                new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACT-PCT"),
-                new SubjectSpec("Financial Management for Administrators", 3, "F5-COM-ACT-FM"),
-                new SubjectSpec("Advanced Information Technology", 3, "F5-COM-ACT-IT"),
-                new SubjectSpec("Advanced Graphic Designing", 2, "F5-COM-ACT-GRAPHIC"),
-                new SubjectSpec("Advanced Business Mathematics", 2, "F5-COM-ACT-ADV-BUSMATH")  // Changed from "F5-COM-ACT-MATH"
-        ));
+            // MARKETING SPECIALTY (Form 3) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3,
+                    "F3-COM-MKT", "Marketing", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Professional Marketing Practice", 4, "F3-COM-MKT-PMP"),
+                            new SubjectSpec("Marketing Skills", 4, "F3-COM-MKT-MSK"),
+                            new SubjectSpec("Digital Marketing Practice", 4, "F3-COM-MKT-DMP"),
+                            new SubjectSpec("Business Mathematics", 3, "F3-COM-MKT-BUSMATH"),
+                            new SubjectSpec("Entrepreneurship", 3, "F3-COM-MKT-ENT"),
+                            new SubjectSpec("Commerce & Finance", 3, "F3-COM-MKT-CFN")
+                    ));
+        }
 
         // ============================================================
-        // SIXTH FORM - ACCOUNTING
+        // FORM 4 SPECIALTY SUBJECTS (ONLY SPECIALTY-SPECIFIC SUBJECTS)
         // ============================================================
+        if (classRoomMap.containsKey(ClassLevel.FORM_4)) {
+            // ACCOUNTING SPECIALTY (Form 4) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4,
+                    "F4-COM-ACC", "Accounting", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("OHADA Financial Accounting", 3, "F4-COM-ACC-FA"),
+                            new SubjectSpec("OHADA Financial Reporting", 3, "F4-COM-ACC-RE"),
+                            new SubjectSpec("International Financial Accounting", 3, "F4-COM-ACC-INT-FA"),
+                            new SubjectSpec("Business Mathematics", 2, "F4-COM-ACC-BUSMATH"),
+                            new SubjectSpec("Commerce", 2, "F4-COM-ACC-COM"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACC-PCT"),
+                            new SubjectSpec("Entrepreneurship", 2, "F4-COM-ACC-ENT")
+                    ));
 
-        // Lower Sixth Accounting
+            // ACT SPECIALTY (Form 4) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4,
+                    "F4-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Office and Administration Management", 3, "F4-COM-ACT-OAM"),
+                            new SubjectSpec("Information Processing", 3, "F4-COM-ACT-IP"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F4-COM-ACT-PCT"),
+                            new SubjectSpec("Financial Accounting for Administrators", 3, "F4-COM-ACT-FA"),
+                            new SubjectSpec("Information Technology", 3, "F4-COM-ACT-IT"),
+                            new SubjectSpec("Graphic Designing", 2, "F4-COM-ACT-GRAPHIC"),
+                            new SubjectSpec("Business Mathematics", 2, "F4-COM-ACT-BUSMATH")
+                    ));
+
+            // MARKETING SPECIALTY (Form 4) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4,
+                    "F4-COM-MKT", "Marketing", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Professional Marketing Practice", 4, "F4-COM-MKT-PMP"),
+                            new SubjectSpec("Marketing Skills", 4, "F4-COM-MKT-MSK"),
+                            new SubjectSpec("Digital Marketing Practice", 4, "F4-COM-MKT-DMP"),
+                            new SubjectSpec("Business Mathematics", 3, "F4-COM-MKT-BUSMATH"),
+                            new SubjectSpec("Entrepreneurship", 3, "F4-COM-MKT-ENT"),
+                            new SubjectSpec("Commerce & Finance", 3, "F4-COM-MKT-CFN")
+                    ));
+        }
+
+        // ============================================================
+        // FORM 5 SPECIALTY SUBJECTS (ONLY SPECIALTY-SPECIFIC SUBJECTS)
+        // ============================================================
+        if (classRoomMap.containsKey(ClassLevel.FORM_5)) {
+            // ACCOUNTING SPECIALTY (Form 5) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5,
+                    "F5-COM-ACC", "Accounting", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("OHADA Financial Accounting", 3, "F5-COM-ACC-FA"),
+                            new SubjectSpec("OHADA Financial Reporting", 3, "F5-COM-ACC-RE"),
+                            new SubjectSpec("International Financial Accounting", 3, "F5-COM-ACC-INT-FA"),
+                            new SubjectSpec("Business Mathematics", 2, "F5-COM-ACC-BUSMATH"),
+                            new SubjectSpec("Commerce", 2, "F5-COM-ACC-COM"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACC-PCT"),
+                            new SubjectSpec("Entrepreneurship", 2, "F5-COM-ACC-ENT")
+                    ));
+
+            // ACT SPECIALTY (Form 5) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5,
+                    "F5-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Advanced Office and Administration Management", 3, "F5-COM-ACT-OAM"),
+                            new SubjectSpec("Advanced Information Processing", 3, "F5-COM-ACT-IP"),
+                            new SubjectSpec("Professional Communication Technique", 3, "F5-COM-ACT-PCT"),
+                            new SubjectSpec("Financial Management for Administrators", 3, "F5-COM-ACT-FM"),
+                            new SubjectSpec("Advanced Information Technology", 3, "F5-COM-ACT-IT"),
+                            new SubjectSpec("Advanced Graphic Designing", 2, "F5-COM-ACT-GRAPHIC"),
+                            new SubjectSpec("Advanced Business Mathematics", 2, "F5-COM-ACT-ADV-BUSMATH")
+                    ));
+
+            // MARKETING SPECIALTY (Form 5) - ONLY specialty subjects
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5,
+                    "F5-COM-MKT", "Marketing", Arrays.asList(
+                            // ✅ ONLY Specialty Subjects
+                            new SubjectSpec("Advanced Professional Marketing Practice", 4, "F5-COM-MKT-ADV-PMP"),
+                            new SubjectSpec("Advanced Marketing Skills", 4, "F5-COM-MKT-ADV-MSK"),
+                            new SubjectSpec("Advanced Digital Marketing Practice", 4, "F5-COM-MKT-ADV-DMP"),
+                            new SubjectSpec("Advanced Business Mathematics", 3, "F5-COM-MKT-ADV-BUSMATH"),
+                            new SubjectSpec("Advanced Entrepreneurship", 3, "F5-COM-MKT-ADV-ENT"),
+                            new SubjectSpec("Advanced Commerce & Finance", 3, "F5-COM-MKT-ADV-CFN")
+                    ));
+        }
+
+        // ============================================================
+        // SIXTH FORM SUBJECTS (Keep as is - Sixth Form works differently)
+        // ============================================================
         if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
-            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-COM-ACC", "Accounting", Arrays.asList(
-                    new SubjectSpec("Cost and Management Accounting", 5, "L6-COM-ACC-CMA"),
-                    new SubjectSpec("Financial Accounting", 5, "L6-COM-ACC-FA"),
-                    new SubjectSpec("Corporate Accounting", 5, "L6-COM-ACC-CA"),
-                    new SubjectSpec("Business Mathematics", 5, "L6-COM-ACC-BUSMATH"),
-                    new SubjectSpec("Entrepreneurship", 5, "L6-COM-ACC-ENT"),
-                    new SubjectSpec("Economics", 5, "L6-COM-ACC-ECONS"),
-                    new SubjectSpec("Commerce and Finance", 5, "L6-COM-ACC-FIN"),
-                    new SubjectSpec("Business Management", 5, "L6-COM-ACC-MGMT"),
-                    new SubjectSpec("Food Science", 5, "L6-COM-ACC-FS")
-            ));
+            // Lower Sixth Accounting
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
+                    "L6-COM-ACC", "Accounting", Arrays.asList(
+                            new SubjectSpec("Cost and Management Accounting", 5, "L6-COM-ACC-CMA"),
+                            new SubjectSpec("Financial Accounting", 5, "L6-COM-ACC-FA"),
+                            new SubjectSpec("Corporate Accounting", 5, "L6-COM-ACC-CA"),
+                            new SubjectSpec("Business Mathematics", 5, "L6-COM-ACC-BUSMATH"),
+                            new SubjectSpec("Entrepreneurship", 5, "L6-COM-ACC-ENT"),
+                            new SubjectSpec("Economics", 5, "L6-COM-ACC-ECONS"),
+                            new SubjectSpec("Commerce and Finance", 5, "L6-COM-ACC-FIN"),
+                            new SubjectSpec("Business Management", 5, "L6-COM-ACC-MGMT"),
+                            new SubjectSpec("Food Science", 5, "L6-COM-ACC-FS")
+                    ));
+
+            // Lower Sixth ACT
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
+                    "L6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                            new SubjectSpec("Automated Clerical Management", 5, "L6-COM-ACT-ACM"),
+                            new SubjectSpec("Professional English", 5, "L6-COM-ACT-PENG"),
+                            new SubjectSpec("Applied Office Work", 5, "L6-COM-ACT-APPWORK"),
+                            new SubjectSpec("Graphic Designing", 5, "L6-COM-ACT-GRAPHIC"),
+                            new SubjectSpec("Office Technology", 5, "L6-COM-ACT-OFFTECH"),
+                            new SubjectSpec("Information Processing", 5, "L6-COM-ACT-INFO"),
+                            new SubjectSpec("Professional Communication Technique", 5, "L6-COM-ACT-PCT"),
+                            new SubjectSpec("Business Finance for Administrators", 5, "L6-COM-ACT-FIN"),
+                            new SubjectSpec("Food Science", 5, "L6-COM-ACT-FS")
+                    ));
+
+            // Lower Sixth Marketing
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
+                    "L6-COM-MKT", "Marketing", Arrays.asList(
+                            new SubjectSpec("Professional Marketing Practice", 5, "L6-COM-MKT-PMP"),
+                            new SubjectSpec("Marketing Skills", 5, "L6-COM-MKT-MSK"),
+                            new SubjectSpec("Digital Marketing Practice", 5, "L6-COM-MKT-DMP"),
+                            new SubjectSpec("Business Mathematics", 5, "L6-COM-MKT-BMA"),
+                            new SubjectSpec("Commerce & Finance", 5, "L6-COM-MKT-CFN"),
+                            new SubjectSpec("Entrepreneurship", 5, "L6-COM-MKT-ENT"),
+                            new SubjectSpec("Economics", 5, "L6-COM-MKT-ECO"),
+                            new SubjectSpec("Law", 5, "L6-COM-MKT-LAW"),
+                            new SubjectSpec("ICT", 5, "L6-COM-MKT-ICT"),
+                            new SubjectSpec("Religious Studies", 5, "L6-COM-MKT-REL")
+                    ));
         }
 
-        // Upper Sixth Accounting
         if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
-            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-COM-ACC", "Accounting", Arrays.asList(
-                    new SubjectSpec("Advanced Cost and Management Accounting", 5, "U6-COM-ACC-CMA"),
-                    new SubjectSpec("Advanced Financial Accounting", 5, "U6-COM-ACC-FA"),
-                    new SubjectSpec("Advanced Corporate Accounting", 5, "U6-COM-ACC-CA"),
-                    new SubjectSpec("Advanced Business Mathematics", 5, "U6-COM-ACC-ADV-BUSMATH"),
-                    new SubjectSpec("Advanced Entrepreneurship", 5, "U6-COM-ACC-ENT"),
-                    new SubjectSpec("Advanced Economics", 5, "U6-COM-ACC-ECONS"),
-                    new SubjectSpec("International Finance", 5, "U6-COM-ACC-FIN"),
-                    new SubjectSpec("Strategic Business Management", 5, "U6-COM-ACC-MGMT"),
-                    new SubjectSpec("Food Science", 5, "U6-COM-ACC-FS")
-            ));
-        }
+            // Upper Sixth Accounting
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
+                    "U6-COM-ACC", "Accounting", Arrays.asList(
+                            new SubjectSpec("Advanced Cost and Management Accounting", 5, "U6-COM-ACC-CMA"),
+                            new SubjectSpec("Advanced Financial Accounting", 5, "U6-COM-ACC-FA"),
+                            new SubjectSpec("Advanced Corporate Accounting", 5, "U6-COM-ACC-CA"),
+                            new SubjectSpec("Advanced Business Mathematics", 5, "U6-COM-ACC-ADV-BUSMATH"),
+                            new SubjectSpec("Advanced Entrepreneurship", 5, "U6-COM-ACC-ENT"),
+                            new SubjectSpec("Advanced Economics", 5, "U6-COM-ACC-ECONS"),
+                            new SubjectSpec("International Finance", 5, "U6-COM-ACC-FIN"),
+                            new SubjectSpec("Strategic Business Management", 5, "U6-COM-ACC-MGMT"),
+                            new SubjectSpec("Food Science", 5, "U6-COM-ACC-FS")
+                    ));
 
-        // ============================================================
-        // SIXTH FORM - ADMINISTRATION & COMMUNICATION TECHNIQUES
-        // ============================================================
+            // Upper Sixth ACT
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
+                    "U6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
+                            new SubjectSpec("Advanced Automated Clerical Management", 5, "U6-COM-ACT-ACM"),
+                            new SubjectSpec("Advanced Professional English", 5, "U6-COM-ACT-PENG"),
+                            new SubjectSpec("Advanced Applied Office Work", 5, "U6-COM-ACT-APPWORK"),
+                            new SubjectSpec("Advanced Graphic Designing", 5, "U6-COM-ACT-GRAPHIC"),
+                            new SubjectSpec("Advanced Office Technology", 5, "U6-COM-ACT-OFFTECH"),
+                            new SubjectSpec("Advanced Information Processing", 5, "U6-COM-ACT-INFO"),
+                            new SubjectSpec("Advanced Professional Communication Technique", 5, "U6-COM-ACT-PCT"),
+                            new SubjectSpec("Corporate Finance Management", 5, "U6-COM-ACT-FIN"),
+                            new SubjectSpec("Food Science", 5, "U6-COM-ACT-FS")
+                    ));
 
-        // Lower Sixth ACT
-        if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
-            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
-                    new SubjectSpec("Automated Clerical Management", 5, "L6-COM-ACT-ACM"),
-                    new SubjectSpec("Professional English", 5, "L6-COM-ACT-PENG"),
-                    new SubjectSpec("Applied Office Work", 5, "L6-COM-ACT-APPWORK"),
-                    new SubjectSpec("Graphic Designing", 5, "L6-COM-ACT-GRAPHIC"),
-                    new SubjectSpec("Office Technology", 5, "L6-COM-ACT-OFFTECH"),
-                    new SubjectSpec("Information Processing", 5, "L6-COM-ACT-INFO"),
-                    new SubjectSpec("Professional Communication Technique", 5, "L6-COM-ACT-PCT"),
-                    new SubjectSpec("Business Finance for Administrators", 5, "L6-COM-ACT-FIN"),
-                    new SubjectSpec("Food Science", 5, "L6-COM-ACT-FS")
-            ));
-        }
-
-        // Upper Sixth ACT
-        if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
-            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-COM-ACT", "Administration & Communication Techniques", Arrays.asList(
-                    new SubjectSpec("Advanced Automated Clerical Management", 5, "U6-COM-ACT-ACM"),
-                    new SubjectSpec("Advanced Professional English", 5, "U6-COM-ACT-PENG"),
-                    new SubjectSpec("Advanced Applied Office Work", 5, "U6-COM-ACT-APPWORK"),
-                    new SubjectSpec("Advanced Graphic Designing", 5, "U6-COM-ACT-GRAPHIC"),
-                    new SubjectSpec("Advanced Office Technology", 5, "U6-COM-ACT-OFFTECH"),
-                    new SubjectSpec("Advanced Information Processing", 5, "U6-COM-ACT-INFO"),
-                    new SubjectSpec("Advanced Professional Communication Technique", 5, "U6-COM-ACT-PCT"),
-                    new SubjectSpec("Corporate Finance Management", 5, "U6-COM-ACT-FIN"),
-                    new SubjectSpec("Food Science", 5, "U6-COM-ACT-FS")
-            ));
+            // Upper Sixth Marketing
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
+                    "U6-COM-MKT", "Marketing", Arrays.asList(
+                            new SubjectSpec("Advanced Professional Marketing Practice", 5, "U6-COM-MKT-ADV-PMP"),
+                            new SubjectSpec("Advanced Marketing Skills", 5, "U6-COM-MKT-ADV-MSK"),
+                            new SubjectSpec("Advanced Digital Marketing Practice", 5, "U6-COM-MKT-ADV-DMP"),
+                            new SubjectSpec("Advanced Business Mathematics", 5, "U6-COM-MKT-ADV-BMA"),
+                            new SubjectSpec("Advanced Commerce & Finance", 5, "U6-COM-MKT-ADV-CFN"),
+                            new SubjectSpec("Advanced Entrepreneurship", 5, "U6-COM-MKT-ADV-ENT"),
+                            new SubjectSpec("Advanced Economics", 5, "U6-COM-MKT-ADV-ECO"),
+                            new SubjectSpec("Advanced Law", 5, "U6-COM-MKT-ADV-LAW"),
+                            new SubjectSpec("Advanced ICT", 5, "U6-COM-MKT-ADV-ICT"),
+                            new SubjectSpec("Advanced Religious Studies", 5, "U6-COM-MKT-ADV-REL")
+                    ));
         }
     }
 
@@ -1375,75 +1436,75 @@ public class DataInitializer implements CommandLineRunner {
                 ClassLevel.FORM_4, ClassLevel.FORM_5)) {
 
             if (classRoomMap.containsKey(level)) {
-
                 String formCode = level.name().replace("FORM_", "F");
 
                 createFormSubjects(subjects, department, classRoomMap, level, formCode + "-BC", Arrays.asList(
-
-                        // 🟦 TRADE SUBJECTS (BC)
-                        new SubjectSpec("Quantities and Estimate", 3, formCode + "-BC-QE"),
-                        new SubjectSpec("Soils / Surveying", 3, formCode + "-BC-SURV"),
-                        new SubjectSpec("Practicals", 5, formCode + "-BC-PRAC"),
-                        new SubjectSpec("Technical Drawing", 4, formCode + "-BC-TD"),
-                        new SubjectSpec("Applied Mechanics", 3, formCode + "-BC-AM"),
-                        new SubjectSpec("Construction Processes", 3, formCode + "-BC-CP"),
-                        new SubjectSpec("Project Management", 3, formCode + "-BC-PM"),
-                        new SubjectSpec("Trade and Training", 3, formCode + "-BC-TT"),
-
-                        // 🟩 GENERAL SUBJECTS
-                        new SubjectSpec("English", 5, formCode + "-BC-ENG"),
-                        new SubjectSpec("French", 5, formCode + "-BC-FR"),
+                        // ✅ COMPULSORY CORE SUBJECTS
                         new SubjectSpec("Mathematics", 5, formCode + "-BC-MATH"),
+                        new SubjectSpec("English", 5, formCode + "-BC-ENG"),
+                        new SubjectSpec("French", 5, formCode + "-BC-FREN"),
                         new SubjectSpec("Physics", 5, formCode + "-BC-PHY"),
                         new SubjectSpec("Chemistry", 5, formCode + "-BC-CHEM"),
-                        new SubjectSpec("Citizenship", 2, formCode + "-BC-CIT"),
-                        new SubjectSpec("Law and Government", 2, formCode + "-BC-LAW"),
-                        new SubjectSpec("History / Geography", 3, formCode + "-BC-HISTGEO"),
-                        new SubjectSpec("Computer Science", 3, formCode + "-BC-COMPSCI"),
-                        new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI")
+
+                        // ✅ TRADE SUBJECTS (COMPULSORY)
+                        new SubjectSpec("Technical Drawing", 4, formCode + "-BC-TD"),
+                        new SubjectSpec("Practicals", 5, formCode + "-BC-PRAC"),
+                        new SubjectSpec("Applied Mechanics", 3, formCode + "-BC-AM"),
+                        new SubjectSpec("Construction Processes", 3, formCode + "-BC-CP"),
+
+                        // ✅ OPTIONAL SUBJECTS (Students choose some)
+                        new SubjectSpec("Quantities and Estimate", 3, formCode + "-BC-QE", true),
+                        new SubjectSpec("Soils / Surveying", 3, formCode + "-BC-SURV", true),
+                        new SubjectSpec("Project Management", 3, formCode + "-BC-PM", true),
+                        new SubjectSpec("Trade and Training", 3, formCode + "-BC-TT", true),
+                        new SubjectSpec("Citizenship", 2, formCode + "-BC-CIT", true),
+                        new SubjectSpec("Law and Government", 2, formCode + "-BC-LAW", true),
+                        new SubjectSpec("History / Geography", 3, formCode + "-BC-HISTGEO", true),
+                        new SubjectSpec("Computer Science", 3, formCode + "-BC-COMPSCI", true),
+                        new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI", true)
                 ));
             }
         }
 
-        // LOWER SIXTH BC
+        // LOWER SIXTH BC (Specialty subjects)
         if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
-
             createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
                     "L6-BC", "Building Construction", Arrays.asList(
-
-                            new SubjectSpec("Quantities and Estimate", 3, "L6-BC-QE"),
-                            new SubjectSpec("Soils / Surveying", 3, "L6-BC-SURV"),
-                            new SubjectSpec("Practicals", 5, "L6-BC-PRAC"),
+                            // ✅ SIXTH FORM SPECIALTY SUBJECTS
                             new SubjectSpec("Technical Drawing", 4, "L6-BC-TD"),
+                            new SubjectSpec("Practicals", 5, "L6-BC-PRAC"),
                             new SubjectSpec("Applied Mechanics", 3, "L6-BC-AM"),
                             new SubjectSpec("Construction Processes", 3, "L6-BC-CP"),
-                            new SubjectSpec("Project Management", 3, "L6-BC-PM"),
-                            new SubjectSpec("Trade and Training", 3, "L6-BC-TT"),
                             new SubjectSpec("Mathematics With Mechanics", 5, "L6-BC-MATH-MECH"),
-                            new SubjectSpec("Industrial Computing", 5, "L6-BC-INT-COMP")
+                            new SubjectSpec("Industrial Computing", 5, "L6-BC-INT-COMP"),
+
+                            // ✅ OPTIONAL SUBJECTS
+                            new SubjectSpec("Quantities and Estimate", 3, "L6-BC-QE", true),
+                            new SubjectSpec("Soils / Surveying", 3, "L6-BC-SURV", true),
+                            new SubjectSpec("Project Management", 3, "L6-BC-PM", true),
+                            new SubjectSpec("Trade and Training", 3, "L6-BC-TT", true)
                     ));
         }
 
-        // UPPER SIXTH BC
+        // UPPER SIXTH BC (Specialty subjects)
         if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
-
             createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
                     "U6-BC", "Building Construction", Arrays.asList(
-
-                            new SubjectSpec("Quantities and Estimate", 3, "U6-BC-QE"),
-                            new SubjectSpec("Soils / Surveying", 3, "U6-BC-SURV"),
-                            new SubjectSpec("Practicals", 5, "U6-BC-PRAC"),
+                            // ✅ ADVANCED SIXTH FORM SPECIALTY SUBJECTS
                             new SubjectSpec("Technical Drawing", 4, "U6-BC-TD"),
+                            new SubjectSpec("Practicals", 5, "U6-BC-PRAC"),
                             new SubjectSpec("Applied Mechanics", 3, "U6-BC-AM"),
                             new SubjectSpec("Construction Processes", 3, "U6-BC-CP"),
-                            new SubjectSpec("Project Management", 3, "U6-BC-PM"),
-                            new SubjectSpec("Trade and Training", 3, "U6-BC-TT"),
                             new SubjectSpec("Mathematics With Mechanics", 5, "U6-BC-MATH-MECH"),
-                            new SubjectSpec("Industrial Computing", 5, "U6-BC-INT-COMP")
+                            new SubjectSpec("Industrial Computing", 5, "U6-BC-INT-COMP"),
+
+                            // ✅ ADVANCED OPTIONAL SUBJECTS
+                            new SubjectSpec("Advanced Quantities and Estimate", 3, "U6-BC-ADV-QE", true),
+                            new SubjectSpec("Advanced Soils / Surveying", 3, "U6-BC-ADV-SURV", true),
+                            new SubjectSpec("Advanced Project Management", 3, "U6-BC-ADV-PM", true),
+                            new SubjectSpec("Advanced Trade and Training", 3, "U6-BC-ADV-TT", true)
                     ));
         }
-
-
     }
 
     private void createHomeEconomicsSubjects(
@@ -1462,7 +1523,6 @@ public class DataInitializer implements CommandLineRunner {
                 continue;
             }
 
-            // F1, F2, F3, F4, F5
             String levelCode = level.name().replace("FORM_", "F");
 
             createFormSubjects(
@@ -1472,34 +1532,35 @@ public class DataInitializer implements CommandLineRunner {
                     level,
                     levelCode + "-HE",
                     Arrays.asList(
-
-                            // 🟩 PROFESSIONAL SUBJECTS
-                            new SubjectSpec("Food Nutrition and Health (FNH)", 4, levelCode + "-HE-FNH"),
-                            new SubjectSpec("Practicals on Food Nutrition and Health", 2, levelCode + "-HE-FNH-PRAC"),
-                            new SubjectSpec("Resource Management on Home Studies (RMHS)", 4, levelCode + "-HE-RMHS"),
-                            new SubjectSpec("Practicals on RMHS", 2, levelCode + "-HE-RMHS-PRAC"),
-                            new SubjectSpec("Family Life Education and Gerontology (FLEG)", 4, levelCode + "-HE-FLEG"),
-
-                            // 🟦 RELATED PROFESSIONAL SUBJECTS
-                            new SubjectSpec("Natural Science", 2, levelCode + "-HE-NSCI"),
-                            new SubjectSpec("Business Mathematics", 2, levelCode + "-HE-BUSMATH"),
-                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
-
-                            // 🟧 GENERAL SUBJECTS (COMPULSORY)
+                            // ✅ COMPULSORY CORE SUBJECTS
                             new SubjectSpec("French", 4, levelCode + "-HE-FREN"),
                             new SubjectSpec("English", 4, levelCode + "-HE-ENG"),
                             new SubjectSpec("Mathematics", 4, levelCode + "-HE-MATH"),
-                            new SubjectSpec("Economic Geography", 2, levelCode + "-HE-ECOGEO"),
-                            new SubjectSpec("Law and Government", 2, levelCode + "-HE-LAW"),
-                            new SubjectSpec("Citizenship", 2, levelCode + "-HE-CIT"),
-                            new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP"),
-                            new SubjectSpec("Computer Science", 2, levelCode + "-HE-COMP"),
-                            new SubjectSpec("ICT", 2, levelCode + "-HE-ICT")
 
+                            // ✅ PROFESSIONAL SUBJECTS (COMPULSORY)
+                            new SubjectSpec("Food Nutrition and Health (FNH)", 4, levelCode + "-HE-FNH"),
+                            new SubjectSpec("Resource Management on Home Studies (RMHS)", 4, levelCode + "-HE-RMHS"),
+                            new SubjectSpec("Family Life Education and Gerontology (FLEG)", 4, levelCode + "-HE-FLEG"),
+
+                            // ✅ PRACTICALS (COMPULSORY)
+                            new SubjectSpec("Practicals on Food Nutrition and Health", 2, levelCode + "-HE-FNH-PRAC"),
+                            new SubjectSpec("Practicals on RMHS", 2, levelCode + "-HE-RMHS-PRAC"),
+
+                            // ✅ OPTIONAL RELATED PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Natural Science", 2, levelCode + "-HE-NSCI", true),
+                            new SubjectSpec("Business Mathematics", 2, levelCode + "-HE-BUSMATH", true),
+                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT", true),
+                            new SubjectSpec("Economic Geography", 2, levelCode + "-HE-ECOGEO", true),
+                            new SubjectSpec("Law and Government", 2, levelCode + "-HE-LAW", true),
+                            new SubjectSpec("Citizenship", 2, levelCode + "-HE-CIT", true),
+                            new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP", true),
+                            new SubjectSpec("Computer Science", 2, levelCode + "-HE-COMP", true),
+                            new SubjectSpec("ICT", 2, levelCode + "-HE-ICT", true)
                     )
             );
         }
     }
+
     private void createHomeEconomicsSixthFormSubjects(
             List<Subject> subjects,
             Department department,
@@ -1522,27 +1583,25 @@ public class DataInitializer implements CommandLineRunner {
                     level,
                     levelCode + "-HE",
                     Arrays.asList(
-
-                            // 🟩 PROFESSIONAL SUBJECTS
+                            // ✅ COMPULSORY PROFESSIONAL SUBJECTS
                             new SubjectSpec("Catering Management and Dietetics", 5, levelCode + "-HE-CMD"),
-                            new SubjectSpec("Culinary Practicals on Catering Management and Dietetics", 3, levelCode + "-HE-CMD-PRAC"),
                             new SubjectSpec("Family Life Education and Gerontology (Theory)", 5, levelCode + "-HE-FLEG"),
-                            new SubjectSpec("Family Life Education and Gerontology (Practicals)", 3, levelCode + "-HE-FLEG-PRAC"),
                             new SubjectSpec("Resource Management on Home Studies (RMHS)", 5, levelCode + "-HE-RMHS"),
+                            new SubjectSpec("Professional English", 4, levelCode + "-HE-PENG"),
+
+                            // ✅ PRACTICALS (COMPULSORY)
+                            new SubjectSpec("Culinary Practicals on Catering Management and Dietetics", 3, levelCode + "-HE-CMD-PRAC"),
+                            new SubjectSpec("Family Life Education and Gerontology (Practicals)", 3, levelCode + "-HE-FLEG-PRAC"),
                             new SubjectSpec("Practicals on RMHS", 3, levelCode + "-HE-RMHS-PRAC"),
 
-                            // 🟦 RELATED PROFESSIONAL SUBJECTS
-                            new SubjectSpec("Social Life", 2, levelCode + "-HE-SLIFE"),
-                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT"),
-                            new SubjectSpec("Natural Science", 3, levelCode + "-HE-NSCI"),
-                            new SubjectSpec("Economics", 3, levelCode + "-HE-ECON"),
-
-                            // 🟧 GENERAL / SUPPORTING SUBJECTS
-                            new SubjectSpec("Professional English", 4, levelCode + "-HE-PENG"),
-                            new SubjectSpec("Management Aided in Computer", 1, levelCode + "-HE-MGT-COMP"),
-                            new SubjectSpec("Advanced Computer Science", 2, levelCode + "-HE-ADV-COMP"),
-                            new SubjectSpec("Advanced ICT", 2, levelCode + "-HE-ADV-ICT")
-
+                            // ✅ OPTIONAL RELATED PROFESSIONAL SUBJECTS
+                            new SubjectSpec("Social Life", 2, levelCode + "-HE-SLIFE", true),
+                            new SubjectSpec("Entrepreneurship", 2, levelCode + "-HE-ENT", true),
+                            new SubjectSpec("Natural Science", 3, levelCode + "-HE-NSCI", true),
+                            new SubjectSpec("Economics", 3, levelCode + "-HE-ECON", true),
+                            new SubjectSpec("Management Aided in Computer", 1, levelCode + "-HE-MGT-COMP", true),
+                            new SubjectSpec("Advanced Computer Science", 2, levelCode + "-HE-ADV-COMP", true),
+                            new SubjectSpec("Advanced ICT", 2, levelCode + "-HE-ADV-ICT", true)
                     )
             );
         }
@@ -1551,151 +1610,89 @@ public class DataInitializer implements CommandLineRunner {
     private void createEPSSubjects(List<Subject> subjects, Department department,
                                    Map<ClassLevel, ClassRoom> classRoomMap) {
 
-        // Form 1 EPS Subjects
-        if (classRoomMap.containsKey(ClassLevel.FORM_1)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_1, "F1-EPS", Arrays.asList(
-                    new SubjectSpec("Mathematics", 5, "F1-EPS-MATH"),
-                    new SubjectSpec("English", 5, "F1-EPS-ENG"),
-                    new SubjectSpec("French", 5, "F1-EPS-FREN"),
-                    new SubjectSpec("Citizenship", 2, "F1-EPS-CIT"),
-                    new SubjectSpec("Human And Economic Geography", 2, "F1-EPS-GEO"),
-                    new SubjectSpec("Engineering Science", 2, "F1-EPS-ENG-SCI"),  // Changed from "F1-EPS-ENG"
-                    new SubjectSpec("Computer Science", 3, "F1-EPS-COMP"),
-                    new SubjectSpec("Entrepreneurship", 2, "F1-EPS-ENT"),
-                    new SubjectSpec("Electrical Technology", 2, "F1-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 2, "F1-EPS-ELEC-DIA"),
-                    new SubjectSpec("EPS Practical", 6, "F1-EPS-PRAC"),
-                    new SubjectSpec("Engineering Drawing", 4, "F1-EPS-ENG-DRAW")
-            ));
+        // Forms 1 Building Construction Subjects
+        for (ClassLevel level : Arrays.asList(ClassLevel.FORM_1, ClassLevel.FORM_2, ClassLevel.FORM_3,
+                ClassLevel.FORM_4, ClassLevel.FORM_5)) {
+            if (classRoomMap.containsKey(level)) {
+                String formCode = level.name().replace("FORM_", "F");
+
+                createFormSubjects(subjects, department, classRoomMap, level, formCode + "-EPS", Arrays.asList(
+                        // ✅ COMPULSORY CORE SUBJECTS
+                        new SubjectSpec("Mathematics", 5, formCode + "-EPS-MATH"),
+                        new SubjectSpec("English", 5, formCode + "-EPS-ENG"),
+                        new SubjectSpec("French", 5, formCode + "-EPS-FREN"),
+
+                        // ✅ COMPULSORY EPS SUBJECTS
+                        new SubjectSpec("EPS Practical", 6, formCode + "-EPS-PRAC"),
+                        new SubjectSpec("Engineering Drawing", 4, formCode + "-EPS-ENG-DRAW"),
+                        new SubjectSpec("Electrical Technology", 2, formCode + "-EPS-ELEC-TECH"),
+                        new SubjectSpec("Electrical Diagram", 2, formCode + "-EPS-ELEC-DIA"),
+
+                        // ✅ OPTIONAL SUBJECTS
+                        new SubjectSpec("Citizenship", 2, formCode + "-EPS-CIT", true),
+                        new SubjectSpec("Human And Economic Geography", 2, formCode + "-EPS-GEO", true),
+                        new SubjectSpec("Engineering Science", 2, formCode + "-EPS-ENG-SCI", true),
+                        new SubjectSpec("Computer Science", 3, formCode + "-EPS-COMP", true),
+                        new SubjectSpec("Entrepreneurship", 2, formCode + "-EPS-ENT", true),
+                        new SubjectSpec("Electrical Circuit", 2, formCode + "-EPS-ELEC-CIR", true),
+                        new SubjectSpec("Electrical Machine", 2, formCode + "-EPS-ELEC-MACH", true),
+                        new SubjectSpec("Test and Measurement", 2, formCode + "-EPS-TEST-MEA", true),
+                        new SubjectSpec("Law And Government", 2, formCode + "-EPS-LAW-GOV", true),
+                        new SubjectSpec("Industrial Computing", 3, formCode + "-EPS-INT-COMP", true)
+                ));
+            }
         }
 
-        // Form 2 EPS Subjects
-        if (classRoomMap.containsKey(ClassLevel.FORM_2)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_2, "F2-EPS", Arrays.asList(
-                    new SubjectSpec("Mathematics", 5, "F2-EPS-MATH"),
-                    new SubjectSpec("English", 5, "F2-EPS-ENG"),
-                    new SubjectSpec("French", 5, "F2-EPS-FREN"),
-                    new SubjectSpec("Citizenship", 2, "F2-EPS-CIT"),
-                    new SubjectSpec("Human And Economic Geography", 2, "F2-EPS-GEO"),
-                    new SubjectSpec("Engineering Science", 2, "F2-EPS-ENG-SCI"),  // Changed from "F2-EPS-ENG"
-                    new SubjectSpec("Computer Science", 3, "F2-EPS-COMP"),
-                    new SubjectSpec("Entrepreneurship", 2, "F2-EPS-ENT"),
-                    new SubjectSpec("Electrical Technology", 2, "F2-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 2, "F2-EPS-ELEC-DIA"),
-                    new SubjectSpec("EPS Practical", 6, "F2-EPS-PRAC"),
-                    new SubjectSpec("Engineering Drawing", 4, "F2-EPS-ENG-DRAW"),
-                    new SubjectSpec("Electrical Circuit", 2, "F2-EPS-ELEC-CIR")
-            ));
-        }
-
-        // Form 3 EPS Subjects
-        if (classRoomMap.containsKey(ClassLevel.FORM_3)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_3, "F3-EPS", Arrays.asList(
-                    new SubjectSpec("Mathematics", 5, "F3-EPS-MATH"),
-                    new SubjectSpec("English", 5, "F3-EPS-ENG"),
-                    new SubjectSpec("French", 5, "F3-EPS-FREN"),
-                    new SubjectSpec("Citizenship", 2, "F3-EPS-CIT"),
-                    new SubjectSpec("Human And Economic Geography", 2, "F3-EPS-GEO"),
-                    new SubjectSpec("Engineering Science", 2, "F3-EPS-ENG-SCI"),  // Changed from "F3-EPS-ENG"
-                    new SubjectSpec("Computer Science", 3, "F3-EPS-COMP"),
-                    new SubjectSpec("Law And Government", 2, "F3-EPS-LAW-GOV"),
-                    new SubjectSpec("Entrepreneurship", 2, "F3-EPS-ENT"),
-                    new SubjectSpec("Electrical Technology", 2, "F3-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 2, "F3-EPS-ELEC-DIA"),
-                    new SubjectSpec("EPS Practical", 6, "F3-EPS-PRAC"),
-                    new SubjectSpec("Engineering Drawing", 4, "F3-EPS-ENG-DRAW"),
-                    new SubjectSpec("Electrical Circuit", 2, "F3-EPS-ELEC-CIR"),
-                    new SubjectSpec("Electrical Machine", 2, "F3-EPS-ELEC-MACH"),
-                    new SubjectSpec("Test and Measurement", 2, "F3-EPS-TEST-MEA")
-            ));
-        }
-
-        // Form 4 EPS Subjects
-        if (classRoomMap.containsKey(ClassLevel.FORM_4)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_4, "F4-EPS", Arrays.asList(
-                    new SubjectSpec("Mathematics", 5, "F4-EPS-MATH"),
-                    new SubjectSpec("English", 5, "F4-EPS-ENG"),
-                    new SubjectSpec("French", 5, "F4-EPS-FREN"),
-                    new SubjectSpec("Citizenship", 2, "F4-EPS-CIT"),
-                    new SubjectSpec("Human And Economic Geography", 2, "F4-EPS-GEO"),
-                    new SubjectSpec("Engineering Science", 2, "F4-EPS-ENG-SCI"),  // Changed from "F4-EPS-ENG"
-                    new SubjectSpec("Industrial Computing", 3, "F4-EPS-INT-COMP"),
-                    new SubjectSpec("Law And Government", 2, "F4-EPS-LAW-GOV"),
-                    new SubjectSpec("Entrepreneurship", 2, "F4-EPS-ENT"),
-                    new SubjectSpec("Electrical Technology", 2, "F4-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 2, "F4-EPS-ELEC-DIA"),
-                    new SubjectSpec("EPS Practical", 6, "F4-EPS-PRAC"),
-                    new SubjectSpec("Engineering Drawing", 4, "F4-EPS-ENG-DRAW"),
-                    new SubjectSpec("Electrical Circuit", 2, "F4-EPS-ELEC-CIR"),
-                    new SubjectSpec("Electrical Machine", 2, "F4-EPS-ELEC-MACH"),
-                    new SubjectSpec("Test and Measurement", 2, "F4-EPS-TEST-MEA")
-            ));
-        }
-
-        // Form 5 EPS Subjects
-        if (classRoomMap.containsKey(ClassLevel.FORM_5)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_5, "F5-EPS", Arrays.asList(
-                    new SubjectSpec("Mathematics", 5, "F5-EPS-MATH"),
-                    new SubjectSpec("English", 5, "F5-EPS-ENG"),
-                    new SubjectSpec("French", 5, "F5-EPS-FREN"),
-                    new SubjectSpec("Citizenship", 2, "F5-EPS-CIT"),
-                    new SubjectSpec("Human And Economic Geography", 2, "F5-EPS-GEO"),
-                    new SubjectSpec("Engineering Science", 2, "F5-EPS-ENG-SCI"),  // Changed from "F5-EPS-ENG"
-                    new SubjectSpec("Computer Science", 3, "F5-EPS-COMP"),
-                    new SubjectSpec("Law And Government", 2, "F5-EPS-LAW-GOV"),
-                    new SubjectSpec("Entrepreneurship", 2, "F5-EPS-ENT"),
-                    new SubjectSpec("Electrical Technology", 2, "F5-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 2, "F5-EPS-ELEC-DIA"),
-                    new SubjectSpec("EPS Practical", 6, "F5-EPS-PRAC"),
-                    new SubjectSpec("Engineering Drawing", 4, "F5-EPS-ENG-DRAW"),
-                    new SubjectSpec("Electrical Circuit", 2, "F5-EPS-ELEC-CIR"),
-                    new SubjectSpec("Electrical Machine", 2, "F5-EPS-ELEC-MACH"),
-                    new SubjectSpec("Industrial Computing", 3, "F5-EPS-INT-COMP"),
-                    new SubjectSpec("Test and Measurement", 2, "F5-EPS-TEST-MEA")
-            ));
-        }
-
+        // LOWER SIXTH EPS (Specialty subjects)
         if (classRoomMap.containsKey(ClassLevel.LOWER_SIXTH)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH, "L6-EPS", Arrays.asList(
-                    new SubjectSpec("Electrical Technology", 5, "L6-EPS-ELEC-TECH"),
-                    new SubjectSpec("Electrical Diagram", 5, "L6-EPS-ELEC-DIA"),
-                    new SubjectSpec("Engineering Drawing", 5, "L6-EPS-ENG-DRAW"),
-                    new SubjectSpec("EPS Practical", 6, "L6-EPS-PRAC"),
-                    new SubjectSpec("Electrical Circuit", 5, "L6-EPS-ELEC-CIR"),
-                    new SubjectSpec("Electrical Machine", 5, "L6-EPS-ELEC-MACH"),
-                    new SubjectSpec("Test and Measurement", 5, "L6-EPS-TEST-MEA"),
-                    new SubjectSpec("Power Systems", 5, "L6-EPS-POWER-SYS"),
-                    new SubjectSpec("Control Systems", 5, "L6-EPS-CONTROL-SYS"),
-                    new SubjectSpec("Electronics", 5, "L6-EPS-ELECTRONICS"),
-                    new SubjectSpec("Professional English", 4, "L6-EPS-PENG"),
-                    new SubjectSpec("Professional Mathematics", 4, "L6-EPS-PMATH"),
-                    new SubjectSpec("Engineering Science", 4, "L6-EPS-ENG-SCI"),
-                    new SubjectSpec("Entrepreneurship", 3, "L6-EPS-ENT"),
-                    new SubjectSpec("Computer Applications", 3, "L6-EPS-COMP-APP")
-            ));
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.LOWER_SIXTH,
+                    "L6-EPS", "Electrical Power System", Arrays.asList(
+                            // ✅ SIXTH FORM SPECIALTY SUBJECTS
+                            new SubjectSpec("Electrical Technology", 5, "L6-EPS-ELEC-TECH"),
+                            new SubjectSpec("Electrical Diagram", 5, "L6-EPS-ELEC-DIA"),
+                            new SubjectSpec("Engineering Drawing", 5, "L6-EPS-ENG-DRAW"),
+                            new SubjectSpec("EPS Practical", 6, "L6-EPS-PRAC"),
+                            new SubjectSpec("Electrical Circuit", 5, "L6-EPS-ELEC-CIR"),
+                            new SubjectSpec("Electrical Machine", 5, "L6-EPS-ELEC-MACH"),
+                            new SubjectSpec("Professional English", 4, "L6-EPS-PENG"),
+                            new SubjectSpec("Professional Mathematics", 4, "L6-EPS-PMATH"),
+
+                            // ✅ OPTIONAL SUBJECTS
+                            new SubjectSpec("Test and Measurement", 5, "L6-EPS-TEST-MEA", true),
+                            new SubjectSpec("Power Systems", 5, "L6-EPS-POWER-SYS", true),
+                            new SubjectSpec("Control Systems", 5, "L6-EPS-CONTROL-SYS", true),
+                            new SubjectSpec("Electronics", 5, "L6-EPS-ELECTRONICS", true),
+                            new SubjectSpec("Engineering Science", 4, "L6-EPS-ENG-SCI", true),
+                            new SubjectSpec("Entrepreneurship", 3, "L6-EPS-ENT", true),
+                            new SubjectSpec("Computer Applications", 3, "L6-EPS-COMP-APP", true)
+                    ));
         }
 
-// SIXTH FORM EPS SUBJECTS (UPPER SIXTH)
+        // UPPER SIXTH EPS (Specialty subjects)
         if (classRoomMap.containsKey(ClassLevel.UPPER_SIXTH)) {
-            createFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH, "U6-EPS", Arrays.asList(
-                    new SubjectSpec("Advanced Electrical Technology", 5, "U6-EPS-ADV-ELEC-TECH"),
-                    new SubjectSpec("Advanced Electrical Diagram", 5, "U6-EPS-ADV-ELEC-DIA"),
-                    new SubjectSpec("Advanced Engineering Drawing", 5, "U6-EPS-ADV-ENG-DRAW"),
-                    new SubjectSpec("Advanced EPS Practical", 6, "U6-EPS-ADV-PRAC"),
-                    new SubjectSpec("Advanced Electrical Circuit", 5, "U6-EPS-ADV-ELEC-CIR"),
-                    new SubjectSpec("Advanced Electrical Machine", 5, "U6-EPS-ADV-ELEC-MACH"),
-                    new SubjectSpec("Advanced Test and Measurement", 5, "U6-EPS-ADV-TEST-MEA"),
-                    new SubjectSpec("Advanced Power Systems", 5, "U6-EPS-ADV-POWER-SYS"),
-                    new SubjectSpec("Advanced Control Systems", 5, "U6-EPS-ADV-CONTROL-SYS"),
-                    new SubjectSpec("Advanced Electronics", 5, "U6-EPS-ADV-ELECTRONICS"),
-                    new SubjectSpec("Power Electronics", 5, "U6-EPS-POWER-ELECTRONICS"),
-                    new SubjectSpec("Renewable Energy Systems", 5, "U6-EPS-RENEW-ENERGY"),
-                    new SubjectSpec("Professional English", 4, "U6-EPS-PENG"),
-                    new SubjectSpec("Advanced Professional Mathematics", 4, "U6-EPS-ADV-PMATH"),
-                    new SubjectSpec("Advanced Engineering Science", 4, "U6-EPS-ADV-ENG-SCI"),
-                    new SubjectSpec("Advanced Entrepreneurship", 3, "U6-EPS-ADV-ENT"),
-                    new SubjectSpec("Computer Applications", 3, "U6-EPS-COMP-APP")
-            ));
+            createSpecialtyFormSubjects(subjects, department, classRoomMap, ClassLevel.UPPER_SIXTH,
+                    "U6-EPS", "Electrical Power System", Arrays.asList(
+                            // ✅ ADVANCED SIXTH FORM SPECIALTY SUBJECTS
+                            new SubjectSpec("Advanced Electrical Technology", 5, "U6-EPS-ADV-ELEC-TECH"),
+                            new SubjectSpec("Advanced Electrical Diagram", 5, "U6-EPS-ADV-ELEC-DIA"),
+                            new SubjectSpec("Advanced Engineering Drawing", 5, "U6-EPS-ADV-ENG-DRAW"),
+                            new SubjectSpec("Advanced EPS Practical", 6, "U6-EPS-ADV-PRAC"),
+                            new SubjectSpec("Advanced Electrical Circuit", 5, "U6-EPS-ADV-ELEC-CIR"),
+                            new SubjectSpec("Advanced Electrical Machine", 5, "U6-EPS-ADV-ELEC-MACH"),
+                            new SubjectSpec("Professional English", 4, "U6-EPS-PENG"),
+                            new SubjectSpec("Advanced Professional Mathematics", 4, "U6-EPS-ADV-PMATH"),
+
+                            // ✅ ADVANCED OPTIONAL SUBJECTS
+                            new SubjectSpec("Advanced Test and Measurement", 5, "U6-EPS-ADV-TEST-MEA", true),
+                            new SubjectSpec("Advanced Power Systems", 5, "U6-EPS-ADV-POWER-SYS", true),
+                            new SubjectSpec("Advanced Control Systems", 5, "U6-EPS-ADV-CONTROL-SYS", true),
+                            new SubjectSpec("Advanced Electronics", 5, "U6-EPS-ADV-ELECTRONICS", true),
+                            new SubjectSpec("Power Electronics", 5, "U6-EPS-POWER-ELECTRONICS", true),
+                            new SubjectSpec("Renewable Energy Systems", 5, "U6-EPS-RENEW-ENERGY", true),
+                            new SubjectSpec("Advanced Engineering Science", 4, "U6-EPS-ADV-ENG-SCI", true),
+                            new SubjectSpec("Advanced Entrepreneurship", 3, "U6-EPS-ADV-ENT", true),
+                            new SubjectSpec("Computer Applications", 3, "U6-EPS-COMP-APP", true)
+                    ));
         }
     }
 
@@ -1724,22 +1721,22 @@ public class DataInitializer implements CommandLineRunner {
                     level,
                     levelCode + "-CI",
                     Arrays.asList(
-                            // 🟦 GENERAL COMPULSORY SUBJECTS
+                            // ✅ COMPULSORY CORE SUBJECTS
                             new SubjectSpec("English Language", 3, levelCode + "-CI-ENG"),
                             new SubjectSpec("Mathematics", 3, levelCode + "-CI-MATH"),
                             new SubjectSpec("French Language", 3, levelCode + "-CI-FREN"),
-                            new SubjectSpec("Citizenship", 3, levelCode + "-CI-CIT"),
-                            new SubjectSpec("Physical Science", 4, levelCode + "-CI-PSCI"),
-                            new SubjectSpec("Legislation", 4, levelCode + "-CI-LAW"),
 
-                            // 🟩 TIMED / PROFESSIONAL SUBJECTS
+                            // ✅ COMPULSORY PROFESSIONAL SUBJECTS
                             new SubjectSpec("Sewing", 4, levelCode + "-CI-SEW"),
                             new SubjectSpec("Pattern Drafting", 4, levelCode + "-CI-PATTERN"),
                             new SubjectSpec("Textile Technology", 3, levelCode + "-CI-TEXT"),
-                            new SubjectSpec("Work Organization", 2, levelCode + "-CI-WORKORG"),
-                            new SubjectSpec("Fashion Drawing", 3, levelCode + "-CI-FDRAW"),
 
-                            // 🟨 OPTIONAL SUBJECTS
+                            // ✅ OPTIONAL SUBJECTS
+                            new SubjectSpec("Citizenship", 3, levelCode + "-CI-CIT", true),
+                            new SubjectSpec("Physical Science", 4, levelCode + "-CI-PSCI", true),
+                            new SubjectSpec("Legislation", 4, levelCode + "-CI-LAW", true),
+                            new SubjectSpec("Work Organization", 2, levelCode + "-CI-WORKORG", true),
+                            new SubjectSpec("Fashion Drawing", 3, levelCode + "-CI-FDRAW", true),
                             new SubjectSpec("Computer Science", 4, levelCode + "-CI-CS", true),
                             new SubjectSpec("Information and Communication Technology", 4, levelCode + "-CI-ICT", true)
                     )

@@ -56,5 +56,5 @@ public class Teacher {
     )
     @Builder.Default
     @ToString.Exclude
-    private List<ClassRoom> classrooms = new ArrayList<>();
+    private List<ClassRoom> classRooms = new ArrayList<>();
 }

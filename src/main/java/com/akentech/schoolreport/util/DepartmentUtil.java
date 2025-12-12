@@ -12,7 +12,7 @@ public class DepartmentUtil {
         }
 
         return switch (departmentCode) {
-            case "COM" -> Arrays.asList("Accounting", "Administration & Communication Techniques");
+            case "COM" -> Arrays.asList("Accounting", "Administration & Communication Techniques", "Marketing");
             case "SCI" -> Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
             case "ART" -> Arrays.asList("A1", "A2", "A3", "A4", "A5");
             default -> Collections.emptyList();

@@ -53,7 +53,7 @@ public class StudentService {
             throw new BusinessRuleException("Class room is required");
         }
 
-        // Validate class room has code
+        // Validate classroom has code
         validateClassRoom(student.getClassRoom());
 
         if (student.getDepartment() == null) {
@@ -742,6 +742,7 @@ public class StudentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<String> getSpecialtiesByDepartmentCode(DepartmentCode deptCode) {
         if (deptCode == null) {
             return Collections.emptyList();
@@ -749,7 +750,7 @@ public class StudentService {
 
         return switch (deptCode) {
             case COM -> // Commercial
-                    Arrays.asList("Accounting", "Administration & Communication Techniques");
+                    Arrays.asList("Accounting", "Administration & Communication Techniques", "Marketing");
             case SCI -> // Sciences (8 specialties as per DataInitializer)
                     Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
             case ART -> // Arts (8 specialties as per DataInitializer)

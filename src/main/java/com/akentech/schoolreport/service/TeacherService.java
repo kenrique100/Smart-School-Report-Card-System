@@ -60,7 +60,7 @@ public class TeacherService {
         log.info("Created teacher: {} {} (ID: {}) with {} subjects and {} classrooms",
                 savedTeacher.getFirstName(), savedTeacher.getLastName(),
                 savedTeacher.getTeacherId(), savedTeacher.getSubjects().size(),
-                savedTeacher.getClassrooms().size());
+                savedTeacher.getClassRooms().size());
 
         return savedTeacher;
     }
@@ -129,9 +129,9 @@ public class TeacherService {
                 log.warn("Teacher {} has subjects unsuitable for some selected classrooms", teacher.getTeacherId());
             }
 
-            teacher.setClassrooms(validClassrooms);
+            teacher.setClassRooms(validClassrooms);
         } else {
-            teacher.setClassrooms(new ArrayList<>());
+            teacher.setClassRooms(new ArrayList<>());
         }
     }
 
@@ -193,7 +193,7 @@ public class TeacherService {
         log.info("Updated teacher: {} {} (ID: {}) with {} subjects and {} classrooms",
                 updatedTeacher.getFirstName(), updatedTeacher.getLastName(),
                 updatedTeacher.getTeacherId(), updatedTeacher.getSubjects().size(),
-                updatedTeacher.getClassrooms().size());
+                updatedTeacher.getClassRooms().size());
 
         return updatedTeacher;
     }

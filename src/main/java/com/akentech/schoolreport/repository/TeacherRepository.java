@@ -24,11 +24,11 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     @Query("SELECT t FROM Teacher t JOIN t.subjects s WHERE s.id = :subjectId")
     Page<Teacher> findBySubjectId(@Param("subjectId") Long subjectId, Pageable pageable);
 
-    @Query("SELECT t FROM Teacher t JOIN t.classrooms c WHERE c.id = :classroomId")
-    List<Teacher> findByClassroomId(@Param("classroomId") Long classroomId);
+    @Query("SELECT t FROM Teacher t JOIN t.classRooms c WHERE c.id = :classroomId")
+    List<Teacher> findByClassroomId(@Param("classroomId") Long classRoomId);
 
-    @Query("SELECT t FROM Teacher t JOIN t.classrooms c WHERE c.id = :classroomId")
-    Page<Teacher> findByClassroomId(@Param("classroomId") Long classroomId, Pageable pageable);
+    @Query("SELECT t FROM Teacher t JOIN t.classRooms c WHERE c.id = :classroomId")
+    Page<Teacher> findByClassroomId(@Param("classroomId") Long classRoomId, Pageable pageable);
 
     // New methods for filtering and pagination
     @Query("SELECT t FROM Teacher t WHERE " +
