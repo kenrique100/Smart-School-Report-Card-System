@@ -1,8 +1,11 @@
 package com.akentech.schoolreport.service.impl;
 
+import com.akentech.schoolreport.dto.StudentAssessmentSummaryDTO;
 import com.akentech.schoolreport.dto.StudentTermAverageDTO;
 import com.akentech.schoolreport.dto.StudentYearlyAverageDTO;
+import com.akentech.schoolreport.dto.TermAssessmentDTO;
 import com.akentech.schoolreport.exception.BusinessRuleException;
+import com.akentech.schoolreport.exception.EntityNotFoundException;
 import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.StudentSubject;
@@ -33,13 +36,11 @@ public class AssessmentServiceImpl implements AssessmentService {
     private final StudentPerformanceService studentPerformanceService;
     private final GradeService gradeService;
 
-    // Add this method to handle String type parameter conversion
     @Override
     @Transactional(readOnly = true)
     public Optional<Assessment> findByStudentSubjectTermType(Student student, Subject subject,
                                                              Integer term, String type) {
         try {
-            // Convert String to AssessmentType
             AssessmentType assessmentType = AssessmentType.valueOf(type.toUpperCase());
             return assessmentRepository.findByStudentAndSubjectAndTermAndType(student, subject, term, assessmentType);
         } catch (IllegalArgumentException e) {
@@ -72,7 +73,6 @@ public class AssessmentServiceImpl implements AssessmentService {
     public Assessment save(Assessment assessment) {
         validateAssessment(assessment);
 
-        // Check for duplicate assessment
         Optional<Assessment> existing = assessmentRepository.findByStudentAndSubjectAndTermAndType(
                 assessment.getStudent(), assessment.getSubject(), assessment.getTerm(), assessment.getType());
 
@@ -90,7 +90,6 @@ public class AssessmentServiceImpl implements AssessmentService {
                 saved.getType(),
                 saved.getScore());
 
-        // Update student subject scores after saving assessment
         try {
             studentPerformanceService.updateStudentSubjectScores(
                     saved.getStudent().getId(), saved.getTerm());
@@ -115,7 +114,6 @@ public class AssessmentServiceImpl implements AssessmentService {
         List<Assessment> saved = assessmentRepository.saveAll(assessments);
         log.info("Saved {} assessments", saved.size());
 
-        // Update scores for the first student in the batch
         if (!saved.isEmpty()) {
             Long studentId = saved.getFirst().getStudent().getId();
             Integer term = saved.getFirst().getTerm();
@@ -161,7 +159,6 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public Double calculateTermAverage(Long studentId, Integer term) {
-        // Get all subjects for the student
         List<Subject> studentSubjects = getStudentSubjects(studentId);
 
         if (studentSubjects.isEmpty()) {
@@ -192,7 +189,6 @@ public class AssessmentServiceImpl implements AssessmentService {
         double term2Avg = calculateTermAverage(studentId, 2);
         double term3Avg = calculateTermAverage(studentId, 3);
 
-        // Calculate yearly average (average of all terms)
         return gradeService.calculateYearlyAverage(term1Avg, term2Avg, term3Avg);
     }
 
@@ -207,7 +203,6 @@ public class AssessmentServiceImpl implements AssessmentService {
             termAverages.add(new StudentTermAverageDTO(student, average, null));
         }
 
-        // Rank students by average (descending)
         termAverages.sort(Comparator.comparing(StudentTermAverageDTO::getAverage).reversed());
 
         int rank = 1;
@@ -229,7 +224,6 @@ public class AssessmentServiceImpl implements AssessmentService {
             yearlyAverages.add(new StudentYearlyAverageDTO(student, yearlyAverage, null));
         }
 
-        // Rank students by yearly average (descending)
         yearlyAverages.sort(Comparator.comparing(StudentYearlyAverageDTO::getYearlyAverage).reversed());
 
         int rank = 1;
@@ -255,6 +249,148 @@ public class AssessmentServiceImpl implements AssessmentService {
         }
 
         return subjectScores;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
+
+        List<Assessment> assessments = getAssessmentsByStudent(studentId);
+
+        Map<Integer, List<Assessment>> assessmentsByTerm = assessments.stream()
+                .collect(Collectors.groupingBy(Assessment::getTerm));
+
+        Double term1Avg = calculateTermAverage(studentId, 1);
+        Double term2Avg = calculateTermAverage(studentId, 2);
+        Double term3Avg = calculateTermAverage(studentId, 3);
+        Double yearlyAvg = calculateYearlyAverage(studentId);
+
+        List<StudentSubject> enrolledSubjects = studentSubjectRepository.findByStudentId(studentId);
+        int totalSubjects = enrolledSubjects.size();
+
+        boolean term1Completed = checkTermCompletion(assessmentsByTerm.get(1), totalSubjects);
+        boolean term2Completed = checkTermCompletion(assessmentsByTerm.get(2), totalSubjects);
+        boolean term3Completed = checkTermCompletion(assessmentsByTerm.get(3), totalSubjects);
+
+        return StudentAssessmentSummaryDTO.builder()
+                .studentId(studentId)
+                .studentName(student.getFullName())
+                .totalAssessments(assessments.size())
+                .term1Assessments(assessmentsByTerm.getOrDefault(1, List.of()).size())
+                .term2Assessments(assessmentsByTerm.getOrDefault(2, List.of()).size())
+                .term3Assessments(assessmentsByTerm.getOrDefault(3, List.of()).size())
+                .term1Average(term1Avg)
+                .term2Average(term2Avg)
+                .term3Average(term3Avg)
+                .yearlyAverage(yearlyAvg)
+                .totalSubjects(totalSubjects)
+                .term1CompletedSubjects(countCompletedSubjects(assessmentsByTerm.get(1)))
+                .term2CompletedSubjects(countCompletedSubjects(assessmentsByTerm.get(2)))
+                .term3CompletedSubjects(countCompletedSubjects(assessmentsByTerm.get(3)))
+                .term1Completed(term1Completed)
+                .term2Completed(term2Completed)
+                .term3Completed(term3Completed)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term) {
+        List<StudentSubject> enrolledSubjects = studentSubjectRepository.findByStudentId(studentId);
+        List<TermAssessmentDTO> termAssessments = new ArrayList<>();
+
+        for (StudentSubject enrollment : enrolledSubjects) {
+            Subject subject = enrollment.getSubject();
+
+            List<Assessment> subjectAssessments = getAssessmentsByStudentSubjectAndTerm(
+                    studentId, subject.getId(), term);
+
+            Map<Integer, Double> scores = new HashMap<>();
+            for (Assessment assessment : subjectAssessments) {
+                scores.put(assessment.getType().getAssessmentNumber(), assessment.getScore());
+            }
+
+            Double termAverage = calculateSubjectTermAverage(scores, term);
+            String termGrade = termAverage != null ?
+                    gradeService.calculateLetterGrade(termAverage, subject.getName()) : null;
+
+            TermAssessmentDTO dto = TermAssessmentDTO.builder()
+                    .subjectId(subject.getId())
+                    .subjectName(subject.getName())
+                    .subjectCode(subject.getSubjectCode())
+                    .coefficient(subject.getCoefficient())
+                    .assessment1Score(scores.get(1))
+                    .assessment2Score(scores.get(2))
+                    .assessment3Score(scores.get(3))
+                    .assessment4Score(scores.get(4))
+                    .assessment5Score(scores.get(5))
+                    .termAverage(termAverage)
+                    .termGrade(termGrade)
+                    .completed(termAverage != null)
+                    .build();
+
+            termAssessments.add(dto);
+        }
+
+        // Sort by subject name
+        termAssessments.sort(Comparator.comparing(TermAssessmentDTO::getSubjectName));
+
+        return termAssessments;
+    }
+
+    private Double calculateSubjectTermAverage(Map<Integer, Double> scores, Integer term) {
+        if (scores.isEmpty()) {
+            return null;
+        }
+
+        return switch (term) {
+            case 1 -> {
+                Double a1 = scores.get(1);
+                Double a2 = scores.get(2);
+                if (a1 != null && a2 != null) {
+                    yield (a1 + a2) / 2.0;
+                } else if (a1 != null) {
+                    yield a1;
+                } else yield a2;
+            }
+            case 2 -> {
+                Double a3 = scores.get(3);
+                Double a4 = scores.get(4);
+                if (a3 != null && a4 != null) {
+                    yield (a3 + a4) / 2.0;
+                } else if (a3 != null) {
+                    yield a3;
+                } else yield a4;
+            }
+            case 3 -> scores.get(5);
+            default -> null;
+        };
+    }
+
+    private boolean checkTermCompletion(List<Assessment> assessments, int totalSubjects) {
+        if (assessments == null) {
+            return false;
+        }
+
+        long assessedSubjects = assessments.stream()
+                .map(a -> a.getSubject().getId())
+                .distinct()
+                .count();
+
+        return assessedSubjects == totalSubjects;
+    }
+
+    private int countCompletedSubjects(List<Assessment> assessments) {
+        if (assessments == null) {
+            return 0;
+        }
+
+        return (int) assessments.stream()
+                .map(a -> a.getSubject().getId())
+                .distinct()
+                .count();
     }
 
     private List<Subject> getStudentSubjects(Long studentId) {
@@ -289,12 +425,10 @@ public class AssessmentServiceImpl implements AssessmentService {
             throw new BusinessRuleException("Score is required");
         }
 
-        // Ensure all scores are on 20 marks scale
         if (assessment.getScore() < 0 || assessment.getScore() > 20) {
             throw new BusinessRuleException("Score must be between 0 and 20 (out of 20 marks)");
         }
 
-        // Validate term and assessment type consistency
         AssessmentType type = assessment.getType();
         if (!type.getTerm().equals(assessment.getTerm())) {
             throw new BusinessRuleException("Assessment type " + type + " is not valid for term " + assessment.getTerm());

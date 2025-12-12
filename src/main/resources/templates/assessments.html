@@ -1,148 +1,829 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter Assessment - Student Management</title>
+    <title>Enter Assessments - School Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .term-1 { border-color: #3B82F6; background-color: #EFF6FF; }
+        .term-2 { border-color: #10B981; background-color: #F0FDF4; }
+        .term-3 { border-color: #8B5CF6; background-color: #F5F3FF; }
+        .assessment-form { transition: all 0.3s ease; }
+        .assessment-form:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .subject-row:hover { background-color: #F9FAFB; }
+        .score-input:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .assessment-card { border-left: 4px solid; }
+        .assessment-1 { border-left-color: #3B82F6; }
+        .assessment-2 { border-left-color: #10B981; }
+        .assessment-3 { border-left-color: #F59E0B; }
+        .assessment-4 { border-left-color: #8B5CF6; }
+        .assessment-5 { border-left-color: #EC4899; }
+        .grade-A { background-color: #10B981; color: white; }
+        .grade-B { background-color: #3B82F6; color: white; }
+        .grade-C { background-color: #F59E0B; color: white; }
+        .grade-D { background-color: #EF4444; color: white; }
+        .grade-F { background-color: #6B7280; color: white; }
+    </style>
 </head>
 <body class="bg-gray-50">
-<div class="flex">
-    <!-- Sidebar -->
-    <div class="w-64 bg-blue-800 text-white min-h-screen">
-        <div class="p-4">
-            <h1 class="text-xl font-bold">School Management</h1>
-            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/dashboard}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Enter Student Assessments</h1>
+                        <p class="text-gray-600 text-sm mt-1">Term-based assessment system (All scores out of 20)</p>
+                    </div>
+                </div>
+                <button onclick="showSystemInfo()"
+                        class="text-gray-600 hover:text-gray-900 flex items-center space-x-2 transition-colors">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="hidden md:inline">System Rules</span>
+                </button>
+            </div>
         </div>
-        <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-            </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
-            </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
-            </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
-            </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
-            </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
-            </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
-            </a>
-        </nav>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1">
-        <!-- Header -->
-        <div class="bg-white shadow">
-            <div class="px-6 py-4">
-                <h1 class="text-2xl font-bold text-gray-800">Enter Assessment</h1>
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Filter Section -->
+        <div class="bg-white shadow-xl rounded-2xl p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-filter mr-2 text-blue-600"></i>Filter Options
+            </h2>
+
+            <form th:action="@{/assessments/entry}" method="get" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Class Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                        <select name="classRoomId"
+                                onchange="this.form.submit()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Classes</option>
+                            <option th:each="c : ${classes}"
+                                    th:value="${c.id}"
+                                    th:text="${c.name}"
+                                    th:selected="${classRoomId != null and classRoomId == c.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Department Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <select name="departmentId"
+                                onchange="this.form.submit()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Departments</option>
+                            <option th:each="d : ${departments}"
+                                    th:value="${d.id}"
+                                    th:text="${d.name}"
+                                    th:selected="${departmentId != null and departmentId == d.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Specialty Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Specialty</label>
+                        <select name="specialty"
+                                onchange="this.form.submit()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Specialties</option>
+                            <option th:each="s : ${specialties}"
+                                    th:value="${s}"
+                                    th:text="${s}"
+                                    th:selected="${specialty != null and specialty == s}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Student Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
+                        <select name="studentId"
+                                onchange="this.form.submit()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select Student</option>
+                            <option th:each="s : ${students}"
+                                    th:value="${s.id}"
+                                    th:text="${s.firstName + ' ' + s.lastName + ' (' + s.studentId + ')'}"
+                                    th:selected="${selectedStudentId != null and selectedStudentId == s.id}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Term and Assessment Selection -->
+                <div th:if="${selectedStudentId != null}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Term Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Term</label>
+                        <div class="flex space-x-2">
+                            <button type="button"
+                                    th:each="t : ${terms}"
+                                    th:onclick="'selectTerm(' + ${t} + ')'"
+                                    th:class="${'flex-1 py-2 px-3 rounded-lg text-sm font-medium ' +
+                                               (term == t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}"
+                                    th:text="'Term ' + ${t}">
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Assessment Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Assessment</label>
+                        <select name="assessmentNumber"
+                                onchange="this.form.submit()"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option th:each="num : ${assessmentNumbers}"
+                                    th:value="${num}"
+                                    th:text="${'Assessment ' + num + ' (Term ' + term + ')'}"
+                                    th:selected="${assessmentNumber != null and assessmentNumber == num}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Current Assessment Info -->
+                    <div th:if="${currentAssessmentType != null}"
+                         th:classappend="${'term-' + term}"
+                         class="p-3 border rounded-lg flex items-center space-x-3">
+                        <div th:classappend="${'assessment-' + assessmentNumber}"
+                             class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold">
+                            <span th:text="${assessmentNumber}"></span>
+                        </div>
+                        <div>
+                            <div class="font-semibold" th:text="${assessmentName}"></div>
+                            <div class="text-sm text-gray-600">Term <span th:text="${term}"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Assessment Form -->
+        <div th:if="${selectedStudent != null}" class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <!-- Student Header -->
+            <div th:classappend="${'term-' + term}"
+                 class="px-6 py-4 border-b">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div th:class="${'w-12 h-12 rounded-full flex items-center justify-center ' + (selectedStudent.gender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
+                            <i th:class="${selectedStudent.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-xl'"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900" th:text="${selectedStudent.firstName + ' ' + selectedStudent.lastName}"></h2>
+                            <p class="text-gray-600 text-sm">
+                                <span th:text="${selectedStudent.classRoom.name}"></span> •
+                                <span th:text="${selectedStudent.department.name}"></span>
+                                <span th:if="${selectedStudent.specialty}"> • <span th:text="${selectedStudent.specialty}"></span></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-600">Student ID</div>
+                        <div class="font-mono font-semibold" th:text="${selectedStudent.studentId}"></div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Progress</span>
+                        <span id="completion-progress">0/<span th:text="${subjects.size()}"></span> subjects</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="progress-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects Assessment Form -->
+            <div class="p-6">
+                <!-- Warning Message -->
+                <div th:if="${warningMessage}" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                        <span class="text-yellow-800" th:text="${warningMessage}"></span>
+                    </div>
+                </div>
+
+                <!-- Success Message -->
+                <div th:if="${successMessage}" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                        <span class="text-green-800" th:text="${successMessage}"></span>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div th:if="${errorMessage}" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-times-circle text-red-600 mr-3"></i>
+                        <span class="text-red-800" th:text="${errorMessage}"></span>
+                    </div>
+                </div>
+
+                <!-- Assessment Form -->
+                <form th:action="@{/assessments/save-batch}" method="post">
+                    <!-- Hidden Fields -->
+                    <input type="hidden" name="studentId" th:value="${selectedStudentId}">
+                    <input type="hidden" name="term" th:value="${term}">
+                    <input type="hidden" name="assessmentNumber" th:value="${assessmentNumber}">
+                    <input type="hidden" name="classRoomId" th:value="${classRoomId}">
+                    <input type="hidden" name="departmentId" th:value="${departmentId}">
+                    <input type="hidden" name="specialty" th:value="${specialty}">
+
+                    <!-- Subjects Table -->
+                    <div th:if="${!subjects.empty}" class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                    <i class="fas fa-book-open mr-2 text-blue-600"></i>
+                                    <span>Enter Scores for <span th:text="${subjects.size()}"></span> Subjects</span>
+                                </h3>
+                                <span class="text-sm text-gray-600">(All scores out of 20 marks)</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-600">Term Average</div>
+                                <div id="term-average-display" class="text-2xl font-bold text-blue-600">-</div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coefficient</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Existing Score</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enter Score (0-20)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Average</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tr th:each="subject, stat : ${subjects}" class="subject-row">
+                                    <!-- Subject Name -->
+                                    <td class="px-6 py-4">
+                                        <div class="font-medium text-gray-900" th:text="${subject.name}"></div>
+                                        <div class="text-xs text-gray-500" th:if="${subject.specialty}" th:text="${subject.specialty}"></div>
+                                    </td>
+
+                                    <!-- Coefficient -->
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <i class="fas fa-weight-hanging mr-1"></i>
+                                            <span class="coefficient-value" th:text="${subject.coefficient}"></span>
+                                        </span>
+                                    </td>
+
+                                    <!-- Existing Score -->
+                                    <td class="px-6 py-4">
+                                        <div th:if="${existingAssessments != null and existingAssessments.containsKey(subject.id)}">
+                                            <span class="font-semibold text-gray-900"
+                                                  th:text="${existingAssessments.get(subject.id).score}"></span>
+                                            <div class="text-xs text-gray-500">
+                                                Saved on <span th:text="${#temporals.format(existingAssessments.get(subject.id).createdDate, 'dd/MM/yyyy')}"></span>
+                                            </div>
+                                        </div>
+                                        <div th:unless="${existingAssessments != null and existingAssessments.containsKey(subject.id)}">
+                                            <span class="text-gray-400 text-sm">No score entered</span>
+                                        </div>
+                                    </td>
+
+                                    <!-- Score Input -->
+                                    <td class="px-6 py-4">
+                                        <div class="relative">
+                                            <input type="number"
+                                                   name="scores"
+                                                   th:value="${existingAssessments != null and existingAssessments.containsKey(subject.id) ? existingAssessments.get(subject.id).score : ''}"
+                                                   min="0"
+                                                   max="20"
+                                                   step="0.01"
+                                                   class="score-input w-24 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   placeholder="0-20"
+                                                   oninput="validateScore(this)">
+                                            <!-- Hidden subject ID -->
+                                            <input type="hidden" name="subjectIds" th:value="${subject.id}">
+                                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                                /20
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Subject Average -->
+                                    <td class="px-6 py-4">
+                                        <div class="subject-average-display text-center font-medium">-</div>
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td class="px-6 py-4">
+                                        <div th:if="${existingAssessments != null and existingAssessments.containsKey(subject.id)}">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                Saved
+                                            </span>
+                                        </div>
+                                        <div th:unless="${existingAssessments != null and existingAssessments.containsKey(subject.id)}">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                Pending
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Batch Actions -->
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="text-sm text-gray-600">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Enter scores for all subjects at once. Press Enter to move between fields.
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="button" onclick="clearAllScores()"
+                                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center">
+                                    <i class="fas fa-eraser mr-2"></i>
+                                    Clear All
+                                </button>
+                                <button type="submit"
+                                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center">
+                                    <i class="fas fa-save mr-2"></i>
+                                    Save All Scores
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Subjects Warning -->
+                    <div th:if="${subjects.empty}" class="text-center py-12">
+                        <i class="fas fa-book text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Subjects Found</h3>
+                        <p class="text-gray-600 mb-6">This student is not enrolled in any subjects for the selected term and assessment.</p>
+                        <a th:href="@{'/students/edit/' + ${selectedStudentId}}"
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-plus mr-2"></i>
+                            Enroll in Subjects
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <main class="p-6">
-            <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
-                <h1 class="text-3xl font-semibold text-center text-blue-600 mb-8">Enter Assessment</h1>
-
-                <form th:action="@{/assessments/save}" th:object="${assessment}" method="post" class="space-y-5">
-                    <!-- Student -->
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1">Student</label>
-                        <select th:field="*{student.id}" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                            <option value="" disabled selected>Select student</option>
-                            <option th:each="s : ${students}"
-                                    th:value="${s.id}"
-                                    th:text="${s.firstName + ' ' + s.lastName + ' (' + s.studentId + ')'}"></option>
-                        </select>
-                    </div>
-
-                    <!-- Subject -->
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1">Subject</label>
-                        <select th:field="*{subject.id}" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                            <option value="" disabled selected>Select subject</option>
-                            <option th:each="sub : ${subjects}"
-                                    th:value="${sub.id}"
-                                    th:text="${sub.name + ' (Coeff: ' + sub.coefficient + ')'}"></option>
-                        </select>
-                    </div>
-
-                    <!-- Term -->
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1">Term</label>
-                        <select th:field="*{term}" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                            <option value="1">Term 1</option>
-                            <option value="2">Term 2</option>
-                            <option value="3">Term 3</option>
-                        </select>
-                    </div>
-
-                    <!-- Type -->
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1">Type</label>
-                        <select th:field="*{type}" required
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                            <option value="Assessment1">Assessment 1</option>
-                            <option value="Assessment2">Assessment 2</option>
-                            <option value="Exam">Exam</option>
-                        </select>
-                    </div>
-
-                    <!-- Score -->
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1">Score (0–20)</label>
-                        <input type="number" th:field="*{score}" min="0" max="20" step="0.01" required
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <p class="text-sm text-gray-500">
-                        Term Average:
-                        <span id="term-average" class="font-semibold text-blue-600">0</span>
-                    </p>
-
-                    <button type="submit"
-                            class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                        Save Assessment
-                    </button>
-                </form>
-
-                <a th:href="@{/dashboard}" class="block text-center mt-6 text-blue-600 hover:underline">
-                    ← Back to Dashboard
-                </a>
+        <!-- Term Information Panel -->
+        <div th:if="${selectedStudent != null}" class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in mt-8">
+            <div th:classappend="${'term-' + term}"
+                 class="px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Term <span th:text="${term}"></span> Information</h2>
             </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="bg-white border-t mt-8">
-            <div class="px-6 py-4 text-center text-gray-600">
-                <p>Copyright © 2024. All rights reserved.</p>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Term 1 -->
+                    <div class="term-1 assessment-card border p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-700 mb-2 flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>Term 1 Assessments
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-600">
+                            <li><i class="fas fa-check-circle text-green-500 mr-1"></i> Assessment 1</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-1"></i> Assessment 2</li>
+                            <li><i class="fas fa-info-circle text-blue-500 mr-1"></i> Term Average = (A1 + A2) / 2</li>
+                        </ul>
+                        <div class="mt-3">
+                            <a th:href="@{'/assessments/entry?studentId=' + ${selectedStudentId} + '&term=1'}"
+                               class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                View/Edit Term 1 Assessments →
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Term 2 -->
+                    <div class="term-2 assessment-card border p-4 rounded-lg">
+                        <h3 class="font-semibold text-green-700 mb-2 flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>Term 2 Assessments
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-600">
+                            <li><i class="fas fa-check-circle text-green-500 mr-1"></i> Assessment 3</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-1"></i> Assessment 4</li>
+                            <li><i class="fas fa-info-circle text-green-500 mr-1"></i> Term Average = (A3 + A4) / 2</li>
+                        </ul>
+                        <div class="mt-3">
+                            <a th:href="@{'/assessments/entry?studentId=' + ${selectedStudentId} + '&term=2'}"
+                               class="text-sm text-green-600 hover:text-green-800 font-medium">
+                                View/Edit Term 2 Assessments →
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Term 3 -->
+                    <div class="term-3 assessment-card border p-4 rounded-lg">
+                        <h3 class="font-semibold text-purple-700 mb-2 flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>Term 3 Assessments
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-600">
+                            <li><i class="fas fa-check-circle text-green-500 mr-1"></i> Assessment 5 (Final)</li>
+                            <li><i class="fas fa-info-circle text-purple-500 mr-1"></i> Term Average = Assessment 5</li>
+                            <li><i class="fas fa-star text-yellow-500 mr-1"></i> Yearly Average = (T1 + T2 + T3) / 3</li>
+                        </ul>
+                        <div class="mt-3">
+                            <a th:href="@{'/assessments/entry?studentId=' + ${selectedStudentId} + '&term=3'}"
+                               class="text-sm text-purple-600 hover:text-purple-800 font-medium">
+                                View/Edit Term 3 Assessments →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Performance Summary -->
+                <div class="mt-8 pt-8 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Student Performance Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <a th:href="@{'/assessments/student-performance/' + ${selectedStudentId}}"
+                           class="bg-blue-50 p-4 rounded-lg hover:bg-blue-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-blue-800">Overall Performance</div>
+                                    <div class="text-2xl font-bold text-blue-600">View</div>
+                                </div>
+                                <i class="fas fa-chart-line text-blue-500 text-xl"></i>
+                            </div>
+                        </a>
+
+                        <a th:href="@{'/reports/student/yearly/' + ${selectedStudentId}}"
+                           class="bg-green-50 p-4 rounded-lg hover:bg-green-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-green-800">Yearly Report</div>
+                                    <div class="text-2xl font-bold text-green-600">View</div>
+                                </div>
+                                <i class="fas fa-file-alt text-green-500 text-xl"></i>
+                            </div>
+                        </a>
+
+                        <a th:href="@{'/assessments/term-averages/' + ${selectedStudent.classRoom.id} + '?term=' + ${term}}"
+                           class="bg-purple-50 p-4 rounded-lg hover:bg-purple-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-purple-800">Class Ranking</div>
+                                    <div class="text-2xl font-bold text-purple-600">View</div>
+                                </div>
+                                <i class="fas fa-trophy text-purple-500 text-xl"></i>
+                            </div>
+                        </a>
+
+                        <a th:href="@{'/assessments/yearly-ranking/' + ${selectedStudent.classRoom.id}}"
+                           class="bg-orange-50 p-4 rounded-lg hover:bg-orange-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-orange-800">Yearly Ranking</div>
+                                    <div class="text-2xl font-bold text-orange-600">View</div>
+                                </div>
+                                <i class="fas fa-ranking-star text-orange-500 text-xl"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
             </div>
-        </footer>
+        </div>
+
+        <!-- Instructions -->
+        <div th:unless="${selectedStudent != null}" class="bg-white shadow-xl rounded-2xl p-8 text-center">
+            <i class="fas fa-user-graduate text-5xl text-gray-300 mb-6"></i>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">Select a Student to Enter Assessments</h3>
+            <p class="text-gray-600 mb-6">Use the filters above to find and select a student. Then choose the term and assessment to enter marks.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-blue-600 mb-2">
+                        <i class="fas fa-1 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-800 mb-1">Filter Students</h4>
+                    <p class="text-sm text-gray-600">Filter by class, department, or specialty</p>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-green-600 mb-2">
+                        <i class="fas fa-2 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-800 mb-1">Select Student</h4>
+                    <p class="text-sm text-gray-600">Choose student from dropdown</p>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-purple-600 mb-2">
+                        <i class="fas fa-3 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-800 mb-1">Enter Scores</h4>
+                    <p class="text-sm text-gray-600">Enter marks for all subjects</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assessment System Modal -->
+<div id="systemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Assessment System Rules</h3>
+
+            <div class="space-y-3 text-sm text-gray-600">
+                <div class="flex items-start">
+                    <i class="fas fa-calendar-alt text-blue-500 mt-1 mr-2"></i>
+                    <div>
+                        <span class="font-medium text-gray-800">Term Structure:</span>
+                        <ul class="ml-4 mt-1">
+                            <li>• Term 1: Assessment 1 & 2</li>
+                            <li>• Term 2: Assessment 3 & 4</li>
+                            <li>• Term 3: Assessment 5 (Final)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <i class="fas fa-calculator text-green-500 mt-1 mr-2"></i>
+                    <div>
+                        <span class="font-medium text-gray-800">Calculations:</span>
+                        <ul class="ml-4 mt-1">
+                            <li>• All scores on 20 marks scale</li>
+                            <li>• Term Avg = Average of assessments</li>
+                            <li>• Yearly Avg = (T1 + T2 + T3) / 3</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <i class="fas fa-trophy text-yellow-500 mt-1 mr-2"></i>
+                    <div>
+                        <span class="font-medium text-gray-800">Ranking:</span>
+                        <ul class="ml-4 mt-1">
+                            <li>• Students ranked by term averages</li>
+                            <li>• Yearly ranking based on yearly average</li>
+                            <li>• Passing grade: ≥10/20</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <button onclick="closeModal()"
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    I Understand
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // Optional: simple average calculator if you want instant feedback
-    const scoreInput = document.querySelector('input[name="score"]');
-    const termAverage = document.getElementById('term-average');
-    if (scoreInput && termAverage) {
-        scoreInput.addEventListener('input', () => {
-            const val = parseFloat(scoreInput.value || 0);
-            termAverage.textContent = val.toFixed(2);
-        });
+    // Validate term and assessment combinations
+    function validateAssessmentCombination() {
+        const term = document.querySelector('input[name="term"]')?.value;
+        const assessmentNumber = document.querySelector('select[name="assessmentNumber"]')?.value;
+
+        if (term && assessmentNumber) {
+            const validCombinations = {
+                1: [1, 2],    // Term 1: Assessments 1-2
+                2: [3, 4],    // Term 2: Assessments 3-4
+                3: [5]        // Term 3: Assessment 5
+            };
+
+            const validNumbers = validCombinations[term];
+            if (!validNumbers || !validNumbers.includes(parseInt(assessmentNumber))) {
+                // If invalid, reset to first valid option
+                const select = document.querySelector('select[name="assessmentNumber"]');
+                if (select && validNumbers && validNumbers.length > 0) {
+                    select.value = validNumbers[0];
+                    select.form.submit();
+                }
+            }
+        }
     }
+
+    // Run validation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        validateAssessmentCombination();
+
+        // Auto-focus first input when form loads
+        const firstInput = document.querySelector('.score-input');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+
+        // Add animation to form
+        const form = document.querySelector('.assessment-form');
+        if (form) {
+            form.classList.add('fade-in');
+        }
+
+        // Show info modal on first visit
+        const isFirstVisit = !localStorage.getItem('assessmentSystemViewed');
+        if (isFirstVisit && document.querySelector('.score-input')) {
+            showSystemInfo();
+            localStorage.setItem('assessmentSystemViewed', 'true');
+        }
+
+        // Calculate averages for existing values
+        document.querySelectorAll('.score-input').forEach(input => {
+            if (input.value) {
+                calculateSubjectAverage(input);
+            }
+        });
+    });
+
+    // Update the existing selectTerm function to include validation
+    function selectTerm(term) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('term', term);
+
+        // Reset assessment number when term changes
+        const validAssessments = {
+            1: [1, 2],
+            2: [3, 4],
+            3: [5]
+        };
+
+        const currentAssessment = url.searchParams.get('assessmentNumber');
+        if (currentAssessment && validAssessments[term] && !validAssessments[term].includes(parseInt(currentAssessment))) {
+            url.searchParams.set('assessmentNumber', validAssessments[term][0]);
+        }
+
+        window.location.href = url.toString();
+    }
+
+    // Validate score input
+    function validateScore(input) {
+        const value = parseFloat(input.value);
+        if (isNaN(value) || value < 0 || value > 20) {
+            input.style.borderColor = '#EF4444';
+            input.style.backgroundColor = '#FEF2F2';
+        } else {
+            input.style.borderColor = '#D1D5DB';
+            input.style.backgroundColor = 'white';
+            calculateSubjectAverage(input);
+        }
+    }
+
+    // Clear all scores
+    function clearAllScores() {
+        const inputs = document.querySelectorAll('.score-input');
+        inputs.forEach(input => {
+            input.value = '';
+            input.style.borderColor = '#D1D5DB';
+            input.style.backgroundColor = 'white';
+        });
+        // Reset all averages
+        document.querySelectorAll('.subject-average-display').forEach(display => {
+            display.textContent = '-';
+            display.className = 'subject-average-display text-center font-medium';
+        });
+        document.getElementById('term-average-display').textContent = '-';
+        document.getElementById('progress-bar').style.width = '0%';
+        document.getElementById('completion-progress').textContent = '0/' + document.querySelectorAll('.subject-row').length + ' subjects';
+    }
+
+    // Show system modal
+    function showSystemInfo() {
+        document.getElementById('systemModal').classList.remove('hidden');
+    }
+
+    // Close modal
+    function closeModal() {
+        document.getElementById('systemModal').classList.add('hidden');
+    }
+
+    // Calculate subject average
+    function calculateSubjectAverage(input) {
+        const row = input.closest('tr');
+        const coefficient = parseFloat(row.querySelector('.coefficient-value').textContent);
+        const score = parseFloat(input.value);
+        const averageDisplay = row.querySelector('.subject-average-display');
+
+        if (!isNaN(score)) {
+            // For this single assessment entry, the subject average is just the score itself
+            // (Term average will be calculated from all assessments later)
+            const average = score;
+            averageDisplay.textContent = average.toFixed(2);
+
+            // Add color coding based on grade
+            if (average >= 18) {
+                averageDisplay.className = 'subject-average-display text-center font-medium grade-A px-2 py-1 rounded';
+            } else if (average >= 15) {
+                averageDisplay.className = 'subject-average-display text-center font-medium grade-B px-2 py-1 rounded';
+            } else if (average >= 10) {
+                averageDisplay.className = 'subject-average-display text-center font-medium grade-C px-2 py-1 rounded';
+            } else if (average >= 5) {
+                averageDisplay.className = 'subject-average-display text-center font-medium grade-D px-2 py-1 rounded';
+            } else {
+                averageDisplay.className = 'subject-average-display text-center font-medium grade-F px-2 py-1 rounded';
+            }
+        } else {
+            averageDisplay.textContent = '-';
+            averageDisplay.className = 'subject-average-display text-center font-medium';
+        }
+
+        // Calculate weighted average for the entire term
+        calculateTermWeightedAverage();
+    }
+
+    function calculateTermWeightedAverage() {
+        const rows = document.querySelectorAll('tbody tr');
+        let totalWeightedScore = 0;
+        let totalCoefficient = 0;
+        let completedSubjects = 0;
+
+        rows.forEach(row => {
+            const coefficient = parseFloat(row.querySelector('.coefficient-value').textContent);
+            const averageDisplay = row.querySelector('.subject-average-display');
+            const averageText = averageDisplay.textContent;
+
+            if (averageText !== '-') {
+                const average = parseFloat(averageText);
+                if (!isNaN(average)) {
+                    totalWeightedScore += average * coefficient;
+                    totalCoefficient += coefficient;
+                    completedSubjects++;
+                }
+            }
+        });
+
+        const termAverageElement = document.getElementById('term-average-display');
+        const progressBar = document.getElementById('progress-bar');
+        const completionText = document.getElementById('completion-progress');
+
+        if (totalCoefficient > 0) {
+            const termAverage = totalWeightedScore / totalCoefficient;
+            termAverageElement.textContent = termAverage.toFixed(2);
+
+            // Color code term average
+            if (termAverage >= 18) {
+                termAverageElement.className = 'text-2xl font-bold grade-A px-2 py-1 rounded';
+            } else if (termAverage >= 15) {
+                termAverageElement.className = 'text-2xl font-bold grade-B px-2 py-1 rounded';
+            } else if (termAverage >= 10) {
+                termAverageElement.className = 'text-2xl font-bold grade-C px-2 py-1 rounded';
+            } else if (termAverage >= 5) {
+                termAverageElement.className = 'text-2xl font-bold grade-D px-2 py-1 rounded';
+            } else {
+                termAverageElement.className = 'text-2xl font-bold grade-F px-2 py-1 rounded';
+            }
+        } else {
+            termAverageElement.textContent = '-';
+            termAverageElement.className = 'text-2xl font-bold text-blue-600';
+        }
+
+        // Update progress
+        if (progressBar && completionText) {
+            const totalSubjects = rows.length;
+            const percentage = (completedSubjects / totalSubjects) * 100;
+            progressBar.style.width = `${percentage}%`;
+            completionText.textContent = `${completedSubjects}/${totalSubjects} subjects`;
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + ? to show system info
+        if (e.ctrlKey && e.key === '?') {
+            e.preventDefault();
+            showSystemInfo();
+        }
+
+        // Enter key moves to next input
+        if (e.key === 'Enter' && e.target.classList.contains('score-input')) {
+            e.preventDefault();
+            const inputs = Array.from(document.querySelectorAll('.score-input'));
+            const currentIndex = inputs.indexOf(e.target);
+            if (currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+            } else if (currentIndex === inputs.length - 1) {
+                // If last input, focus the save button
+                const saveButton = document.querySelector('button[type="submit"]');
+                if (saveButton) saveButton.focus();
+            }
+        }
+
+        // Escape key clears current input
+        if (e.key === 'Escape' && e.target.classList.contains('score-input')) {
+            e.target.value = '';
+            validateScore(e.target);
+        }
+    });
 </script>
 </body>
 </html>

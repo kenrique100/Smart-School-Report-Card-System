@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${student.firstName + ' ' + student.lastName + ' - Performance'}">Student Performance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-card { transition: all 0.3s ease; }
+        .stats-card:hover { transform: scale(1.02); }
+        .term-1 { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
+        .term-2 { background: linear-gradient(135deg, #10B981, #047857); }
+        .term-3 { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #E5E7EB;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/assessments/entry}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Assessments</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" th:text="${student.firstName + ' ' + student.lastName + ' - Academic Performance'}"></h1>
+                        <p class="text-gray-600 text-sm mt-1" th:text="${student.classRoom.name}"></p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Student Information -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white">Student Information</h2>
+                    <div class="text-white">
+                        <span class="text-sm">ID: </span>
+                        <span class="font-mono font-semibold" th:text="${student.studentId}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex items-center space-x-4">
+                        <div th:class="${'w-16 h-16 rounded-full flex items-center justify-center ' + (student.gender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
+                            <i th:class="${student.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-2xl'"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900" th:text="${student.firstName + ' ' + student.lastName}"></h3>
+                            <p class="text-gray-600" th:text="${student.rollNumber}"></p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Class:</span>
+                            <span class="font-semibold" th:text="${student.classRoom.name}"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Department:</span>
+                            <span class="font-semibold" th:text="${student.department.name}"></span>
+                        </div>
+                        <div th:if="${student.specialty}" class="flex justify-between text-sm">
+                            <span class="text-gray-500">Specialty:</span>
+                            <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs" th:text="${student.specialty}"></span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Academic Year:</span>
+                            <span class="font-semibold" th:text="${student.academicYearStart} + '-' + ${student.academicYearEnd}"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Class Teacher:</span>
+                            <span class="font-semibold" th:text="${student.classRoom.classTeacher}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Summary -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white">Yearly Performance Summary</h2>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="stats-card bg-blue-50 p-6 rounded-xl border border-blue-200 text-center">
+                        <div class="text-4xl font-bold text-blue-600" th:text="${#numbers.formatDecimal(yearlyAverage, 1, 2)}">0.00</div>
+                        <div class="text-sm font-semibold text-blue-800 mt-1">Yearly Average</div>
+                        <div class="text-xs text-blue-600 mt-1">Overall Performance</div>
+                    </div>
+
+                    <div th:class="${'stats-card p-6 rounded-xl border text-center ' + (yearlyPassed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200')}">
+                        <div th:class="${'text-4xl font-bold ' + (yearlyPassed ? 'text-green-600' : 'text-red-600')}"
+                             th:text="${yearlyPassed ? 'PASS' : 'FAIL'}"></div>
+                        <div th:class="${'text-sm font-semibold mt-1 ' + (yearlyPassed ? 'text-green-800' : 'text-red-800')}">Promotion Status</div>
+                        <div th:class="${'text-xs mt-1 ' + (yearlyPassed ? 'text-green-600' : 'text-red-600')}"
+                             th:text="${yearlyStatus}"></div>
+                    </div>
+
+                    <div class="stats-card bg-purple-50 p-6 rounded-xl border border-purple-200 text-center">
+                        <div class="text-4xl font-bold text-purple-600"
+                             th:text="${#lists.size(termData[1].subjectScores)}">0</div>
+                        <div class="text-sm font-semibold text-purple-800 mt-1">Total Subjects</div>
+                        <div class="text-xs text-purple-600 mt-1">Enrolled</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Term Performance -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div th:each="termDataEntry : ${termData.entrySet()}" class="bg-white shadow-xl rounded-2xl overflow-hidden">
+                <div th:class="${'term-' + termDataEntry.key + ' px-6 py-4'}">
+                    <h2 class="text-xl font-bold text-white">Term <span th:text="${termDataEntry.key}"></span></h2>
+                </div>
+
+                <div class="p-6">
+                    <div class="text-center mb-6">
+                        <div class="text-3xl font-bold text-gray-900" th:text="${#numbers.formatDecimal(termDataEntry.value.average, 1, 2)}">0.00</div>
+                        <div class="text-sm text-gray-600 mt-1">Term Average</div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill bg-gradient-to-r from-blue-500 to-purple-500"
+                                 th:style="'width: ' + ${(termDataEntry.value.average != null ? termDataEntry.value.average : 0) * 5} + '%;'"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Status:</span>
+                            <span th:class="${'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' +
+                                           (termDataEntry.value.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">
+                                <i th:class="${termDataEntry.value.passed ? 'fas fa-check-circle mr-1' : 'fas fa-times-circle mr-1'}"></i>
+                                <span th:text="${termDataEntry.value.passed ? 'Pass' : 'Fail'}"></span>
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Performance:</span>
+                            <span th:class="${'font-semibold ' +
+                                           (termDataEntry.value.average >= 15 ? 'text-green-600' :
+                                            termDataEntry.value.average >= 10 ? 'text-yellow-600' : 'text-red-600')}"
+                                  th:text="${termDataEntry.value.status}"></span>
+                        </div>
+
+                        <div th:if="${termDataEntry.value.subjectScores != null}">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Subjects with scores:</span>
+                                <span class="font-semibold" th:text="${termDataEntry.value.subjectScores.size()}"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Remarks:</h4>
+                        <p class="text-sm text-gray-600" th:text="${termDataEntry.value.remarks}"></p>
+                    </div>
+
+                    <div class="mt-4">
+                        <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=' + ${termDataEntry.key}}"
+                           class="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-edit mr-2"></i>Edit Term <span th:text="${termDataEntry.key}"></span> Assessments
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Performance -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white">Subject Performance by Term</h2>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Subject</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Term 1</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Term 2</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Term 3</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:each="subjectEntry : ${termData[1].subjectScores.entrySet()}" class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900" th:text="${subjectEntry.key}"></div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div th:if="${termData[1].subjectScores.get(subjectEntry.key) != null and not termData[1].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(termData[1].subjectScores.get(subjectEntry.key)[0], 1, 2)}">0.00</span>
+                                </div>
+                                <div th:unless="${termData[1].subjectScores.get(subjectEntry.key) != null and not termData[1].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="text-gray-400">-</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div th:if="${termData[2].subjectScores.get(subjectEntry.key) != null and not termData[2].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(termData[2].subjectScores.get(subjectEntry.key)[0], 1, 2)}">0.00</span>
+                                </div>
+                                <div th:unless="${termData[2].subjectScores.get(subjectEntry.key) != null and not termData[2].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="text-gray-400">-</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div th:if="${termData[3].subjectScores.get(subjectEntry.key) != null and not termData[3].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(termData[3].subjectScores.get(subjectEntry.key)[0], 1, 2)}">0.00</span>
+                                </div>
+                                <div th:unless="${termData[3].subjectScores.get(subjectEntry.key) != null and not termData[3].subjectScores.get(subjectEntry.key).isEmpty()}">
+                                    <span class="text-gray-400">-</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex space-x-2">
+                                    <button onclick="viewSubjectDetails([[${subjectEntry.key}]])"
+                                            class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center">
+                                        <i class="fas fa-eye mr-1"></i>View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-8 flex justify-between items-center">
+            <div class="text-sm text-gray-500">
+                Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+            </div>
+            <div class="flex space-x-3">
+                <a th:href="@{'/reports/student/yearly/' + ${student.id}}"
+                   class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-file-alt"></i>
+                    <span>View Full Yearly Report</span>
+                </a>
+                <button onclick="window.print()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-print"></i>
+                    <span>Print Performance</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Details Modal -->
+<div id="subjectModal" class="modal-overlay">
+    <div class="modal-content max-w-md mx-auto mt-20">
+        <div class="bg-white p-6 rounded-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="subjectTitle" class="text-lg font-semibold text-gray-900">Subject Details</h3>
+                <button onclick="closeSubjectModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="subjectDetails" class="space-y-4">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeSubjectModal()"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function viewSubjectDetails(subjectName) {
+        // This would ideally fetch more detailed subject information
+        document.getElementById('subjectTitle').textContent = subjectName + ' Performance';
+        document.getElementById('subjectDetails').innerHTML = `
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Subject:</span>
+                    <span class="font-semibold">${subjectName}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Term 1 Average:</span>
+                    <span class="font-semibold">[[${#numbers.formatDecimal(termData[1].subjectScores[subjectName] != null && termData[1].subjectScores[subjectName].length > 0 ? termData[1].subjectScores[subjectName][0] : 0, 1, 2)}]]</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Term 2 Average:</span>
+                    <span class="font-semibold">[[${#numbers.formatDecimal(termData[2].subjectScores[subjectName] != null && termData[2].subjectScores[subjectName].length > 0 ? termData[2].subjectScores[subjectName][0] : 0, 1, 2)}]]</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Term 3 Average:</span>
+                    <span class="font-semibold">[[${#numbers.formatDecimal(termData[3].subjectScores[subjectName] != null && termData[3].subjectScores[subjectName].length > 0 ? termData[3].subjectScores[subjectName][0] : 0, 1, 2)}]]</span>
+                </div>
+            </div>
+        `;
+        document.getElementById('subjectModal').style.display = 'block';
+    }
+
+    function closeSubjectModal() {
+        document.getElementById('subjectModal').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('subjectModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSubjectModal();
+            }
+        });
+    });
+</script>
+</body>
+</html>

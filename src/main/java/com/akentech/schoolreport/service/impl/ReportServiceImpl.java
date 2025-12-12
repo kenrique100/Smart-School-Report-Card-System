@@ -692,7 +692,6 @@ public class ReportServiceImpl implements ReportService {
                 .remarks("No assessment data available")
                 .subjectReports(new ArrayList<>())
                 .academicYear(getAcademicYear(student))
-                .classTeacher(getClassTeacher(student))
                 .build();
     }
 
@@ -750,10 +749,5 @@ public class ReportServiceImpl implements ReportService {
             return student.getAcademicYearStart() + "-" + student.getAcademicYearEnd();
         }
         return Year.now().getValue() + "-" + (Year.now().getValue() + 1);
-    }
-
-    private String getClassTeacher(Student student) {
-        return student.getClassRoom() != null ?
-                student.getClassRoom().getClassTeacher() : "Not Assigned";
     }
 }

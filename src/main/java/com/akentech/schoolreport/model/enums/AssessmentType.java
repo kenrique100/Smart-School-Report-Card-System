@@ -20,11 +20,13 @@ public enum AssessmentType {
 
     public static AssessmentType fromTermAndNumber(Integer term, Integer assessmentNumber) {
         for (AssessmentType type : values()) {
+            // Fix: Check if the type matches the term and assessment number
             if (type.getTerm().equals(term) && type.getAssessmentNumber().equals(assessmentNumber)) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Invalid term or assessment number");
+        throw new IllegalArgumentException("Invalid term or assessment number. " +
+                "Valid combinations: Term 1: Assessments 1-2, Term 2: Assessments 3-4, Term 3: Assessment 5");
     }
 
     public static AssessmentType[] getAssessmentsForTerm(Integer term) {
@@ -34,5 +36,10 @@ public enum AssessmentType {
             case 3 -> new AssessmentType[]{ASSESSMENT_5};
             default -> throw new IllegalArgumentException("Invalid term: " + term);
         };
+    }
+
+    // Add a method to get display name
+    public String getDisplayName() {
+        return "Assessment " + assessmentNumber + " (Term " + term + ")";
     }
 }

@@ -15,11 +15,24 @@
         .subject-card { transition: all 0.3s ease; border-left: 4px solid transparent; }
         .subject-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
         .compulsory-subject { border-left-color: #10B981; }
-        .optional-subject { border-left-color: #3B82F6; }
+        .optional-subject { border-left-color: #3B7280; }
         .fade-in { animation: fadeIn 0.6s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .stats-card { transition: all 0.3s ease; }
         .stats-card:hover { transform: scale(1.02); }
+        .term-1 { border-color: #3B82F6; }
+        .term-2 { border-color: #10B981; }
+        .term-3 { border-color: #8B5CF6; }
+        .assessment-tab.active { border-bottom: 3px solid; font-weight: 600; }
+        .assessment-tab.term-1.active { border-color: #3B82F6; color: #3B82F6; }
+        .assessment-tab.term-2.active { border-color: #10B981; color: #10B981; }
+        .assessment-tab.term-3.active { border-color: #8B5CF6; color: #8B5CF6; }
+        .grade-A { background-color: #10B981; color: white; }
+        .grade-B { background-color: #3B82F6; color: white; }
+        .grade-C { background-color: #F59E0B; color: white; }
+        .grade-D { background-color: #EF4444; color: white; }
+        .grade-F { background-color: #6B7280; color: white; }
+        .grade-U { background-color: #111827; color: white; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -52,10 +65,17 @@
             <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white">Student Information</h2>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-blue-100 text-sm" th:text="${student.classroomName}"></span>
-                        <span class="text-white">•</span>
-                        <span class="text-blue-100 text-sm" th:text="${student.departmentName}"></span>
+                    <div class="flex items-center space-x-4">
+                        <a th:href="@{'/assessments/entry?studentId=' + ${student.id}}"
+                           class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Assessment</span>
+                        </a>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-blue-100 text-sm" th:text="${student.classroomName}"></span>
+                            <span class="text-white">•</span>
+                            <span class="text-blue-100 text-sm" th:text="${student.departmentName}"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,10 +172,10 @@
                                 <i class="fas fa-edit"></i>
                                 <span>Edit Student</span>
                             </a>
-                            <a th:href="@{/students}"
-                               class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-center font-medium flex items-center justify-center space-x-2">
-                                <i class="fas fa-list"></i>
-                                <span>All Students</span>
+                            <a th:href="@{'/assessments/entry?studentId=' + ${student.id}}"
+                               class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-center font-medium flex items-center justify-center space-x-2">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Manage Assessments</span>
                             </a>
                         </div>
                     </div>
@@ -168,7 +188,7 @@
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-chart-line mr-2"></i>Academic Performance
+                        <i class="fas fa-chart-line mr-2"></i>Academic Performance & Assessments
                     </h2>
                     <span class="text-green-100 text-sm">
                         <span th:text="${student.classroomName}"></span> •
@@ -179,182 +199,455 @@
 
             <div class="p-6">
                 <!-- Performance Statistics -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
                     <div class="stats-card bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
                         <div class="text-3xl font-bold text-blue-600"
-                             th:text="${subjectsSummary.totalSubjects != null ? subjectsSummary.totalSubjects : 0}">0</div>
-                        <div class="text-sm font-semibold text-blue-800 mt-1">Total Subjects</div>
-                        <div class="text-xs text-blue-600 mt-1">Enrolled</div>
+                             th:text="${assessmentSummary?.totalAssessments != null ? assessmentSummary.totalAssessments : 0}">0</div>
+                        <div class="text-sm font-semibold text-blue-800 mt-1">Total Assessments</div>
+                        <div class="text-xs text-blue-600 mt-1">All Terms</div>
                     </div>
                     <div class="stats-card bg-green-50 p-4 rounded-xl text-center border border-green-200">
                         <div class="text-3xl font-bold text-green-600"
-                             th:text="${subjectsSummary.subjectsWithScores != null ? subjectsSummary.subjectsWithScores : 0}">0</div>
-                        <div class="text-sm font-semibold text-green-800 mt-1">With Scores</div>
-                        <div class="text-xs text-green-600 mt-1">Assessed</div>
+                             th:text="${assessmentSummary?.term1Average != null ? #numbers.formatDecimal(assessmentSummary.term1Average, 1, 1) : '-'}">-</div>
+                        <div class="text-sm font-semibold text-green-800 mt-1">Term 1 Avg</div>
+                        <div class="text-xs text-green-600 mt-1">Out of 20</div>
                     </div>
                     <div class="stats-card bg-purple-50 p-4 rounded-xl text-center border border-purple-200">
                         <div class="text-3xl font-bold text-purple-600"
-                             th:text="${subjectsSummary.compulsorySubjects != null ? subjectsSummary.compulsorySubjects : 0}">0</div>
-                        <div class="text-sm font-semibold text-purple-800 mt-1">Compulsory</div>
-                        <div class="text-xs text-purple-600 mt-1">Required</div>
+                             th:text="${assessmentSummary?.term2Average != null ? #numbers.formatDecimal(assessmentSummary.term2Average, 1, 1) : '-'}">-</div>
+                        <div class="text-sm font-semibold text-purple-800 mt-1">Term 2 Avg</div>
+                        <div class="text-xs text-purple-600 mt-1">Out of 20</div>
                     </div>
-                    <div class="stats-card bg-orange-50 p-4 rounded-xl text-center border border-orange-200"
-                         th:if="${subjectsSummary.averageScore != null and subjectsSummary.averageScore > 0}">
+                    <div class="stats-card bg-orange-50 p-4 rounded-xl text-center border border-orange-200">
                         <div class="text-3xl font-bold text-orange-600"
-                             th:text="${#numbers.formatDecimal(subjectsSummary.averageScore, 1, 1)}">0</div>
-                        <div class="text-sm font-semibold text-orange-800 mt-1">Average Score</div>
-                        <div class="text-xs text-orange-600 mt-1">Overall</div>
+                             th:text="${assessmentSummary?.term3Average != null ? #numbers.formatDecimal(assessmentSummary.term3Average, 1, 1) : '-'}">-</div>
+                        <div class="text-sm font-semibold text-orange-800 mt-1">Term 3 Avg</div>
+                        <div class="text-xs text-orange-600 mt-1">Out of 20</div>
                     </div>
-                    <div class="stats-card bg-gray-50 p-4 rounded-xl text-center border border-gray-200"
-                         th:if="${subjectsSummary.averageScore == null or subjectsSummary.averageScore == 0}">
-                        <div class="text-3xl font-bold text-gray-600">-</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-1">Average Score</div>
-                        <div class="text-xs text-gray-600 mt-1">No scores yet</div>
+                    <div class="stats-card bg-indigo-50 p-4 rounded-xl text-center border border-indigo-200">
+                        <div class="text-3xl font-bold text-indigo-600"
+                             th:text="${assessmentSummary?.yearlyAverage != null ? #numbers.formatDecimal(assessmentSummary.yearlyAverage, 1, 1) : '-'}">-</div>
+                        <div class="text-sm font-semibold text-indigo-800 mt-1">Yearly Avg</div>
+                        <div class="text-xs text-indigo-600 mt-1">Overall</div>
+                    </div>
+                    <div class="stats-card bg-red-50 p-4 rounded-xl text-center border border-red-200">
+                        <div class="text-3xl font-bold text-red-600"
+                             th:text="${assessmentSummary?.classRank != null ? assessmentSummary.classRank : '-'}">-</div>
+                        <div class="text-sm font-semibold text-red-800 mt-1">Class Rank</div>
+                        <div class="text-xs text-red-600 mt-1">Yearly</div>
                     </div>
                 </div>
 
-                <!-- Subjects Table -->
-                <div th:if="${not studentSubjects.empty}">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-book-open mr-2 text-green-600"></i>Enrolled Subjects
-                            <span class="ml-2 text-sm font-normal text-gray-600 bg-gray-100 px-2 py-1 rounded-full"
-                                  th:text="${studentSubjects.size() + ' subjects'}"></span>
-                        </h3>
-                        <div class="flex items-center space-x-2 text-sm text-gray-600">
-                            <div class="flex items-center space-x-1">
-                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span>Compulsory</span>
-                            </div>
-                            <div class="flex items-center space-x-1">
-                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <span>Optional</span>
+                <!-- Term Tabs -->
+                <div class="mb-6">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8">
+                            <button onclick="switchTerm(1)"
+                                    class="assessment-tab term-1 py-2 px-1 text-sm font-medium"
+                                    th:classappend="${currentTerm == 1 ? 'active text-blue-600' : 'text-gray-500 hover:text-gray-700'}">
+                                Term 1 Assessments
+                                <span th:if="${assessmentSummary?.term1Assessments != null}"
+                                      class="ml-2 bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full"
+                                      th:text="${assessmentSummary.term1Assessments}"></span>
+                            </button>
+                            <button onclick="switchTerm(2)"
+                                    class="assessment-tab term-2 py-2 px-1 text-sm font-medium"
+                                    th:classappend="${currentTerm == 2 ? 'active text-green-600' : 'text-gray-500 hover:text-gray-700'}">
+                                Term 2 Assessments
+                                <span th:if="${assessmentSummary?.term2Assessments != null}"
+                                      class="ml-2 bg-green-100 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full"
+                                      th:text="${assessmentSummary.term2Assessments}"></span>
+                            </button>
+                            <button onclick="switchTerm(3)"
+                                    class="assessment-tab term-3 py-2 px-1 text-sm font-medium"
+                                    th:classappend="${currentTerm == 3 ? 'active text-purple-600' : 'text-gray-500 hover:text-gray-700'}">
+                                Term 3 Assessments
+                                <span th:if="${assessmentSummary?.term3Assessments != null}"
+                                      class="ml-2 bg-purple-100 text-purple-600 text-xs font-semibold px-2 py-0.5 rounded-full"
+                                      th:text="${assessmentSummary.term3Assessments}"></span>
+                            </button>
+                            <a th:href="@{'/assessments/entry?studentId=' + ${student.id}}"
+                               class="py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                                View All Assessments
+                            </a>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Term Assessments Content -->
+                <div id="term1Content" class="fade-in">
+                    <h3 class="text-lg font-semibold text-blue-700 mb-4 flex items-center">
+                        <i class="fas fa-file-alt mr-2"></i>Term 1 Assessment Details
+                    </h3>
+
+                    <div th:if="${not termAssessments.empty and currentTerm == 1}">
+                        <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coefficient</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Assessment 1</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Assessment 2</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term Average</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Grade</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                <tr th:each="assessment : ${termAssessments}"
+                                    class="hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="px-6 py-4">
+                                        <div class="font-semibold text-gray-900" th:text="${assessment.subjectName}"></div>
+                                        <div th:if="${assessment.subjectCode != null}"
+                                             class="text-xs text-gray-600 mt-1 font-mono"
+                                             th:text="${assessment.subjectCode}"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="font-semibold text-gray-900"
+                                              th:text="${assessment.coefficient}"></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.assessment1Score != null}">
+                                            <span class="font-bold text-lg text-gray-900" th:text="${#numbers.formatDecimal(assessment.assessment1Score, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.assessment1Score == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.assessment2Score != null}">
+                                            <span class="font-bold text-lg text-gray-900" th:text="${#numbers.formatDecimal(assessment.assessment2Score, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.assessment2Score == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.termAverage != null}">
+                                            <span class="font-bold text-xl text-gray-900" th:text="${#numbers.formatDecimal(assessment.termAverage, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.termAverage == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span th:if="${assessment.termGrade != null}"
+                                              th:class="${'grade-' + assessment.termGrade + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'}"
+                                              th:text="${assessment.termGrade}"></span>
+                                        <span th:if="${assessment.termGrade == null}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <i class="fas fa-minus mr-1"></i>No grade
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span th:if="${assessment.completed}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                            <i class="fas fa-check mr-1"></i>Complete
+                                        </span>
+                                        <span th:if="${!assessment.completed}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                            <i class="fas fa-clock mr-1"></i>Incomplete
+                                        </span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Term 1 Summary -->
+                        <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 mb-2">Term 1 Summary</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-blue-700">Average Score:</span>
+                                    <span class="font-bold text-blue-900"
+                                          th:text="${assessmentSummary?.term1Average != null ? #numbers.formatDecimal(assessmentSummary.term1Average, 1, 1) + '/20' : 'No data'}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-blue-700">Assessments Completed:</span>
+                                    <span class="font-bold text-blue-900"
+                                          th:text="${assessmentSummary?.term1CompletedSubjects != null ? assessmentSummary.term1CompletedSubjects + '/' + assessmentSummary.totalSubjects : '0/' + assessmentSummary.totalSubjects}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-blue-700">Status:</span>
+                                    <span th:if="${assessmentSummary?.term1Completed}"
+                                          class="font-bold text-green-600">Completed</span>
+                                    <span th:if="${assessmentSummary?.term1Completed != null and !assessmentSummary.term1Completed}"
+                                          class="font-bold text-yellow-600">In Progress</span>
+                                </div>
+                                <div>
+                                    <span class="block text-blue-700">Actions:</span>
+                                    <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=1'}"
+                                       class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                        <i class="fas fa-edit mr-1"></i>Edit Assessments
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
-                        <table class="w-full text-sm">
-                            <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Code</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Department</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Type</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coefficient</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Score</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Performance</th>
-                                <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                            <tr th:each="studentSubject : ${studentSubjects}"
-                                class="hover:bg-gray-50 transition-colors duration-150">
-                                <td class="px-6 py-4">
-                                    <div class="font-semibold text-gray-900" th:text="${studentSubject.subject.name}"></div>
-                                    <div th:if="${studentSubject.subject.description != null and studentSubject.subject.description != ''}"
-                                         class="text-xs text-gray-600 mt-1"
-                                         th:text="${studentSubject.subject.description}"></div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
-                                          th:text="${studentSubject.subject.subjectCode}"></code>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="text-gray-700"
-                                          th:text="${studentSubject.subject.department != null ? studentSubject.subject.department.name : 'General'}"></span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <!-- FIXED: Use studentSubject.compulsory (transient getter) -->
-                                    <span th:if="${studentSubject.compulsory}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                        <i class="fas fa-check-circle mr-1"></i>Compulsory
-                                    </span>
-                                    <!-- FIXED: Use not studentSubject.compulsory -->
-                                    <span th:if="${not studentSubject.compulsory}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                        <i class="fas fa-list-alt mr-1"></i>Optional
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="font-semibold text-gray-900"
-                                          th:text="${studentSubject.subject.coefficient}"></span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div th:if="${studentSubject.score != null}">
-                                        <span class="font-bold text-lg text-gray-900" th:text="${studentSubject.score}"></span>
-                                        <span class="text-xs text-gray-500">/100</span>
-                                    </div>
-                                    <div th:if="${studentSubject.score == null}">
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            <i class="fas fa-clock mr-1"></i>No score
-                                        </span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <!-- FIXED: Safe navigation and null check -->
-                                    <span th:if="${studentSubject?.performanceString != null and !#strings.isEmpty(studentSubject.performanceString)}"
-                                          th:class="${'performance-' + #strings.toLowerCase(studentSubject.performanceString)}
-                                                    + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'">
-                                        <i class="fas fa-chart-bar mr-1"></i>
-                                        <span th:text="${studentSubject.performanceString}"></span>
-                                    </span>
-                                    <span th:if="${studentSubject?.performanceString == null or #strings.isEmpty(studentSubject.performanceString)}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        <i class="fas fa-minus mr-1"></i>Not assessed
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span th:if="${studentSubject.score != null}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                        <i class="fas fa-check mr-1"></i>Assessed
-                                    </span>
-                                    <span th:if="${studentSubject.score == null}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                                        <i class="fas fa-clock mr-1"></i>Pending
-                                    </span>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- No Subjects Message -->
-                <div th:if="${studentSubjects.empty}" class="text-center py-16">
-                    <div class="max-w-md mx-auto">
-                        <i class="fas fa-book-open text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Subjects Enrolled</h3>
-                        <p class="text-gray-500 mb-6">This student is not currently enrolled in any subjects for the selected academic configuration.</p>
-                        <a th:href="@{'/students/edit/' + ${student.id}}"
-                           class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                            <i class="fas fa-plus mr-2"></i>Enroll in Subjects
+                    <!-- No Assessments Message -->
+                    <div th:if="${(termAssessments.empty or currentTerm != 1) and currentTerm == 1}" class="text-center py-12">
+                        <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Term 1 Assessments</h3>
+                        <p class="text-gray-600 mb-6">This student has no assessments recorded for Term 1.</p>
+                        <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=1'}"
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Term 1 Assessments
                         </a>
                     </div>
                 </div>
 
-                <!-- Academic Context -->
-                <div th:if="${not studentSubjects.empty}" class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-200">
-                    <h4 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>Academic Context
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <span class="block font-semibold text-blue-700">Class Level</span>
-                            <span class="text-blue-900" th:text="${student.classroomName}"></span>
+                <!-- Term 2 Assessments Content -->
+                <div id="term2Content" class="fade-in" style="display: none;">
+                    <h3 class="text-lg font-semibold text-green-700 mb-4 flex items-center">
+                        <i class="fas fa-file-alt mr-2"></i>Term 2 Assessment Details
+                    </h3>
+
+                    <div th:if="${not termAssessments.empty and currentTerm == 2}">
+                        <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coefficient</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Assessment 3</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Assessment 4</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term Average</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Grade</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                <tr th:each="assessment : ${termAssessments}"
+                                    class="hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="px-6 py-4">
+                                        <div class="font-semibold text-gray-900" th:text="${assessment.subjectName}"></div>
+                                        <div th:if="${assessment.subjectCode != null}"
+                                             class="text-xs text-gray-600 mt-1 font-mono"
+                                             th:text="${assessment.subjectCode}"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span class="font-semibold text-gray-900"
+                              th:text="${assessment.coefficient}"></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.assessment3Score != null}">
+                                            <span class="font-bold text-lg text-gray-900" th:text="${#numbers.formatDecimal(assessment.assessment3Score, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.assessment3Score == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.assessment4Score != null}">
+                                            <span class="font-bold text-lg text-gray-900" th:text="${#numbers.formatDecimal(assessment.assessment4Score, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.assessment4Score == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.termAverage != null}">
+                                            <span class="font-bold text-xl text-gray-900" th:text="${#numbers.formatDecimal(assessment.termAverage, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.termAverage == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span th:if="${assessment.termGrade != null}"
+                              th:class="${'grade-' + assessment.termGrade + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'}"
+                              th:text="${assessment.termGrade}"></span>
+                                        <span th:if="${assessment.termGrade == null}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <i class="fas fa-minus mr-1"></i>No grade
+                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span th:if="${assessment.completed}"
+                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <i class="fas fa-check mr-1"></i>Complete
+                        </span>
+                                        <span th:if="${!assessment.completed}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-clock mr-1"></i>Incomplete
+                        </span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div>
-                            <span class="block font-semibold text-blue-700">Department</span>
-                            <span class="text-blue-900" th:text="${student.departmentName}"></span>
+
+                        <!-- Term 2 Summary -->
+                        <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                            <h4 class="font-semibold text-green-800 mb-2">Term 2 Summary</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-green-700">Average Score:</span>
+                                    <span class="font-bold text-green-900"
+                                          th:text="${assessmentSummary?.term2Average != null ? #numbers.formatDecimal(assessmentSummary.term2Average, 1, 1) + '/20' : 'No data'}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-green-700">Assessments Completed:</span>
+                                    <span class="font-bold text-green-900"
+                                          th:text="${assessmentSummary?.term2CompletedSubjects != null ? assessmentSummary.term2CompletedSubjects + '/' + assessmentSummary.totalSubjects : '0/' + assessmentSummary.totalSubjects}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-green-700">Status:</span>
+                                    <span th:if="${assessmentSummary?.term2Completed}"
+                                          class="font-bold text-green-600">Completed</span>
+                                    <span th:if="${assessmentSummary?.term2Completed != null and !assessmentSummary.term2Completed}"
+                                          class="font-bold text-yellow-600">In Progress</span>
+                                </div>
+                                <div>
+                                    <span class="block text-green-700">Actions:</span>
+                                    <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=2'}"
+                                       class="text-green-600 hover:text-green-800 font-medium text-sm">
+                                        <i class="fas fa-edit mr-1"></i>Edit Assessments
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                        <div th:if="${student.specialty != null and student.specialty != ''}">
-                            <span class="block font-semibold text-blue-700">Specialization</span>
-                            <span class="text-blue-900" th:text="${student.specialty}"></span>
+                    </div>
+
+                    <!-- No Assessments Message -->
+                    <div th:if="${(termAssessments.empty or currentTerm != 2) and currentTerm == 2}" class="text-center py-12">
+                        <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Term 2 Assessments</h3>
+                        <p class="text-gray-600 mb-6">This student has no assessments recorded for Term 2.</p>
+                        <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=2'}"
+                           class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Term 2 Assessments
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Term 3 Assessments Content -->
+                <div id="term3Content" class="fade-in" style="display: none;">
+                    <h3 class="text-lg font-semibold text-purple-700 mb-4 flex items-center">
+                        <i class="fas fa-file-alt mr-2"></i>Term 3 Assessment Details
+                    </h3>
+
+                    <div th:if="${not termAssessments.empty and currentTerm == 3}">
+                        <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coefficient</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Assessment 5</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term Average</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Grade</th>
+                                    <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                <tr th:each="assessment : ${termAssessments}"
+                                    class="hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="px-6 py-4">
+                                        <div class="font-semibold text-gray-900" th:text="${assessment.subjectName}"></div>
+                                        <div th:if="${assessment.subjectCode != null}"
+                                             class="text-xs text-gray-600 mt-1 font-mono"
+                                             th:text="${assessment.subjectCode}"></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span class="font-semibold text-gray-900"
+                              th:text="${assessment.coefficient}"></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.assessment5Score != null}">
+                                            <span class="font-bold text-lg text-gray-900" th:text="${#numbers.formatDecimal(assessment.assessment5Score, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.assessment5Score == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div th:if="${assessment.termAverage != null}">
+                                            <span class="font-bold text-xl text-gray-900" th:text="${#numbers.formatDecimal(assessment.termAverage, 1, 1)}"></span>
+                                            <span class="text-xs text-gray-500">/20</span>
+                                        </div>
+                                        <div th:if="${assessment.termAverage == null}">
+                                            <span class="text-gray-400 text-sm">-</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span th:if="${assessment.termGrade != null}"
+                              th:class="${'grade-' + assessment.termGrade + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'}"
+                              th:text="${assessment.termGrade}"></span>
+                                        <span th:if="${assessment.termGrade == null}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <i class="fas fa-minus mr-1"></i>No grade
+                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                        <span th:if="${assessment.completed}"
+                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <i class="fas fa-check mr-1"></i>Complete
+                        </span>
+                                        <span th:if="${!assessment.completed}"
+                                              class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-clock mr-1"></i>Incomplete
+                        </span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div>
-                            <span class="block font-semibold text-blue-700">Academic Year</span>
-                            <span class="text-blue-900" th:text="${student.academicYear}"></span>
+
+                        <!-- Term 3 Summary -->
+                        <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <h4 class="font-semibold text-purple-800 mb-2">Term 3 Summary</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-purple-700">Average Score:</span>
+                                    <span class="font-bold text-purple-900"
+                                          th:text="${assessmentSummary?.term3Average != null ? #numbers.formatDecimal(assessmentSummary.term3Average, 1, 1) + '/20' : 'No data'}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-purple-700">Assessments Completed:</span>
+                                    <span class="font-bold text-purple-900"
+                                          th:text="${assessmentSummary?.term3CompletedSubjects != null ? assessmentSummary.term3CompletedSubjects + '/' + assessmentSummary.totalSubjects : '0/' + assessmentSummary.totalSubjects}"></span>
+                                </div>
+                                <div>
+                                    <span class="block text-purple-700">Status:</span>
+                                    <span th:if="${assessmentSummary?.term3Completed}"
+                                          class="font-bold text-green-600">Completed</span>
+                                    <span th:if="${assessmentSummary?.term3Completed != null and !assessmentSummary.term3Completed}"
+                                          class="font-bold text-yellow-600">In Progress</span>
+                                </div>
+                                <div>
+                                    <span class="block text-purple-700">Actions:</span>
+                                    <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=3'}"
+                                       class="text-purple-600 hover:text-purple-800 font-medium text-sm">
+                                        <i class="fas fa-edit mr-1"></i>Edit Assessments
+                                    </a>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- No Assessments Message -->
+                    <div th:if="${(termAssessments.empty or currentTerm != 3) and currentTerm == 3}" class="text-center py-12">
+                        <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Term 3 Assessments</h3>
+                        <p class="text-gray-600 mb-6">This student has no assessments recorded for Term 3.</p>
+                        <a th:href="@{'/assessments/entry?studentId=' + ${student.id} + '&term=3'}"
+                           class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Term 3 Assessments
+                        </a>
                     </div>
                 </div>
             </div>
@@ -376,59 +669,101 @@
                     <i class="fas fa-edit"></i>
                     <span>Edit Student</span>
                 </a>
-                <a th:href="@{'/students/edit/' + ${student.id} + '#subjects'}"
+                <a th:href="@{'/assessments/entry?studentId=' + ${student.id}}"
                    class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-book"></i>
-                    <span>Manage Subjects</span>
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Manage Assessments</span>
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript for enhanced interactivity -->
+<!-- JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add smooth scrolling for subject cards
-        const subjectCards = document.querySelectorAll('.subject-card');
-        subjectCards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-4px)';
-                this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-            });
+        // Get current term from URL or default to 1
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentTerm = urlParams.get('term');
 
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-            });
+        if (!currentTerm || currentTerm < 1 || currentTerm > 3) {
+            currentTerm = 1;
+        } else {
+            currentTerm = parseInt(currentTerm);
+        }
+
+        // Initialize the correct term
+        initializeTermDisplay(currentTerm);
+
+        // Add print button
+        addPrintButton();
+
+        // Setup keyboard shortcuts
+        setupKeyboardShortcuts();
+
+        console.log('Initialized term display for term:', currentTerm);
+    });
+
+    function initializeTermDisplay(term) {
+        // Hide all term contents
+        document.querySelectorAll('[id^="term"][id$="Content"]').forEach(el => {
+            el.style.display = 'none';
         });
 
-        // Add animation to stats cards
-        const statsCards = document.querySelectorAll('.stats-card');
-        statsCards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
+        // Show selected term content
+        const termContent = document.getElementById('term' + term + 'Content');
+        if (termContent) {
+            termContent.style.display = 'block';
+        }
+
+        // Update active tab
+        document.querySelectorAll('.assessment-tab').forEach(tab => {
+            tab.classList.remove('active');
+            tab.classList.remove('text-blue-600', 'text-green-600', 'text-purple-600');
         });
 
-        // Performance level color coding
-        const performanceCells = document.querySelectorAll('td:has(.performance-excellent), td:has(.performance-good), td:has(.performance-average), td:has(.performance-poor)');
-        performanceCells.forEach(cell => {
-            const perfSpan = cell.querySelector('span');
-            if (perfSpan) {
-                const perfText = perfSpan.textContent.toLowerCase();
-                if (perfText.includes('excellent')) {
-                    perfSpan.className = 'performance-excellent inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
-                } else if (perfText.includes('good')) {
-                    perfSpan.className = 'performance-good inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
-                } else if (perfText.includes('average')) {
-                    perfSpan.className = 'performance-average inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
-                } else if (perfText.includes('poor')) {
-                    perfSpan.className = 'performance-poor inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
-                }
+        const activeTab = document.querySelector('.assessment-tab.term-' + term);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            // Add appropriate color class based on term
+            if (term === 1) activeTab.classList.add('text-blue-600');
+            if (term === 2) activeTab.classList.add('text-green-600');
+            if (term === 3) activeTab.classList.add('text-purple-600');
+        }
+    }
+
+    function switchTerm(term) {
+        // Update URL and reload page to get new data
+        const url = new URL(window.location);
+        url.searchParams.set('term', term);
+        console.log('Switching to term:', term, 'URL:', url.toString());
+        window.location.href = url.toString();
+    }
+
+    function showAllAssessments() {
+        // Get student ID from URL
+        const url = new URL(window.location);
+        const pathParts = url.pathname.split('/');
+        let studentId = null;
+
+        // Try to extract student ID from URL path
+        for (let i = pathParts.length - 1; i >= 0; i--) {
+            if (pathParts[i] && !isNaN(pathParts[i]) && pathParts[i] !== '') {
+                studentId = pathParts[i];
+                break;
             }
-        });
+        }
 
-        // Add print functionality
+        if (studentId) {
+            window.location.href = '/assessments/entry?studentId=' + studentId;
+        } else {
+            alert('Unable to determine student ID. Please navigate from the students list.');
+        }
+    }
+
+    function addPrintButton() {
         const printButton = document.createElement('button');
+        printButton.type = 'button';
         printButton.innerHTML = '<i class="fas fa-print mr-2"></i>Print Report';
         printButton.className = 'px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center';
         printButton.addEventListener('click', function() {
@@ -438,36 +773,32 @@
         // Add print button to actions
         const actionButtons = document.querySelector('.flex.space-x-3:last-child');
         if (actionButtons) {
-            actionButtons.appendChild(printButton);
+            // Check if print button already exists
+            if (!document.querySelector('.print-button')) {
+                printButton.classList.add('print-button');
+                actionButtons.appendChild(printButton);
+            }
         }
-    });
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Ctrl + P for print
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            window.print();
-        }
-        // Escape key to go back
-        if (e.key === 'Escape') {
-            window.history.back();
-        }
-    });
-</script>
-
-<!-- Print Styles -->
-<style>
-    @media print {
-        .bg-gray-50 { background: white !important; }
-        .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
-        .border, .border-b, .border-t { border: 1px solid #ddd !important; }
-        .flex.space-x-3:last-child,
-        .flex.justify-between.items-center.pt-6 { display: none !important; }
-        .stats-card { break-inside: avoid; }
-        .text-blue-600, .text-green-600, .text-purple-600, .text-orange-600 { color: #333 !important; }
-        .bg-gradient-to-r { background: #333 !important; color: white !important; }
     }
-</style>
+
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + P for print
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            // Escape key to go back
+            if (e.key === 'Escape') {
+                window.history.back();
+            }
+            // Number keys 1-3 to switch terms
+            if (e.key >= '1' && e.key <= '3') {
+                e.preventDefault();
+                switchTerm(parseInt(e.key));
+            }
+        });
+    }
+</script>
 </body>
 </html>

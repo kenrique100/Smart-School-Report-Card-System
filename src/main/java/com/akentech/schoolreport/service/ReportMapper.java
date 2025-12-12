@@ -40,7 +40,6 @@ public class ReportMapper {
                 .remarks((String) statistics.get("remarks"))
                 .subjectReports(subjectReports)
                 .academicYear(getAcademicYear(student))
-                .classTeacher(getClassTeacher(student))
                 .build();
     }
 
@@ -86,10 +85,5 @@ public class ReportMapper {
             return student.getAcademicYearStart() + "-" + student.getAcademicYearEnd();
         }
         return "N/A";
-    }
-
-    private String getClassTeacher(Student student) {
-        return student.getClassRoom() != null ?
-                student.getClassRoom().getClassTeacher() : "Not Assigned";
     }
 }

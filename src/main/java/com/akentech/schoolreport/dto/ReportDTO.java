@@ -29,8 +29,6 @@ public class ReportDTO {
     private String remarks;
     private List<SubjectReport> subjectReports;
     private String academicYear;
-    private String classTeacher;
-
     /**
      * Get formatted term average
      */

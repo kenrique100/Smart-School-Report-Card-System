@@ -40,7 +40,7 @@ public class AssessmentController {
                             @RequestParam(value = "classRoomId", required = false) Long classRoomId,
                             @RequestParam(value = "studentId", required = false) Long studentId,
                             @RequestParam(value = "term", required = false, defaultValue = "1") Integer term,
-                            @RequestParam(value = "assessmentNumber", required = false, defaultValue = "1") Integer assessmentNumber,
+                            @RequestParam(value = "assessmentNumber", required = false) Integer assessmentNumber,
                             @RequestParam(value = "departmentId", required = false) Long departmentId,
                             @RequestParam(value = "specialty", required = false) String specialty) {
 
@@ -58,15 +58,31 @@ public class AssessmentController {
 
         // Get available assessments for the selected term
         AssessmentType[] availableAssessments = AssessmentType.getAssessmentsForTerm(term);
-        model.addAttribute("assessmentNumbers", Arrays.stream(availableAssessments)
+        List<Integer> availableAssessmentNumbers = Arrays.stream(availableAssessments)
                 .map(AssessmentType::getAssessmentNumber)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+
+        model.addAttribute("assessmentNumbers", availableAssessmentNumbers);
+
+        // Set default assessment number if not provided or invalid
+        if (assessmentNumber == null || !availableAssessmentNumbers.contains(assessmentNumber)) {
+            assessmentNumber = availableAssessmentNumbers.get(0);
+        }
         model.addAttribute("assessmentNumber", assessmentNumber);
 
         // Get current assessment type
-        AssessmentType currentAssessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
+        AssessmentType currentAssessmentType = null;
+        try {
+            currentAssessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
+        } catch (Exception e) {
+            log.warn("Invalid assessment type for term {}, number {}", term, assessmentNumber);
+            // Default to first available assessment for the term
+            currentAssessmentType = availableAssessments[0];
+            model.addAttribute("assessmentNumber", currentAssessmentType.getAssessmentNumber());
+        }
         model.addAttribute("currentAssessmentType", currentAssessmentType);
-        model.addAttribute("assessmentName", "Assessment " + assessmentNumber);
+        model.addAttribute("assessmentName", currentAssessmentType != null ?
+                currentAssessmentType.getDisplayName() : "Assessment");
 
         // Get filtered students based on class, department, specialty
         List<Student> filteredStudents;
@@ -98,10 +114,12 @@ public class AssessmentController {
 
                 // Get existing assessment for each subject in the selected term and assessment number
                 Map<Long, Assessment> existingAssessments = new HashMap<>();
-                for (Subject subject : studentSubjects) {
-                    Optional<Assessment> existingAssessment = assessmentService.getAssessmentByStudentSubjectAndTermAndType(
-                            studentId, subject.getId(), term, currentAssessmentType);
-                    existingAssessment.ifPresent(assessment -> existingAssessments.put(subject.getId(), assessment));
+                if (currentAssessmentType != null) {
+                    for (Subject subject : studentSubjects) {
+                        Optional<Assessment> existingAssessment = assessmentService.getAssessmentByStudentSubjectAndTermAndType(
+                                studentId, subject.getId(), term, currentAssessmentType);
+                        existingAssessment.ifPresent(assessment -> existingAssessments.put(subject.getId(), assessment));
+                    }
                 }
 
                 model.addAttribute("existingAssessments", existingAssessments);
@@ -127,28 +145,42 @@ public class AssessmentController {
     public String saveBatch(@RequestParam Long studentId,
                             @RequestParam Integer term,
                             @RequestParam Integer assessmentNumber,
-                            @RequestParam Map<String, String> allParams,
+                            @RequestParam(value = "classRoomId", required = false) Long classRoomId,
+                            @RequestParam(value = "departmentId", required = false) Long departmentId,
+                            @RequestParam(value = "specialty", required = false) String specialty,
+                            @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
+                            @RequestParam(value = "scores", required = false) List<Double> scores,
                             RedirectAttributes redirectAttributes) {
         try {
             Student student = studentService.getStudentByIdOrThrow(studentId);
             List<Assessment> assessments = new ArrayList<>();
-            AssessmentType assessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
 
-            // Extract subjectIds and scores from parameters
-            for (Map.Entry<String, String> entry : allParams.entrySet()) {
-                String key = entry.getKey();
+            // Validate assessment type before proceeding
+            AssessmentType assessmentType;
+            try {
+                assessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid assessment combination: term={}, assessment={}", term, assessmentNumber);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Invalid assessment combination. Term " + term + " only accepts: " +
+                                getValidAssessmentsForTerm(term));
 
-                if (key.startsWith("subjectIds[")) {
-                    String indexStr = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
-                    int index = Integer.parseInt(indexStr);
+                // Preserve filter parameters
+                redirectAttributes.addAttribute("classRoomId", classRoomId);
+                redirectAttributes.addAttribute("studentId", studentId);
+                redirectAttributes.addAttribute("term", term);
+                redirectAttributes.addAttribute("departmentId", departmentId);
+                redirectAttributes.addAttribute("specialty", specialty);
 
-                    Long subjectId = Long.parseLong(entry.getValue());
-                    String scoreKey = "scores[" + index + "]";
-                    String scoreValue = allParams.get(scoreKey);
+                return "redirect:/assessments/entry";
+            }
 
-                    if (scoreValue != null && !scoreValue.trim().isEmpty()) {
-                        double score = Double.parseDouble(scoreValue);
+            if (subjectIds != null && scores != null && subjectIds.size() == scores.size()) {
+                for (int i = 0; i < subjectIds.size(); i++) {
+                    Long subjectId = subjectIds.get(i);
+                    Double score = scores.get(i);
 
+                    if (score != null) {
                         if (score >= 0 && score <= 20) {
                             Subject subject = new Subject();
                             subject.setId(subjectId);
@@ -174,6 +206,8 @@ public class AssessmentController {
                                         .build();
                             }
                             assessments.add(assessment);
+                        } else {
+                            log.warn("Invalid score {} for subject {}", score, subjectId);
                         }
                     }
                 }
@@ -182,11 +216,11 @@ public class AssessmentController {
             if (!assessments.isEmpty()) {
                 assessmentService.saveAll(assessments);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Saved " + assessments.size() + " assessments successfully for Term " + term +
-                                ", Assessment " + assessmentNumber + "!");
+                        "Saved " + assessments.size() + " assessments successfully for " +
+                                assessmentType.getDisplayName() + "!");
             } else {
                 redirectAttributes.addFlashAttribute("warningMessage",
-                        "No assessments to save. Please enter scores.");
+                        "No assessments to save. Please enter valid scores (0-20).");
             }
 
         } catch (Exception e) {
@@ -196,14 +230,22 @@ public class AssessmentController {
         }
 
         // Preserve filter parameters
-        redirectAttributes.addAttribute("classRoomId", allParams.get("classRoomId"));
+        redirectAttributes.addAttribute("classRoomId", classRoomId);
         redirectAttributes.addAttribute("studentId", studentId);
         redirectAttributes.addAttribute("term", term);
-        redirectAttributes.addAttribute("assessmentNumber", assessmentNumber);
-        redirectAttributes.addAttribute("departmentId", allParams.get("departmentId"));
-        redirectAttributes.addAttribute("specialty", allParams.get("specialty"));
+        redirectAttributes.addAttribute("departmentId", departmentId);
+        redirectAttributes.addAttribute("specialty", specialty);
 
         return "redirect:/assessments/entry";
+    }
+
+    private String getValidAssessmentsForTerm(Integer term) {
+        return switch (term) {
+            case 1 -> "Assessments 1-2";
+            case 2 -> "Assessments 3-4";
+            case 3 -> "Assessment 5";
+            default -> "No valid assessments";
+        };
     }
 
     @GetMapping("/term-averages/{classId}")

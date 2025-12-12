@@ -1,9 +1,6 @@
 package com.akentech.schoolreport.controller;
 
-import com.akentech.schoolreport.util.DepartmentUtil;
-import com.akentech.schoolreport.util.ParameterUtils;
-import com.akentech.schoolreport.dto.GroupedSubjectsResponse;
-import com.akentech.schoolreport.dto.SubjectDTO;
+import com.akentech.schoolreport.dto.*;
 import com.akentech.schoolreport.exception.BusinessRuleException;
 import com.akentech.schoolreport.exception.DataIntegrityException;
 import com.akentech.schoolreport.exception.EntityNotFoundException;
@@ -12,9 +9,9 @@ import com.akentech.schoolreport.model.enums.ClassLevel;
 import com.akentech.schoolreport.model.enums.DepartmentCode;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
-import com.akentech.schoolreport.service.StudentEnrollmentService;
-import com.akentech.schoolreport.service.StudentService;
-import com.akentech.schoolreport.service.SubjectService;
+import com.akentech.schoolreport.service.*;
+import com.akentech.schoolreport.util.DepartmentUtil;
+import com.akentech.schoolreport.util.ParameterUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +40,9 @@ public class StudentController {
     private final DepartmentRepository departmentRepository;
     private final StudentEnrollmentService studentEnrollmentService;
     private final SubjectService subjectService;
+    private final AssessmentService assessmentService;
+    private final GradeService gradeService;
+    private final ReportService reportService;
 
     @GetMapping
     public String listStudents(
@@ -249,7 +249,7 @@ public class StudentController {
                     try {
                         subjectIds.add(Long.parseLong(id.trim()));
                     } catch (NumberFormatException e) {
-                        log.warn("Invalid subject ID: {}", id);
+                        log.warn("An Invalid subject ID: {}", id);
                     }
                 }
             }
@@ -374,14 +374,32 @@ public class StudentController {
     }
 
     @GetMapping("/view/{id}")
-    public String viewStudent(@PathVariable Long id, Model model) {
+    public String viewStudent(@PathVariable Long id,
+                              @RequestParam(value = "term", defaultValue = "1") Integer term,
+                              Model model) {
         try {
             Student student = studentService.getStudentByIdOrThrow(id);
             List<StudentSubject> studentSubjects = studentService.getStudentSubjects(id);
 
             Map<String, Object> subjectsSummary = studentEnrollmentService.getStudentEnrollmentSummary(id);
 
-            Map<String, List<Subject>> groupedSubjects = studentService.getGroupedSubjectsForStudent(id);
+            // Get assessment summary with ranks
+            StudentAssessmentSummaryDTO assessmentSummary = getAssessmentSummary(id);
+
+            // Calculate and set term rank
+            Integer termRank = calculateStudentTermRank(id, student.getClassRoom().getId(), term);
+            assessmentSummary.setTermRank(termRank);
+
+            // Calculate and set yearly rank
+            Integer yearlyRank = calculateStudentYearlyRank(id, student.getClassRoom().getId());
+            assessmentSummary.setClassRank(yearlyRank);
+
+            model.addAttribute("assessmentSummary", assessmentSummary);
+
+            // Get term assessments
+            List<TermAssessmentDTO> termAssessments = getTermAssessments(id, term);
+            model.addAttribute("termAssessments", termAssessments);
+            model.addAttribute("currentTerm", term);
 
             log.info("📊 Loading student {} {} (ID: {}) with {} subjects",
                     student.getFirstName(), student.getLastName(),
@@ -395,7 +413,13 @@ public class StudentController {
             model.addAttribute("student", student);
             model.addAttribute("subjectsSummary", subjectsSummary);
             model.addAttribute("studentSubjects", studentSubjects);
-            model.addAttribute("groupedSubjects", groupedSubjects);
+
+            // Get enrolled subjects for optional display (remove if not needed)
+            List<Subject> enrolledSubjects = studentEnrollmentService.getStudentEnrollments(id).stream()
+                    .map(StudentSubject::getSubject)
+                    .distinct()
+                    .collect(Collectors.toList());
+            model.addAttribute("enrolledSubjects", enrolledSubjects);
 
             return "view-student";
         } catch (EntityNotFoundException e) {
@@ -405,6 +429,188 @@ public class StudentController {
             log.error("Error viewing student with id: {}", id, e);
             return "redirect:/students?error=server_error";
         }
+    }
+
+    private Integer calculateStudentTermRank(Long studentId, Long classId, Integer term) {
+        try {
+            List<StudentTermAverageDTO> termAverages = assessmentService.getTermAveragesForClass(classId, term);
+
+            for (int i = 0; i < termAverages.size(); i++) {
+                if (termAverages.get(i).getStudent().getId().equals(studentId)) {
+                    return i + 1; // Rank is 1-based
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error calculating term rank for student {} term {}: {}", studentId, term, e.getMessage());
+        }
+        return null;
+    }
+
+    private Integer calculateStudentYearlyRank(Long studentId, Long classId) {
+        try {
+            List<StudentYearlyAverageDTO> yearlyAverages = assessmentService.getYearlyAveragesForClass(classId);
+
+            for (int i = 0; i < yearlyAverages.size(); i++) {
+                if (yearlyAverages.get(i).getStudent().getId().equals(studentId)) {
+                    return i + 1; // Rank is 1-based
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error calculating yearly rank for student {}: {}", studentId, e.getMessage());
+        }
+        return null;
+    }
+
+    private StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId) {
+        Student student = studentService.getStudentByIdOrThrow(studentId);
+
+        // Get all assessments
+        List<Assessment> assessments = assessmentService.getAssessmentsByStudent(studentId);
+
+        // Group by term
+        Map<Integer, List<Assessment>> assessmentsByTerm = assessments.stream()
+                .collect(Collectors.groupingBy(Assessment::getTerm));
+
+        // Calculate term averages
+        Double term1Avg = assessmentService.calculateTermAverage(studentId, 1);
+        Double term2Avg = assessmentService.calculateTermAverage(studentId, 2);
+        Double term3Avg = assessmentService.calculateTermAverage(studentId, 3);
+
+        // Calculate yearly average
+        Double yearlyAvg = assessmentService.calculateYearlyAverage(studentId);
+
+        // Get enrolled subjects count
+        List<StudentSubject> enrolledSubjects = studentEnrollmentService.getStudentEnrollments(studentId);
+        int totalSubjects = enrolledSubjects.size();
+
+        // Check completion status for each term
+        boolean term1Completed = checkTermCompletion(assessmentsByTerm.get(1), totalSubjects);
+        boolean term2Completed = checkTermCompletion(assessmentsByTerm.get(2), totalSubjects);
+        boolean term3Completed = checkTermCompletion(assessmentsByTerm.get(3), totalSubjects);
+
+        // Calculate rank-related statistics
+        int term1CompletedSubjects = countCompletedSubjects(assessmentsByTerm.get(1));
+        int term2CompletedSubjects = countCompletedSubjects(assessmentsByTerm.get(2));
+        int term3CompletedSubjects = countCompletedSubjects(assessmentsByTerm.get(3));
+
+        return StudentAssessmentSummaryDTO.builder()
+                .studentId(studentId)
+                .studentName(student.getFullName())
+                .totalAssessments(assessments.size())
+                .term1Assessments(assessmentsByTerm.getOrDefault(1, List.of()).size())
+                .term2Assessments(assessmentsByTerm.getOrDefault(2, List.of()).size())
+                .term3Assessments(assessmentsByTerm.getOrDefault(3, List.of()).size())
+                .term1Average(term1Avg)
+                .term2Average(term2Avg)
+                .term3Average(term3Avg)
+                .yearlyAverage(yearlyAvg)
+                .totalSubjects(totalSubjects)
+                .term1CompletedSubjects(term1CompletedSubjects)
+                .term2CompletedSubjects(term2CompletedSubjects)
+                .term3CompletedSubjects(term3CompletedSubjects)
+                .term1Completed(term1Completed)
+                .term2Completed(term2Completed)
+                .term3Completed(term3Completed)
+                .termRank(null) // Will be set by caller
+                .classRank(null) // Will be set by caller
+                .build();
+    }
+
+    private List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term) {
+        List<StudentSubject> enrolledSubjects = studentEnrollmentService.getStudentEnrollments(studentId);
+        List<TermAssessmentDTO> termAssessments = new ArrayList<>();
+
+        for (StudentSubject enrollment : enrolledSubjects) {
+            Subject subject = enrollment.getSubject();
+
+            // Get assessments for this subject and term
+            List<Assessment> subjectAssessments = assessmentService.getAssessmentsByStudentSubjectAndTerm(
+                    studentId, subject.getId(), term);
+
+            // Group by assessment type/number
+            Map<Integer, Double> scoresByAssessment = new HashMap<>();
+            for (Assessment assessment : subjectAssessments) {
+                scoresByAssessment.put(assessment.getType().getAssessmentNumber(), assessment.getScore());
+            }
+
+            // Calculate term average
+            Double termAverage = calculateSubjectTermAverage(scoresByAssessment, term);
+            String termGrade = termAverage != null ?
+                    gradeService.calculateLetterGrade(termAverage, subject.getName()) : null;
+
+            TermAssessmentDTO dto = TermAssessmentDTO.builder()
+                    .subjectId(subject.getId())
+                    .subjectName(subject.getName())
+                    .subjectCode(subject.getSubjectCode())
+                    .coefficient(subject.getCoefficient())
+                    .assessment1Score(scoresByAssessment.get(1))
+                    .assessment2Score(scoresByAssessment.get(2))
+                    .assessment3Score(scoresByAssessment.get(3))
+                    .assessment4Score(scoresByAssessment.get(4))
+                    .assessment5Score(scoresByAssessment.get(5))
+                    .termAverage(termAverage)
+                    .termGrade(termGrade)
+                    .completed(termAverage != null)
+                    .build();
+
+            termAssessments.add(dto);
+        }
+
+        // Sort by subject name
+        termAssessments.sort(Comparator.comparing(TermAssessmentDTO::getSubjectName));
+
+        return termAssessments;
+    }
+
+    private Double calculateSubjectTermAverage(Map<Integer, Double> scores, Integer term) {
+        if (scores.isEmpty()) {
+            return null;
+        }
+
+        return switch (term) {
+            case 1 -> {
+                // Term 1: Average of Assessment 1 and 2
+                Double a1 = scores.get(1);
+                Double a2 = scores.get(2);
+                yield (a1 != null && a2 != null) ? (a1 + a2) / 2.0 : null;
+            }
+            case 2 -> {
+                // Term 2: Average of Assessment 3 and 4
+                Double a3 = scores.get(3);
+                Double a4 = scores.get(4);
+                yield (a3 != null && a4 != null) ? (a3 + a4) / 2.0 : null;
+            }
+            case 3 -> {
+                // Term 3: Only Assessment 5
+                yield scores.get(5);
+            }
+            default -> null;
+        };
+    }
+
+    private boolean checkTermCompletion(List<Assessment> assessments, int totalSubjects) {
+        if (assessments == null) {
+            return false;
+        }
+
+        // Count unique subjects with assessments
+        long assessedSubjects = assessments.stream()
+                .map(a -> a.getSubject().getId())
+                .distinct()
+                .count();
+
+        return assessedSubjects == totalSubjects;
+    }
+
+    private int countCompletedSubjects(List<Assessment> assessments) {
+        if (assessments == null) {
+            return 0;
+        }
+
+        return (int) assessments.stream()
+                .map(a -> a.getSubject().getId())
+                .distinct()
+                .count();
     }
 
     @GetMapping("/grouped-subjects")
