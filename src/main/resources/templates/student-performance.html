@@ -175,7 +175,7 @@
                                   th:text="${termDataEntry.value.status}"></span>
                         </div>
 
-                        <div th:if="${termDataEntry.value.subjectScores != null}">
+                          <div th:class="${'stats-card p-6 rounded-xl border text-center ' + (yearlyPassed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200')}">                  <div th:if="${termDataEntry.value.subjectScores != null}">
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-600">Subjects with scores:</span>
                                 <span class="font-semibold" th:text="${termDataEntry.value.subjectScores.size()}"></span>

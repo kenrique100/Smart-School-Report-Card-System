@@ -58,6 +58,7 @@ public class ReportServiceImpl implements ReportService {
         // Calculate term statistics
         Map<String, Object> statistics = calculateTermStatistics(subjectReports, student, term);
 
+        // Generate ReportDTO with all required fields
         ReportDTO reportDTO = reportMapper.toReportDTO(student, subjectReports, term, statistics);
 
         // Add action recommendation
@@ -136,12 +137,18 @@ public class ReportServiceImpl implements ReportService {
         // Calculate subject-wise yearly performance
         List<YearlySubjectReport> yearlySubjectReports = calculateYearlySubjectReports(termReports);
 
-        // Calculate subject pass rate
-        long totalSubjects = yearlySubjectReports.size();
-        long subjectsPassed = yearlySubjectReports.stream()
-                .filter(YearlySubjectReport::getPassed)
-                .count();
-        double passRate = totalSubjects > 0 ? (subjectsPassed * 100.0) / totalSubjects : 0.0;
+        // Calculate subject pass rate using the class name
+        String className = student.getClassRoom() != null ? student.getClassRoom().getName() : "";
+        double passRate = gradeService.calculatePassRate(
+                yearlySubjectReports.stream()
+                        .map(ysr -> SubjectReport.builder()
+                                .subjectName(ysr.getSubjectName())
+                                .letterGrade(ysr.getYearlyGrade())
+                                .className(className)
+                                .build())
+                        .collect(Collectors.toList()),
+                className
+        );
 
         // Calculate yearly rank
         Integer yearlyRank = calculateYearlyRank(studentId, student.getClassRoom().getId());
@@ -158,7 +165,7 @@ public class ReportServiceImpl implements ReportService {
         String overallGrade = gradeService.calculateLetterGrade(yearlyAverage,
                 student.getClassRoom() != null ? student.getClassRoom().getName() : "");
 
-        // Generate action recommendation
+        // Generate action recommendation - use the passed parameter
         String action = generateYearlyStudentAction(yearlyAverage, passRate, passed);
 
         return YearlyReportDTO.builder()
@@ -183,8 +190,8 @@ public class ReportServiceImpl implements ReportService {
                 .totalStudentsInClass(totalStudentsInClass)
                 .totalPassed(totalPassed)
                 .totalFailed(totalFailed)
-                .subjectsPassed((int) subjectsPassed)
-                .totalSubjects((int) totalSubjects)
+                .subjectsPassed((int) passRate) // Use the pass rate percentage
+                .totalSubjects(yearlySubjectReports.size())
                 .subjectReports(yearlySubjectReports)
                 .termSummaries(termSummaries)
                 .action(action)
@@ -226,7 +233,7 @@ public class ReportServiceImpl implements ReportService {
                 ReportDTO report = generateReportForStudent(student.getId(), term);
                 reports.add(report);
             } catch (Exception e) {
-                log.error("Errors generating report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage());
                 // Create empty report for student
                 reports.add(createEmptyReport(student, term));
             }
@@ -268,7 +275,7 @@ public class ReportServiceImpl implements ReportService {
                 ReportDTO report = generateReportForStudent(student.getId(), term);
                 reports.add(report);
             } catch (Exception e) {
-                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Error generating report for students {}: {}", student.getId(), e.getMessage());
                 reports.add(createEmptyReport(student, term));
             }
         }
@@ -309,7 +316,7 @@ public class ReportServiceImpl implements ReportService {
                 YearlyReportDTO yearlyReport = generateYearlyReportForStudent(student.getId());
                 yearlyReports.add(yearlyReport);
             } catch (Exception e) {
-                log.error("Errors generating yearly report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Error generating yearly report for student {}: {}", student.getId(), e.getMessage());
                 yearlyReports.add(createEmptyYearlyReport(student));
             }
         }
@@ -346,7 +353,7 @@ public class ReportServiceImpl implements ReportService {
                 YearlyReportDTO yearlyReport = generateYearlyReportForStudent(student.getId());
                 yearlyReports.add(yearlyReport);
             } catch (Exception e) {
-                log.error("Error generating yearly report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Errors generating yearly report for student {}: {}", student.getId(), e.getMessage());
                 // Create empty yearly report for student
                 yearlyReports.add(createEmptyYearlyReport(student));
             }
@@ -448,6 +455,8 @@ public class ReportServiceImpl implements ReportService {
                     Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER));
             case "rollNumber" -> Comparator.comparing(ReportDTO::getRollNumber,
                     Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER));
+            case "passRate" -> Comparator.comparing(ReportDTO::getPassRate,
+                    Comparator.nullsFirst(Comparator.naturalOrder()));
             default -> null;
         };
     }
@@ -496,6 +505,13 @@ public class ReportServiceImpl implements ReportService {
         // Calculate term average using GradeService
         Double termAverage = gradeService.calculateWeightedTermAverage(subjectReports);
 
+        String className = student.getClassRoom() != null ? student.getClassRoom().getName() : "";
+
+        // Calculate pass rate and subjects passed using GradeService with className
+        Double passRate = gradeService.calculatePassRate(subjectReports, className);
+        Long subjectsPassed = gradeService.countPassedSubjects(subjectReports, className);
+        int totalSubjects = subjectReports.size();
+
         // Get class rank
         Integer rankInClass = calculateStudentRank(student.getId(), student.getClassRoom().getId(), term);
 
@@ -507,11 +523,23 @@ public class ReportServiceImpl implements ReportService {
 
         statistics.put("termAverage", termAverage);
         statistics.put("formattedAverage", String.format("%.2f/20", termAverage));
+        statistics.put("passRate", passRate);
+        statistics.put("subjectsPassed", subjectsPassed.intValue());
+        statistics.put("totalSubjects", totalSubjects);
         statistics.put("rankInClass", rankInClass);
         statistics.put("totalStudentsInClass", totalStudentsInClass);
         statistics.put("remarks", remarks);
 
         return statistics;
+    }
+
+    // REMOVED: Unused private methods calculatePassRate, countPassedSubjects, and isSubjectPassing
+    // These are now handled by GradeService
+
+    private boolean hasSubjectData(SubjectReport subjectReport) {
+        return subjectReport.getAssessment1() != null ||
+                subjectReport.getAssessment2() != null ||
+                subjectReport.getSubjectAverage() != null;
     }
 
     private Integer calculateStudentRank(Long studentId, Long classRoomId, Integer term) {
@@ -523,7 +551,8 @@ public class ReportServiceImpl implements ReportService {
         Map<Long, Double> studentAverages = new HashMap<>();
         for (Student student : students) {
             List<Assessment> studentAssessments = self.getCachedStudentTermAssessmentsInternal(student.getId(), term);
-            Double average = calculateStudentTermAverage(studentAssessments);
+            List<SubjectReport> studentSubjectReports = calculateSubjectReports(student, studentAssessments, term);
+            Double average = gradeService.calculateWeightedTermAverage(studentSubjectReports);
             studentAverages.put(student.getId(), average);
         }
 
@@ -542,16 +571,6 @@ public class ReportServiceImpl implements ReportService {
         return students.size();
     }
 
-    private Double calculateStudentTermAverage(List<Assessment> assessments) {
-        if (assessments.isEmpty()) return 0.0;
-
-        // Calculate simple average of all assessments
-        return assessments.stream()
-                .mapToDouble(a -> a.getScore() != null ? a.getScore() : 0)
-                .average()
-                .orElse(0.0);
-    }
-
     private Map<Integer, Double> calculateAllTermAverages(Long studentId) {
         // Single query to get all assessments grouped by term
         List<Assessment> allAssessments = assessmentRepository.findByStudentId(studentId);
@@ -561,8 +580,34 @@ public class ReportServiceImpl implements ReportService {
         Map<Integer, Double> termAverages = new HashMap<>();
 
         for (Map.Entry<Integer, List<Assessment>> entry : assessmentsByTerm.entrySet()) {
-            double average = calculateStudentTermAverage(entry.getValue());
-            termAverages.put(entry.getKey(), average);
+            List<Subject> studentSubjects = studentRepository.findById(studentId)
+                    .map(s -> s.getStudentSubjects().stream()
+                            .map(StudentSubject::getSubject)
+                            .collect(Collectors.toList()))
+                    .orElse(Collections.emptyList());
+
+            if (studentSubjects.isEmpty()) {
+                termAverages.put(entry.getKey(), 0.0);
+                continue;
+            }
+
+            double totalWeightedScore = 0.0;
+            int totalCoefficient = 0;
+
+            for (Subject subject : studentSubjects) {
+                List<Assessment> subjectAssessments = entry.getValue().stream()
+                        .filter(a -> a.getSubject().getId().equals(subject.getId()))
+                        .collect(Collectors.toList());
+
+                if (!subjectAssessments.isEmpty()) {
+                    double subjectAverage = gradeService.calculateSubjectAverageForTerm(subjectAssessments, entry.getKey());
+                    totalWeightedScore += subjectAverage * subject.getCoefficient();
+                    totalCoefficient += subject.getCoefficient();
+                }
+            }
+
+            double termAverage = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0.0;
+            termAverages.put(entry.getKey(), termAverage);
         }
 
         // Ensure we have entries for all terms (1-3)
@@ -606,8 +651,14 @@ public class ReportServiceImpl implements ReportService {
             // Calculate yearly average (simple average of all terms)
             double yearlyAvg = calculateYearlySubjectAverage(term1Avg, term2Avg, term3Avg);
 
-            // Calculate yearly grade (assuming ordinary level for now)
-            String yearlyGrade = gradeService.calculateLetterGrade(yearlyAvg, "");
+            // Get class name from the first term report for grade calculation
+            String className = termReports.get(0).getClassName();
+
+            // Calculate yearly grade using the correct class name
+            String yearlyGrade = gradeService.calculateLetterGrade(yearlyAvg, className);
+
+            // Determine if passed based on class level
+            boolean passed = gradeService.isSubjectPassing(yearlyGrade, className);
 
             yearlySubjectReports.add(YearlySubjectReport.builder()
                     .subjectName(subjectName)
@@ -617,7 +668,7 @@ public class ReportServiceImpl implements ReportService {
                     .term3Average(term3Avg)
                     .yearlyAverage(yearlyAvg)
                     .yearlyGrade(yearlyGrade)
-                    .passed(yearlyGrade.matches("[ABC]"))
+                    .passed(passed)
                     .build());
         }
 
@@ -689,8 +740,13 @@ public class ReportServiceImpl implements ReportService {
 
         for (Student student : students) {
             try {
-                YearlyReportDTO yearlyReport = generateYearlyReportForStudent(student.getId());
-                if (yearlyReport.getPassed()) {
+                Map<Integer, Double> termAverages = calculateAllTermAverages(student.getId());
+                double yearlyAverage = termAverages.values().stream()
+                        .mapToDouble(Double::doubleValue)
+                        .average()
+                        .orElse(0.0);
+
+                if (gradeService.isPassing(yearlyAverage)) {
                     passedCount++;
                 }
             } catch (Exception e) {
@@ -771,6 +827,9 @@ public class ReportServiceImpl implements ReportService {
                 .formattedAverage("0.00/20")
                 .rankInClass(0)
                 .totalStudentsInClass(0)
+                .passRate(0.0)
+                .subjectsPassed(0)
+                .totalSubjects(0)
                 .remarks("No assessment data available")
                 .subjectReports(new ArrayList<>())
                 .academicYear(getAcademicYear(student))

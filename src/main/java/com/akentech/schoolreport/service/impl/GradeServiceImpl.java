@@ -2,6 +2,7 @@ package com.akentech.schoolreport.service.impl;
 
 import com.akentech.schoolreport.dto.SubjectReport;
 import com.akentech.schoolreport.model.Assessment;
+import com.akentech.schoolreport.model.enums.AssessmentType;
 import com.akentech.schoolreport.service.GradeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,22 +21,18 @@ public class GradeServiceImpl implements GradeService {
 
         switch (term) {
             case 1, 2:
-                // Terms 1 & 2: average of 2 assessments
-                int count = 0;
-                double sum = 0.0;
-
-                if (a1 != null) {
-                    sum += safeA1;
-                    count++;
+                // Terms 1 & 2: weighted average (50% Assessment1, 50% Assessment2)
+                if (a1 != null && a2 != null) {
+                    return (safeA1 * 0.5) + (safeA2 * 0.5);
+                } else if (a1 != null) {
+                    return safeA1;
+                } else if (a2 != null) {
+                    return safeA2;
+                } else {
+                    return 0.0;
                 }
-                if (a2 != null) {
-                    sum += safeA2;
-                    count++;
-                }
-
-                return count > 0 ? sum / count : 0.0;
             case 3:
-                // Term 3: only Assessment 5
+                // Term 3: only Assessment 5 (Final Exam)
                 return safeA1;
             default:
                 throw new IllegalArgumentException("Invalid term: " + term);
@@ -49,19 +46,23 @@ public class GradeServiceImpl implements GradeService {
         }
 
         return switch (term) {
-            case 1, 2 -> {
-                // For terms 1 & 2, average all assessments
-                double sum = assessments.stream()
-                        .mapToDouble(Assessment::getScore)
-                        .sum();
-                yield sum / assessments.size();
+            case 1 -> {
+                // Term 1: Assessment1 (50%) + Assessment2 (50%)
+                Double a1 = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_1);
+                Double a2 = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_2);
+                yield calculateSubjectAverage(a1, a2, term);
             }
-            case 3 ->
-                // For term 3, just return the first assessment score
-                    assessments.stream()
-                            .findFirst()
-                            .map(Assessment::getScore)
-                            .orElse(0.0);
+            case 2 -> {
+                // Term 2: Assessment3 (50%) + Assessment4 (50%)
+                Double a3 = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_3);
+                Double a4 = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_4);
+                yield calculateSubjectAverage(a3, a4, term);
+            }
+            case 3 -> {
+                // Term 3: Assessment5 (100%) - Final Exam
+                Double exam = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_5);
+                yield calculateSubjectAverage(exam, null, term);
+            }
             default -> {
                 log.warn("Invalid term: {}", term);
                 yield 0.0;
@@ -69,26 +70,49 @@ public class GradeServiceImpl implements GradeService {
         };
     }
 
+    private Double extractAssessmentScore(List<Assessment> assessments, AssessmentType type) {
+        return assessments.stream()
+                .filter(a -> a.getType() == type)
+                .findFirst()
+                .map(Assessment::getScore)
+                .orElse(null);
+    }
+
     @Override
     public Double calculateYearlyAverage(Double term1Avg, Double term2Avg, Double term3Avg) {
         if (term1Avg == null || term2Avg == null || term3Avg == null) {
             return 0.0;
         }
+        // Yearly average = (Term1 + Term2 + Term3) / 3
         return (term1Avg + term2Avg + term3Avg) / 3.0;
     }
 
     @Override
     public String calculateLetterGrade(Double scoreOutOf20, String className) {
-        if (scoreOutOf20 == null || scoreOutOf20 < 0) return "U";
+        if (scoreOutOf20 == null || scoreOutOf20 < 0) {
+            boolean isAdvancedLevel = isAdvancedLevelClass(className);
+            return isAdvancedLevel ? "F" : "U";
+        }
 
-        boolean isAdvancedLevel = className != null &&
-                (className.contains("Sixth") || className.contains("Upper") || className.contains("Lower"));
+        boolean isAdvancedLevel = isAdvancedLevelClass(className);
 
         if (isAdvancedLevel) {
             return calculateAdvancedLevelGrade(scoreOutOf20);
         } else {
             return calculateOrdinaryLevelGrade(scoreOutOf20);
         }
+    }
+
+    private boolean isAdvancedLevelClass(String className) {
+        if (className == null) return false;
+        String lowerClassName = className.toLowerCase();
+        return lowerClassName.contains("sixth") ||
+                lowerClassName.contains("upper") ||
+                lowerClassName.contains("lower") ||
+                lowerClassName.contains("advanced") ||
+                lowerClassName.contains("a level") ||
+                lowerClassName.contains("as level") ||
+                lowerClassName.contains("higher");
     }
 
     private String calculateAdvancedLevelGrade(Double scoreOutOf20) {
@@ -115,6 +139,21 @@ public class GradeServiceImpl implements GradeService {
     }
 
     @Override
+    public boolean isSubjectPassing(String letterGrade, String className) {
+        if (letterGrade == null || className == null) return false;
+
+        boolean isAdvancedLevel = isAdvancedLevelClass(className);
+
+        if (isAdvancedLevel) {
+            // Advanced level: A, B, C, D, E are passing grades
+            return letterGrade.matches("[ABCDE]");
+        } else {
+            // Ordinary level: A, B, C are passing grades
+            return letterGrade.matches("[ABC]");
+        }
+    }
+
+    @Override
     public Double calculateWeightedTermAverage(List<SubjectReport> subjectReports) {
         if (subjectReports == null || subjectReports.isEmpty()) {
             return 0.0;
@@ -124,13 +163,45 @@ public class GradeServiceImpl implements GradeService {
         int totalCoefficient = 0;
 
         for (SubjectReport subject : subjectReports) {
-            if (subject.getSubjectAverage() != null) {
+            if (subject.getSubjectAverage() != null && subject.getCoefficient() != null) {
                 totalWeightedScore += subject.getSubjectAverage() * subject.getCoefficient();
                 totalCoefficient += subject.getCoefficient();
             }
         }
 
         return totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0.0;
+    }
+
+    @Override
+    public Double calculatePassRate(List<SubjectReport> subjectReports, String className) {
+        if (subjectReports == null || subjectReports.isEmpty()) {
+            return 0.0;
+        }
+
+        long totalSubjects = subjectReports.stream()
+                .filter(SubjectReport::hasData)
+                .count();
+
+        if (totalSubjects == 0) {
+            return 0.0;
+        }
+
+        long passedSubjects = subjectReports.stream()
+                .filter(s -> s.getLetterGrade() != null && isSubjectPassing(s.getLetterGrade(), className))
+                .count();
+
+        return (passedSubjects * 100.0) / totalSubjects;
+    }
+
+    @Override
+    public Long countPassedSubjects(List<SubjectReport> subjectReports, String className) {
+        if (subjectReports == null || subjectReports.isEmpty()) {
+            return 0L;
+        }
+
+        return subjectReports.stream()
+                .filter(s -> s.getLetterGrade() != null && isSubjectPassing(s.getLetterGrade(), className))
+                .count();
     }
 
     @Override

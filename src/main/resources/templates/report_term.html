@@ -234,9 +234,29 @@
                         <div class="text-xs text-blue-600 mt-1">This Term</div>
                     </div>
                     <div class="stats-card bg-green-50 p-4 rounded-xl text-center border border-green-200">
-                        <div class="text-2xl font-bold text-green-600" th:text="${#lists.size(report.subjectReports.?[letterGrade == 'A' || letterGrade == 'B' || letterGrade == 'C'])}">0</div>
-                        <div class="text-sm font-semibold text-green-800 mt-1">Passing Grades</div>
-                        <div class="text-xs text-green-600 mt-1">A, B, C</div>
+                        <div class="text-2xl font-bold text-green-600" th:text="${report.subjectsPassed}">0</div>
+                        <div class="text-sm font-semibold text-green-800 mt-1">Subjects Passed</div>
+                        <div class="text-xs text-green-600 mt-1">
+                            <!-- Display correct passing criteria -->
+                            <span th:if="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
+                                          #strings.containsIgnoreCase(report.className, 'Upper') ||
+                                          #strings.containsIgnoreCase(report.className, 'Lower') ||
+                                          #strings.containsIgnoreCase(report.className, 'Advanced') ||
+                                          #strings.containsIgnoreCase(report.className, 'A Level') ||
+                                          #strings.containsIgnoreCase(report.className, 'AS Level') ||
+                                          #strings.containsIgnoreCase(report.className, 'Higher')}">
+                                A-E are passing
+                            </span>
+                            <span th:unless="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
+                                              #strings.containsIgnoreCase(report.className, 'Upper') ||
+                                              #strings.containsIgnoreCase(report.className, 'Lower') ||
+                                              #strings.containsIgnoreCase(report.className, 'Advanced') ||
+                                              #strings.containsIgnoreCase(report.className, 'A Level') ||
+                                              #strings.containsIgnoreCase(report.className, 'AS Level') ||
+                                              #strings.containsIgnoreCase(report.className, 'Higher')}">
+                                A-C are passing
+                            </span>
+                        </div>
                     </div>
                     <div class="stats-card bg-purple-50 p-4 rounded-xl text-center border border-purple-200">
                         <div class="text-2xl font-bold text-purple-600" th:text="${#lists.size(report.subjectReports.?[subjectAverage >= 15])}">0</div>
@@ -301,25 +321,25 @@
                                 </div>
                             </td>
                             <td th:if="${report.term == 3}" class="px-6 py-4">
-                                <div th:if="${subject.exam != null}">
-                                    <span class="font-medium" th:text="${subject.exam}"></span>
+                                <div th:if="${subject.assessment1 != null}">
+                                    <span class="font-medium" th:text="${subject.assessment1}"></span>
                                     <div class="w-12 h-1 bg-gray-200 rounded-full mt-1">
-                                        <div class="h-full bg-purple-500 rounded-full" th:style="'width: ' + ${subject.exam * 5} + '%;'"></div>
+                                        <div class="h-full bg-purple-500 rounded-full" th:style="'width: ' + ${subject.assessment1 * 5} + '%;'"></div>
                                     </div>
                                 </div>
-                                <div th:unless="${subject.exam != null}">
+                                <div th:unless="${subject.assessment1 != null}">
                                     <span class="text-gray-400 text-sm">-</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div th:if="${subject.subjectAverage > 0}">
+                                <div th:if="${subject.subjectAverage != null && subject.subjectAverage > 0}">
                                     <span class="font-bold text-lg" th:text="${subject.subjectAverage}"></span>
                                     <div class="w-20 h-2 bg-gray-200 rounded-full mt-1">
                                         <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                                              th:style="'width: ' + ${subject.subjectAverage * 5} + '%;'"></div>
                                     </div>
                                 </div>
-                                <div th:unless="${subject.subjectAverage > 0}">
+                                <div th:unless="${subject.subjectAverage != null && subject.subjectAverage > 0}">
                                     <span class="text-gray-400">-</span>
                                 </div>
                             </td>
@@ -329,17 +349,40 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <span th:if="${#strings.containsIgnoreCase('ABC', subject.letterGrade)}"
-                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i>Pass
+                                <!-- Check if this is an advanced level class -->
+                                <span th:if="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
+                                               #strings.containsIgnoreCase(report.className, 'Upper') ||
+                                               #strings.containsIgnoreCase(report.className, 'Lower') ||
+                                               #strings.containsIgnoreCase(report.className, 'Advanced') ||
+                                               #strings.containsIgnoreCase(report.className, 'A Level') ||
+                                               #strings.containsIgnoreCase(report.className, 'AS Level') ||
+                                               #strings.containsIgnoreCase(report.className, 'Higher')}">
+                                    <!-- Advanced level: A, B, C, D, E are passing -->
+                                    <span th:if="${#strings.containsIgnoreCase('ABCDE', subject.letterGrade)}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Pass
+                                    </span>
+                                    <span th:if="${#strings.containsIgnoreCase('OF', subject.letterGrade)}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-1"></i>Fail
+                                    </span>
                                 </span>
-                                <span th:if="${#strings.containsIgnoreCase('DEFU', subject.letterGrade)}"
-                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i>Fail
-                                </span>
-                                <span th:if="${subject.letterGrade == 'O'}"
-                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                                    <i class="fas fa-star mr-1"></i>Complimentary
+                                <span th:unless="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
+                                                   #strings.containsIgnoreCase(report.className, 'Upper') ||
+                                                   #strings.containsIgnoreCase(report.className, 'Lower') ||
+                                                   #strings.containsIgnoreCase(report.className, 'Advanced') ||
+                                                   #strings.containsIgnoreCase(report.className, 'A Level') ||
+                                                   #strings.containsIgnoreCase(report.className, 'AS Level') ||
+                                                   #strings.containsIgnoreCase(report.className, 'Higher')}">
+                                    <!-- Ordinary level: A, B, C are passing -->
+                                    <span th:if="${#strings.containsIgnoreCase('ABC', subject.letterGrade)}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Pass
+                                    </span>
+                                    <span th:if="${#strings.containsIgnoreCase('DU', subject.letterGrade)}"
+                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-1"></i>Fail
+                                    </span>
                                 </span>
                             </td>
                         </tr>
@@ -358,23 +401,30 @@
                                 <div class="text-center grade-c rounded p-2">C: 10-14.9</div>
                                 <div class="text-center grade-d rounded p-2">D: 5-9.9</div>
                                 <div class="text-center grade-u rounded p-2">U: Below 5</div>
-                                <div class="text-center grade-o rounded p-2">O: Complimentary</div>
+                                <div class="text-center grade-e rounded p-2">E: 10-11.9</div>
+                                <div class="text-center grade-o rounded p-2">O: 8-9.9 (Complimentary)</div>
+                                <div class="text-center grade-f rounded p-2">F: Below 8</div>
                             </div>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-semibold text-gray-800 mb-2">Performance Legend</h4>
-                            <div class="flex flex-wrap gap-3 text-sm">
+                            <h4 class="font-semibold text-gray-800 mb-2">Passing Criteria</h4>
+                            <div class="flex flex-col gap-3 text-sm">
                                 <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-                                    <span class="text-gray-600">Pass (A-C)</span>
+                                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                    <div>
+                                        <span class="font-medium">Advanced Level:</span>
+                                        <span class="text-gray-600 ml-1">A, B, C, D, E are passing</span>
+                                    </div>
                                 </div>
                                 <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
-                                    <span class="text-gray-600">Fail (D-F/U)</span>
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                    <div>
+                                        <span class="font-medium">Ordinary Level:</span>
+                                        <span class="text-gray-600 ml-1">A, B, C are passing</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-purple-500 rounded-full mr-1"></div>
-                                    <span class="text-gray-600">Complimentary (O)</span>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Advanced level includes: Sixth Form, Upper/Lower, Advanced/A-Level/AS-Level, Higher classes
                                 </div>
                             </div>
                         </div>

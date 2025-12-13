@@ -17,7 +17,15 @@ public interface GradeService {
 
     boolean isPassing(Double averageOutOf20);
 
+    // Fixed: Updated method signatures to match implementation
+    boolean isSubjectPassing(String letterGrade, String className);
+
     Double calculateWeightedTermAverage(List<SubjectReport> subjectReports);
+
+    // Fixed: Updated method signatures to match implementation
+    Double calculatePassRate(List<SubjectReport> subjectReports, String className);
+
+    Long countPassedSubjects(List<SubjectReport> subjectReports, String className);
 
     String generateRemarks(Double averageOutOf20);
 

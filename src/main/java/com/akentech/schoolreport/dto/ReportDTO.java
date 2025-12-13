@@ -31,7 +31,12 @@ public class ReportDTO {
     private List<SubjectReport> subjectReports;
     private String academicYear;
     private String action;
-    private String classTeacher; // Add this field
+    private String classTeacher;
+
+    // Added fields for pass rate and subjects passed
+    private Double passRate;
+    private Integer subjectsPassed;
+    private Integer totalSubjects;
 
     /**
      * Get formatted term average
@@ -163,5 +168,19 @@ public class ReportDTO {
             return student.getSpecialty();
         }
         return "General";
+    }
+
+    /**
+     * Get formatted pass rate
+     */
+    public String getFormattedPassRate() {
+        return passRate != null ? String.format("%.1f%%", passRate) : "0.0%";
+    }
+
+    /**
+     * Get passed status based on term average
+     */
+    public Boolean getPassed() {
+        return termAverage != null && termAverage >= 10.0;
     }
 }

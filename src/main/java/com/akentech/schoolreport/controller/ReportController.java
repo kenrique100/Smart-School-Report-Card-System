@@ -29,11 +29,10 @@ public class ReportController {
 
     private final ReportService reportService;
     private final ClassRoomRepository classRoomRepository;
-    private final StudentRepository studentRepository; // Add this
+    private final StudentRepository studentRepository;
 
     @GetMapping("/select")
     public String selectView(Model model) {
-        // Use repository method that doesn't load students
         model.addAttribute("classes", classRoomRepository.findAll());
         return "select_report";
     }
@@ -63,16 +62,14 @@ public class ReportController {
             @RequestParam Integer term,
             Model model) {
 
-        // Use repository method to fetch students separately
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        // Fetch students for this class using StudentRepository
         List<Student> students = studentRepository.findByClassRoomId(classId);
 
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("term", term);
-        model.addAttribute("students", students); // Use the fetched list, not classRoom.getStudents()
+        model.addAttribute("students", students);
 
         return "select_student";
     }
@@ -89,7 +86,6 @@ public class ReportController {
 
         try {
             if (studentId == null) {
-                // If no student selected, go back to selection
                 redirectAttributes.addAttribute("classId", classId);
                 redirectAttributes.addAttribute("term", term);
                 return "redirect:/reports/student/list";
@@ -141,7 +137,6 @@ public class ReportController {
                               @RequestParam(defaultValue = "asc") String sortDir,
                               Model model) {
 
-        // Use findById (not with students) since we don't need students here
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
@@ -162,9 +157,6 @@ public class ReportController {
         model.addAttribute("pageSize", size);
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
-
-        // Calculate statistics
-        calculateAndAddStatistics(model, reports, reportPage.getTotalElements());
 
         return "class_reports_term";
     }
@@ -197,77 +189,6 @@ public class ReportController {
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
 
-        // Calculate yearly statistics
-        calculateAndAddYearlyStatistics(model, reports, reportPage.getTotalElements());
-
         return "class_reports_yearly";
-    }
-
-    // ====== HELPER METHODS ======
-
-    private void calculateAndAddStatistics(Model model, List<ReportDTO> reports, long totalStudents) {
-        long totalPassed = reports.stream()
-                .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 10)
-                .count();
-
-        Double classAverage = reports.stream()
-                .filter(r -> r.getTermAverage() != null)
-                .mapToDouble(ReportDTO::getTermAverage)
-                .average()
-                .orElse(0.0);
-
-        Map<String, Long> performanceDistribution = calculatePerformanceDistribution(reports);
-
-        model.addAttribute("totalStudents", totalStudents);
-        model.addAttribute("totalPassed", totalPassed);
-        model.addAttribute("totalFailed", totalStudents - totalPassed);
-        model.addAttribute("classAverage", String.format("%.2f", classAverage));
-        model.addAttribute("excellentCount", performanceDistribution.getOrDefault("excellent", 0L));
-        model.addAttribute("veryGoodCount", performanceDistribution.getOrDefault("veryGood", 0L));
-        model.addAttribute("goodCount", performanceDistribution.getOrDefault("good", 0L));
-        model.addAttribute("needsImprovementCount", performanceDistribution.getOrDefault("needsImprovement", 0L));
-    }
-
-    private void calculateAndAddYearlyStatistics(Model model, List<YearlyReportDTO> reports, long totalStudents) {
-        if (!reports.isEmpty()) {
-            long totalPassed = reports.stream()
-                    .filter(YearlyReportDTO::getPassed)
-                    .count();
-
-            Double classYearlyAverage = reports.stream()
-                    .filter(r -> r.getYearlyAverage() != null)
-                    .mapToDouble(YearlyReportDTO::getYearlyAverage)
-                    .average()
-                    .orElse(0.0);
-
-            Double averagePassRate = reports.stream()
-                    .filter(r -> r.getPassRate() != null)
-                    .mapToDouble(YearlyReportDTO::getPassRate)
-                    .average()
-                    .orElse(0.0);
-
-            model.addAttribute("totalStudents", totalStudents);
-            model.addAttribute("totalPassed", totalPassed);
-            model.addAttribute("totalFailed", totalStudents - totalPassed);
-            model.addAttribute("classYearlyAverage", String.format("%.2f", classYearlyAverage));
-            model.addAttribute("averagePassRate", String.format("%.1f%%", averagePassRate));
-        }
-    }
-
-    private Map<String, Long> calculatePerformanceDistribution(List<ReportDTO> reports) {
-        return Map.of(
-                "excellent", reports.stream()
-                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 18)
-                        .count(),
-                "veryGood", reports.stream()
-                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 15 && r.getTermAverage() < 18)
-                        .count(),
-                "good", reports.stream()
-                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 10 && r.getTermAverage() < 15)
-                        .count(),
-                "needsImprovement", reports.stream()
-                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() < 10)
-                        .count()
-        );
     }
 }
