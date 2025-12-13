@@ -44,7 +44,6 @@ public class ClassRoom {
 
     @OneToMany(mappedBy = "classRoom", cascade = CascadeType.ALL)
     @Builder.Default
-    @ToString.Exclude
     private List<Student> students = new ArrayList<>();
 
     // Helper method to get student count

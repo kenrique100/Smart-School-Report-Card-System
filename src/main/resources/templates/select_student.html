@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Student</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+            <a th:href="@{/reports/student/select}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Class Selection
+            </a>
+        </div>
+
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
+                <h1 class="text-2xl font-bold text-white flex items-center">
+                    <i class="fas fa-user-graduate mr-3"></i>
+                    Select Student from <span th:text="${classRoom.name}" class="ml-1"></span>
+                </h1>
+                <p class="text-green-100 mt-2">Term <span th:text="${term}"></span> • Choose a student to generate report</p>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div th:each="student : ${students}"
+                         class="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-semibold text-gray-900" th:text="${student.firstName + ' ' + student.lastName}"></h3>
+                                <p class="text-sm text-gray-600" th:text="${student.rollNumber}"></p>
+                                <p class="text-xs text-gray-500 mt-1" th:text="${student.studentId}"></p>
+                            </div>
+                            <div class="text-right">
+                                <div class="flex flex-col space-y-2">
+                                    <a th:href="@{/reports/student/report(classId=${classRoom.id}, term=${term}, studentId=${student.id})}"
+                                       class="text-green-600 hover:text-green-800 text-sm font-medium px-2 py-1 rounded hover:bg-green-50 flex items-center justify-center">
+                                        <i class="fas fa-eye mr-1"></i>View Report
+                                    </a>
+                                    <a th:href="@{'/reports/pdf/student/term/class?classId=' + ${classRoom.id} + '&studentId=' + ${student.id} + '&term=' + ${term}}"
+                                       class="text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 flex items-center justify-center">
+                                        <i class="fas fa-file-pdf mr-1"></i>Download PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${students.isEmpty()}" class="text-center py-12">
+                    <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-600">No Students Found</h3>
+                    <p class="text-gray-500 mt-2">This class has no students enrolled.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add any JavaScript functionality if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // You can add search functionality here if needed
+        console.log('Student selection page loaded');
+    });
+</script>
+</body>
+</html>

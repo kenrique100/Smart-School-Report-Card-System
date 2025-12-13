@@ -140,4 +140,12 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     Page<Student> findByAcademicYearRange(@Param("startYear") Integer startYear,
                                           @Param("endYear") Integer endYear,
                                           Pageable pageable);
+
+    // ADD THIS MISSING METHOD (needed for ReportServiceImpl)
+    Optional<Student> findByClassRoomIdAndRollNumber(@Param("classRoomId") Long classRoomId, @Param("rollNumber") String rollNumber);
+
+    // ADD THIS HELPER QUERY if the above doesn't work with params
+    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId AND s.rollNumber = :rollNumber")
+    Optional<Student> findByClassRoomIdAndRollNumberQuery(@Param("classRoomId") Long classRoomId, @Param("rollNumber") String rollNumber);
+
 }

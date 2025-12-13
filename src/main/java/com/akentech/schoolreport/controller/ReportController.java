@@ -3,7 +3,9 @@ package com.akentech.schoolreport.controller;
 import com.akentech.schoolreport.dto.ReportDTO;
 import com.akentech.schoolreport.dto.YearlyReportDTO;
 import com.akentech.schoolreport.model.ClassRoom;
+import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
+import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +16,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/reports")
@@ -25,28 +29,108 @@ public class ReportController {
 
     private final ReportService reportService;
     private final ClassRoomRepository classRoomRepository;
+    private final StudentRepository studentRepository; // Add this
 
     @GetMapping("/select")
     public String selectView(Model model) {
+        // Use repository method that doesn't load students
         model.addAttribute("classes", classRoomRepository.findAll());
         return "select_report";
     }
 
-    @GetMapping("/student/{id}")
-    public String studentReport(@PathVariable Long id,
-                                @RequestParam(defaultValue = "1") Integer term,
-                                Model model) {
-        ReportDTO report = reportService.generateReportForStudent(id, term);
-        model.addAttribute("report", report);
-        return "report_term";
+    // ====== STUDENT REPORT SELECTION FLOW ======
+
+    @GetMapping("/student/select")
+    public String selectStudentReportForm(Model model) {
+        model.addAttribute("classes", classRoomRepository.findAll());
+        return "select_student_report_form";
     }
 
-    @GetMapping("/student/yearly/{id}")
-    public String studentYearlyReport(@PathVariable Long id, Model model) {
-        YearlyReportDTO report = reportService.generateYearlyReportForStudent(id);
-        model.addAttribute("report", report);
-        return "report_yearly";
+    @PostMapping("/student/select")
+    public String processStudentSelection(
+            @RequestParam Long classId,
+            @RequestParam Integer term,
+            RedirectAttributes redirectAttributes) {
+
+        redirectAttributes.addAttribute("classId", classId);
+        redirectAttributes.addAttribute("term", term);
+        return "redirect:/reports/student/list";
     }
+
+    @GetMapping("/student/list")
+    public String listStudentsInClass(
+            @RequestParam Long classId,
+            @RequestParam Integer term,
+            Model model) {
+
+        // Use repository method to fetch students separately
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
+
+        // Fetch students for this class using StudentRepository
+        List<Student> students = studentRepository.findByClassRoomId(classId);
+
+        model.addAttribute("classRoom", classRoom);
+        model.addAttribute("term", term);
+        model.addAttribute("students", students); // Use the fetched list, not classRoom.getStudents()
+
+        return "select_student";
+    }
+
+    // ====== GENERATE REPORTS ======
+
+    @GetMapping("/student/report")
+    public String generateStudentReport(
+            @RequestParam Long classId,
+            @RequestParam Integer term,
+            @RequestParam(required = false) Long studentId,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            if (studentId == null) {
+                // If no student selected, go back to selection
+                redirectAttributes.addAttribute("classId", classId);
+                redirectAttributes.addAttribute("term", term);
+                return "redirect:/reports/student/list";
+            }
+
+            ReportDTO report = reportService.generateReportForStudent(studentId, term);
+            model.addAttribute("report", report);
+            return "report_term";
+
+        } catch (Exception e) {
+            log.error("Error generating report for student {} in term {}: {}",
+                    studentId, term, e.getMessage());
+            redirectAttributes.addFlashAttribute("error",
+                    "Error generating report: " + e.getMessage());
+            redirectAttributes.addAttribute("classId", classId);
+            redirectAttributes.addAttribute("term", term);
+            return "redirect:/reports/student/list";
+        }
+    }
+
+    @GetMapping("/student/yearly/report")
+    public String generateStudentYearlyReport(
+            @RequestParam Long studentId,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            YearlyReportDTO report = reportService.generateYearlyReportForStudent(studentId);
+            model.addAttribute("report", report);
+            return "report_yearly";
+
+        } catch (Exception e) {
+            log.error("Error generating yearly report for student {}: {}",
+                    studentId, e.getMessage());
+            redirectAttributes.addFlashAttribute("error",
+                    "Error generating yearly report: " + e.getMessage());
+            return "redirect:/reports/select";
+        }
+    }
+
+    // ====== CLASS REPORTS ======
 
     @GetMapping("/class")
     public String classReport(@RequestParam Long classId,
@@ -56,14 +140,14 @@ public class ReportController {
                               @RequestParam(defaultValue = "rankInClass") String sortBy,
                               @RequestParam(defaultValue = "asc") String sortDir,
                               Model model) {
+
+        // Use findById (not with students) since we don't need students here
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        // Create pageable for pagination
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Get paginated reports
         Page<ReportDTO> reportPage = reportService.generatePaginatedReportsForClass(classId, term, pageable);
         List<ReportDTO> reports = reportPage.getContent();
 
@@ -80,53 +164,7 @@ public class ReportController {
         model.addAttribute("sortDir", sortDir);
 
         // Calculate statistics
-        long totalStudents = reportPage.getTotalElements();
-        long totalPassed = reports.stream()
-                .filter(r -> {
-                    if (r.getTermAverage() == null) return false;
-                    return r.getTermAverage() >= 10;
-                })
-                .count();
-
-        Double classAverage = reports.stream()
-                .filter(r -> r.getTermAverage() != null)
-                .mapToDouble(ReportDTO::getTermAverage)
-                .average()
-                .orElse(0.0);
-
-        // Calculate performance distribution
-        long excellentCount = reports.stream()
-                .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 18)
-                .count();
-        long veryGoodCount = reports.stream()
-                .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 15 && r.getTermAverage() < 18)
-                .count();
-        long goodCount = reports.stream()
-                .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 10 && r.getTermAverage() < 15)
-                .count();
-        long needsImprovementCount = reports.stream()
-                .filter(r -> r.getTermAverage() != null && r.getTermAverage() < 10)
-                .count();
-
-        long positiveRemarksCount = reports.stream()
-                .filter(r -> r.getRemarks() != null &&
-                        (r.getRemarks().contains("Excellent") || r.getRemarks().contains("Very good")))
-                .count();
-
-        long top3Count = reports.stream()
-                .filter(r -> r.getRankInClass() != null && r.getRankInClass() <= 3)
-                .count();
-
-        model.addAttribute("totalStudents", totalStudents);
-        model.addAttribute("totalPassed", totalPassed);
-        model.addAttribute("totalFailed", totalStudents - totalPassed);
-        model.addAttribute("classAverage", String.format("%.2f", classAverage));
-        model.addAttribute("excellentCount", excellentCount);
-        model.addAttribute("veryGoodCount", veryGoodCount);
-        model.addAttribute("goodCount", goodCount);
-        model.addAttribute("needsImprovementCount", needsImprovementCount);
-        model.addAttribute("positiveRemarksCount", positiveRemarksCount);
-        model.addAttribute("top3Count", top3Count);
+        calculateAndAddStatistics(model, reports, reportPage.getTotalElements());
 
         return "class_reports_term";
     }
@@ -138,14 +176,13 @@ public class ReportController {
                                     @RequestParam(defaultValue = "yearlyRank") String sortBy,
                                     @RequestParam(defaultValue = "asc") String sortDir,
                                     Model model) {
+
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        // Create pageable for pagination
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Get paginated yearly reports
         Page<YearlyReportDTO> reportPage = reportService.generatePaginatedYearlyReportsForClass(classId, pageable);
         List<YearlyReportDTO> reports = reportPage.getContent();
 
@@ -160,9 +197,39 @@ public class ReportController {
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
 
-        // Calculate statistics
+        // Calculate yearly statistics
+        calculateAndAddYearlyStatistics(model, reports, reportPage.getTotalElements());
+
+        return "class_reports_yearly";
+    }
+
+    // ====== HELPER METHODS ======
+
+    private void calculateAndAddStatistics(Model model, List<ReportDTO> reports, long totalStudents) {
+        long totalPassed = reports.stream()
+                .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 10)
+                .count();
+
+        Double classAverage = reports.stream()
+                .filter(r -> r.getTermAverage() != null)
+                .mapToDouble(ReportDTO::getTermAverage)
+                .average()
+                .orElse(0.0);
+
+        Map<String, Long> performanceDistribution = calculatePerformanceDistribution(reports);
+
+        model.addAttribute("totalStudents", totalStudents);
+        model.addAttribute("totalPassed", totalPassed);
+        model.addAttribute("totalFailed", totalStudents - totalPassed);
+        model.addAttribute("classAverage", String.format("%.2f", classAverage));
+        model.addAttribute("excellentCount", performanceDistribution.getOrDefault("excellent", 0L));
+        model.addAttribute("veryGoodCount", performanceDistribution.getOrDefault("veryGood", 0L));
+        model.addAttribute("goodCount", performanceDistribution.getOrDefault("good", 0L));
+        model.addAttribute("needsImprovementCount", performanceDistribution.getOrDefault("needsImprovement", 0L));
+    }
+
+    private void calculateAndAddYearlyStatistics(Model model, List<YearlyReportDTO> reports, long totalStudents) {
         if (!reports.isEmpty()) {
-            long totalStudents = reportPage.getTotalElements();
             long totalPassed = reports.stream()
                     .filter(YearlyReportDTO::getPassed)
                     .count();
@@ -179,33 +246,28 @@ public class ReportController {
                     .average()
                     .orElse(0.0);
 
-            long aGradeCount = reports.stream()
-                    .filter(r -> "A".equals(r.getOverallGrade()))
-                    .count();
-            long bGradeCount = reports.stream()
-                    .filter(r -> "B".equals(r.getOverallGrade()))
-                    .count();
-            long cGradeCount = reports.stream()
-                    .filter(r -> "C".equals(r.getOverallGrade()))
-                    .count();
-            long belowAvgCount = reports.stream()
-                    .filter(r -> {
-                        String grade = r.getOverallGrade();
-                        return grade != null && (grade.equals("D") || grade.equals("F") || grade.equals("U"));
-                    })
-                    .count();
-
             model.addAttribute("totalStudents", totalStudents);
             model.addAttribute("totalPassed", totalPassed);
             model.addAttribute("totalFailed", totalStudents - totalPassed);
             model.addAttribute("classYearlyAverage", String.format("%.2f", classYearlyAverage));
             model.addAttribute("averagePassRate", String.format("%.1f%%", averagePassRate));
-            model.addAttribute("aGradeCount", aGradeCount);
-            model.addAttribute("bGradeCount", bGradeCount);
-            model.addAttribute("cGradeCount", cGradeCount);
-            model.addAttribute("belowAvgCount", belowAvgCount);
         }
+    }
 
-        return "class_reports_yearly";
+    private Map<String, Long> calculatePerformanceDistribution(List<ReportDTO> reports) {
+        return Map.of(
+                "excellent", reports.stream()
+                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 18)
+                        .count(),
+                "veryGood", reports.stream()
+                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 15 && r.getTermAverage() < 18)
+                        .count(),
+                "good", reports.stream()
+                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() >= 10 && r.getTermAverage() < 15)
+                        .count(),
+                "needsImprovement", reports.stream()
+                        .filter(r -> r.getTermAverage() != null && r.getTermAverage() < 10)
+                        .count()
+        );
     }
 }

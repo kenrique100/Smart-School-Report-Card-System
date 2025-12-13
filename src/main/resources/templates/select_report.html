@@ -51,38 +51,25 @@
                     <p class="text-blue-100 text-sm mt-1">Generate individual student performance reports</p>
                 </div>
                 <div class="p-6">
-                    <!-- Individual Student Report Form -->
+                    <!-- Individual Student Report Selection -->
                     <div class="mb-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Term Report</h4>
-                        <form th:action="@{/reports/student/{id}}" method="get" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-                                <input type="number" name="id" required
-                                       placeholder="Enter Student ID"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
-                                <select name="term" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="1">Term 1</option>
-                                    <option value="2">Term 2</option>
-                                    <option value="3">Term 3</option>
-                                </select>
-                            </div>
-                            <button type="submit"
-                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                <i class="fas fa-file-alt mr-2"></i>Generate Term Report
-                            </button>
-                        </form>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Generate Individual Report</h4>
+                        <div class="text-center mb-4">
+                            <a th:href="@{/reports/student/select}"
+                               class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                <i class="fas fa-user-graduate mr-2"></i>Select Student for Report
+                            </a>
+                        </div>
+                        <p class="text-sm text-gray-600 text-center">Select a student from any class to generate term or yearly report</p>
                     </div>
 
                     <!-- Yearly Report Form -->
                     <div class="pt-6 border-t border-gray-200">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report</h4>
-                        <form th:action="@{/reports/student/yearly/{id}}" method="get" class="space-y-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report by ID</h4>
+                        <form th:action="@{/reports/student/yearly/report}" method="get" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-                                <input type="number" name="id" required
+                                <input type="number" name="studentId" required
                                        placeholder="Enter Student ID"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
@@ -208,7 +195,7 @@
                     <ul class="space-y-2 text-yellow-600">
                         <li class="flex items-start">
                             <i class="fas fa-check-circle mt-1 mr-2"></i>
-                            <span>Term Report: Shows performance for a specific term</span>
+                            <span>Individual Report: Select student from any class</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle mt-1 mr-2"></i>
@@ -221,7 +208,7 @@
                     <ul class="space-y-2 text-yellow-600">
                         <li class="flex items-start">
                             <i class="fas fa-check-circle mt-1 mr-2"></i>
-                            <span>Class Report: Performance overview for entire class</span>
+                            <span>Class Term Report: Performance overview for entire class</span>
                         </li>
                         <li class="flex items-start">
                             <i class="fas fa-check-circle mt-1 mr-2"></i>

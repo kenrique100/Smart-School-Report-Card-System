@@ -35,13 +35,14 @@ public class ReportServiceImpl implements ReportService {
     private final StudentRepository studentRepository;
     private final AssessmentRepository assessmentRepository;
     private final ClassRoomRepository classRoomRepository;
-    private final StudentSubjectRepository studentSubjectRepository; // Keep for future use
     private final GradeService gradeService;
     private final ReportMapper reportMapper;
     private final ApplicationContext applicationContext;
 
     @Override
+    @Deprecated
     public ReportDTO generateReportForStudent(Long studentId, Integer term) {
+        log.warn("DEPRECATED: Using deprecated method generateReportForStudent with ID. Use class-based method instead.");
         log.info("Generating term {} report for student ID: {}", term, studentId);
 
         Student student = studentRepository.findByIdWithClassRoomAndDepartment(studentId)
@@ -57,11 +58,34 @@ public class ReportServiceImpl implements ReportService {
         // Calculate term statistics
         Map<String, Object> statistics = calculateTermStatistics(subjectReports, student, term);
 
-        return reportMapper.toReportDTO(student, subjectReports, term, statistics);
+        ReportDTO reportDTO = reportMapper.toReportDTO(student, subjectReports, term, statistics);
+
+        // Add action recommendation
+        reportDTO.setAction(generateStudentAction(reportDTO));
+
+        return reportDTO;
     }
 
     @Override
+    public ReportDTO generateReportForStudentByClassAndRollNumber(Long classId, String rollNumber, Integer term) {
+        log.info("Generating term {} report for student with roll {} in class ID: {}", term, rollNumber, classId);
+
+        // Find student by class and roll number
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("ClassRoom", classId));
+
+        Student student = studentRepository.findByRollNumberAndClassRoom(rollNumber, classRoom)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Student with roll number " + rollNumber + " in class " + classRoom.getName()));
+
+        // Use the deprecated method (which still works internally)
+        return generateReportForStudent(student.getId(), term);
+    }
+
+    @Override
+    @Deprecated
     public YearlyReportDTO generateYearlyReportForStudent(Long studentId) {
+        log.warn("DEPRECATED: Using deprecated method generateYearlyReportForStudent with ID. Use class-based method instead.");
         log.info("Generating yearly report for student ID: {}", studentId);
 
         Student student = studentRepository.findByIdWithClassRoomAndDepartment(studentId)
@@ -134,6 +158,9 @@ public class ReportServiceImpl implements ReportService {
         String overallGrade = gradeService.calculateLetterGrade(yearlyAverage,
                 student.getClassRoom() != null ? student.getClassRoom().getName() : "");
 
+        // Generate action recommendation
+        String action = generateYearlyStudentAction(yearlyAverage, passRate, passed);
+
         return YearlyReportDTO.builder()
                 .student(student)
                 .studentFullName(student.getFullName())
@@ -160,7 +187,24 @@ public class ReportServiceImpl implements ReportService {
                 .totalSubjects((int) totalSubjects)
                 .subjectReports(yearlySubjectReports)
                 .termSummaries(termSummaries)
+                .action(action)
                 .build();
+    }
+
+    @Override
+    public YearlyReportDTO generateYearlyReportForStudentByClassAndRollNumber(Long classId, String rollNumber) {
+        log.info("Generating yearly report for student with roll {} in class ID: {}", rollNumber, classId);
+
+        // Find student by class and roll number
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("ClassRoom", classId));
+
+        Student student = studentRepository.findByRollNumberAndClassRoom(rollNumber, classRoom)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Student with roll number " + rollNumber + " in class " + classRoom.getName()));
+
+        // Use the deprecated method (which still works internally)
+        return generateYearlyReportForStudent(student.getId());
     }
 
     @Override
@@ -182,7 +226,7 @@ public class ReportServiceImpl implements ReportService {
                 ReportDTO report = generateReportForStudent(student.getId(), term);
                 reports.add(report);
             } catch (Exception e) {
-                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Errors generating report for student {}: {}", student.getId(), e.getMessage());
                 // Create empty report for student
                 reports.add(createEmptyReport(student, term));
             }
@@ -265,7 +309,7 @@ public class ReportServiceImpl implements ReportService {
                 YearlyReportDTO yearlyReport = generateYearlyReportForStudent(student.getId());
                 yearlyReports.add(yearlyReport);
             } catch (Exception e) {
-                log.error("Error generating yearly report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Errors generating yearly report for student {}: {}", student.getId(), e.getMessage());
                 yearlyReports.add(createEmptyYearlyReport(student));
             }
         }
@@ -673,6 +717,44 @@ public class ReportServiceImpl implements ReportService {
         }
     }
 
+    // ========== ACTION RECOMMENDATION METHODS ==========
+
+    private String generateStudentAction(ReportDTO report) {
+        if (report.getTermAverage() == null) {
+            return "No assessment data available. Check if all assessments are entered.";
+        }
+
+        if (report.getTermAverage() >= 18) {
+            return "Continue excellent performance. Consider advanced coursework or leadership roles.";
+        } else if (report.getTermAverage() >= 15) {
+            return "Very good performance. Focus on maintaining consistency and addressing minor weaknesses.";
+        } else if (report.getTermAverage() >= 10) {
+            return "Good performance. Identify weak subjects for targeted improvement.";
+        } else if (report.getTermAverage() >= 5) {
+            return "Needs significant improvement. Schedule parent-teacher meeting and remedial classes.";
+        } else {
+            return "Critical concern. Immediate intervention required. Consider repeating the term.";
+        }
+    }
+
+    private String generateYearlyStudentAction(Double yearlyAverage, Double passRate, Boolean passed) {
+        if (yearlyAverage == null) {
+            return "Incomplete yearly data. Review all term assessments.";
+        }
+
+        if (yearlyAverage >= 16 && passRate >= 80) {
+            return "Outstanding yearly performance. Eligible for academic awards and accelerated program.";
+        } else if (yearlyAverage >= 14 && passRate >= 70) {
+            return "Good yearly performance. Continue current study habits. Consider subject specialization.";
+        } else if (yearlyAverage >= 10 && passRate >= 60) {
+            return "Satisfactory performance. Monitor weak subjects. Consider additional tutoring.";
+        } else if (yearlyAverage >= 5) {
+            return "Borderline performance. Requires remedial classes and regular progress monitoring.";
+        } else {
+            return "Failed to meet promotion criteria. Requires repeating the academic year.";
+        }
+    }
+
     // ========== HELPER METHODS FOR CREATING EMPTY REPORTS ==========
 
     private ReportDTO createEmptyReport(Student student, Integer term) {
@@ -692,6 +774,7 @@ public class ReportServiceImpl implements ReportService {
                 .remarks("No assessment data available")
                 .subjectReports(new ArrayList<>())
                 .academicYear(getAcademicYear(student))
+                .action("No action recommendation available due to missing data")
                 .build();
     }
 
@@ -719,6 +802,7 @@ public class ReportServiceImpl implements ReportService {
                 .totalSubjects(0)
                 .subjectReports(new ArrayList<>())
                 .termSummaries(new ArrayList<>())
+                .action("No action recommendation available due to missing data")
                 .build();
     }
 

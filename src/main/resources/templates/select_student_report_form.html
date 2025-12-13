@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Student Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl">
+        <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-8 py-6 rounded-t-2xl">
+            <h1 class="text-2xl font-bold text-white flex items-center">
+                <i class="fas fa-file-alt mr-3"></i>Generate Student Report
+            </h1>
+            <p class="text-blue-100 mt-2">Select class and term to generate individual student reports</p>
+        </div>
+
+        <div class="p-8">
+            <form th:action="@{/reports/student/select}" method="post" class="space-y-6">
+                <div>
+                    <label class="block font-medium text-gray-700 mb-2">
+                        <i class="fas fa-users mr-2"></i>Select Class
+                    </label>
+                    <select name="classId" required
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Choose Class</option>
+                        <option th:each="c : ${classes}"
+                                th:value="${c.id}"
+                                th:text="${c.name} + ' (' + c.academicYear + ')'"></option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt mr-2"></i>Select Term
+                    </label>
+                    <select name="term" required
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="1">Term 1</option>
+                        <option value="2">Term 2</option>
+                        <option value="3">Term 3</option>
+                    </select>
+                </div>
+
+                <div class="flex space-x-4 pt-4">
+                    <a th:href="@{/reports/select}"
+                       class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-center font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+                    </a>
+                    <button type="submit"
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-medium">
+                        <i class="fas fa-arrow-right mr-2"></i>Next: Select Student
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

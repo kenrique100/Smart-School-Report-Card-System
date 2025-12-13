@@ -37,6 +37,7 @@ public class YearlyReportDTO {
     private Integer totalSubjects;
     private List<YearlySubjectReport> subjectReports;
     private List<TermReportSummary> termSummaries;
+    private String action; // ADDED: Action recommendation for student
 
     public String getStudentFullName() {
         return getString(studentFullName, student);

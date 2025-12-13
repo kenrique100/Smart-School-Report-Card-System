@@ -62,6 +62,9 @@
                     <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
                         <i class="fas fa-print mr-1"></i>Print
                     </button>
+                    <button onclick="downloadPdf()" class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
+                        <i class="fas fa-file-pdf mr-1"></i>PDF
+                    </button>
                 </div>
             </div>
         </div>
@@ -78,11 +81,11 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-white">Term <span th:text="${report.term}"></span> Performance</h2>
-                        <p class="text-opacity-90 text-white text-sm mt-1" th:text="${report.student.classRoom.name} + ' • ' + ${report.student.department.name}"></p>
+                        <p class="text-opacity-90 text-white text-sm mt-1" th:text="${report.className} + ' • ' + ${report.department}"></p>
                     </div>
                     <div class="text-right">
                         <div class="text-white text-sm">Student ID</div>
-                        <div class="text-white font-mono font-semibold" th:text="${report.student.studentId}"></div>
+                        <div class="text-white font-mono font-semibold" th:text="${report.studentIdString}"></div>
                     </div>
                 </div>
             </div>
@@ -93,32 +96,32 @@
                     <div class="space-y-4">
                         <div class="flex items-center space-x-4">
                             <div class="flex-shrink-0">
-                                <div th:class="${'w-16 h-16 rounded-full flex items-center justify-center ' + (report.student.gender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
-                                    <i th:class="${report.student.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-2xl'"></i>
+                                <div th:class="${'w-16 h-16 rounded-full flex items-center justify-center ' + (report.studentGender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
+                                    <i th:class="${report.studentGender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-2xl'"></i>
                                 </div>
                             </div>
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-900" th:text="${report.studentFullName}"></h3>
-                                <p class="text-gray-600" th:text="${report.student.rollNumber}"></p>
+                                <p class="text-gray-600" th:text="${report.rollNumber}"></p>
                             </div>
                         </div>
 
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Class:</span>
-                                <span class="font-semibold" th:text="${report.student.classRoom.name}"></span>
+                                <span class="font-semibold" th:text="${report.className}"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Department:</span>
-                                <span class="font-semibold" th:text="${report.student.department.name}"></span>
+                                <span class="font-semibold" th:text="${report.department}"></span>
                             </div>
-                            <div class="flex justify-between" th:if="${report.student.specialty}">
+                            <div class="flex justify-between" th:if="${report.specialty != 'General'}">
                                 <span class="text-gray-500">Specialty:</span>
-                                <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs" th:text="${report.student.specialty}"></span>
+                                <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs" th:text="${report.specialty}"></span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-500">Class Teacher:</span>
-                                <span class="font-semibold" th:text="${report.classTeacher}"></span>
+                                <span class="text-gray-500">Date of Birth:</span>
+                                <span class="font-semibold" th:text="${report.formattedDateOfBirth}"></span>
                             </div>
                         </div>
                     </div>
@@ -133,10 +136,10 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-1">
                                     <span class="text-gray-600">Term Average</span>
-                                    <span class="font-semibold" th:text="${report.formattedAverage} + '/20'"></span>
+                                    <span class="font-semibold" th:text="${report.formattedAverage}"></span>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" th:style="'width: ' + ${report.termAverage * 5} + '%;'"></div>
+                                    <div class="progress-fill" th:style="${report.termAverage != null} ? 'width: ' + ${report.termAverage * 5} + '%;' : 'width: 0%;'"></div>
                                 </div>
                             </div>
 
@@ -147,19 +150,19 @@
                                     <div class="text-xs text-blue-600">out of <span th:text="${report.totalStudentsInClass}"></span></div>
                                 </div>
                                 <div th:class="${'text-center p-3 rounded-lg ' +
-                                               (report.termAverage >= 15 ? 'bg-green-50' :
-                                                report.termAverage >= 10 ? 'bg-yellow-50' : 'bg-red-50')}">
+                                               (report.termAverage != null && report.termAverage >= 15 ? 'bg-green-50' :
+                                                report.termAverage != null && report.termAverage >= 10 ? 'bg-yellow-50' : 'bg-red-50')}">
                                     <div th:class="${'text-2xl font-bold ' +
-                                                   (report.termAverage >= 15 ? 'text-green-600' :
-                                                    report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}"
-                                         th:text="${report.termAverage >= 15 ? 'Excellent' :
-                                                   report.termAverage >= 10 ? 'Good' : 'Needs Improvement'}"></div>
+                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-600' :
+                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}"
+                                         th:text="${report.termAverage != null && report.termAverage >= 15 ? 'Excellent' :
+                                                   report.termAverage != null && report.termAverage >= 10 ? 'Good' : 'Needs Improvement'}"></div>
                                     <div th:class="${'text-xs ' +
-                                                   (report.termAverage >= 15 ? 'text-green-800' :
-                                                    report.termAverage >= 10 ? 'text-yellow-800' : 'text-red-800')}">Performance</div>
+                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-800' :
+                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-800' : 'text-red-800')}">Performance</div>
                                     <div th:class="${'text-xs ' +
-                                                   (report.termAverage >= 15 ? 'text-green-600' :
-                                                    report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}">
+                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-600' :
+                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}">
                                         <span th:text="${report.remarks}"></span>
                                     </div>
                                 </div>
@@ -218,7 +221,7 @@
                     <h2 class="text-xl font-bold text-white flex items-center">
                         <i class="fas fa-book-open mr-2"></i>Subject Performance
                     </h2>
-                    <span class="text-green-100 text-sm" th:text="${report.subjectReports.size()} + ' Subjects'"></span>
+                    <span class="text-green-100 text-sm" th:text="${report.subjectReports != null ? report.subjectReports.size() : 0} + ' Subjects'"></span>
                 </div>
             </div>
 
@@ -226,7 +229,7 @@
                 <!-- Performance Statistics -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="stats-card bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
-                        <div class="text-2xl font-bold text-blue-600" th:text="${report.subjectReports.size()}">0</div>
+                        <div class="text-2xl font-bold text-blue-600" th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}">0</div>
                         <div class="text-sm font-semibold text-blue-800 mt-1">Total Subjects</div>
                         <div class="text-xs text-blue-600 mt-1">This Term</div>
                     </div>
@@ -396,7 +399,7 @@
                     <i class="fas fa-print"></i>
                     <span>Print Report</span>
                 </button>
-                <a th:href="@{'/reports/student/yearly/' + ${report.student.id}}"
+                <a th:href="@{'/reports/student/yearly/report?studentId=' + ${report.student.id}}"
                    class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
                     <i class="fas fa-calendar-alt"></i>
                     <span>View Yearly Report</span>
@@ -456,6 +459,34 @@
             window.history.back();
         }
     });
+
+    // PDF Download function
+    function downloadPdf() {
+        const url = '/reports/pdf/student/term?studentId=' +
+            [[${report.student.id}]] +
+            '&term=' + [[${report.term}]];
+
+        // Show loading indicator
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Generating...';
+        button.disabled = true;
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Report_Term' + [[${report.term}]] + '_' +
+            [[${report.rollNumber}]] + '.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
+    }
 </script>
 </body>
 </html>
