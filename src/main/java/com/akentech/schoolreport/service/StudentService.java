@@ -299,9 +299,11 @@ public class StudentService {
         ClassLevel classLevel = student.getClassRoom().getCode();
         DepartmentCode departmentCode = student.getDepartment().getCode();
 
-        // Validate date of birth
-        if (student.getDateOfBirth() != null && student.getDateOfBirth().isAfter(LocalDate.now().minusYears(5))) {
-            throw new BusinessRuleException("Student must be at least 5 years old");
+        // Make date of birth validation optional - only validate if provided
+        if (student.getDateOfBirth() != null) {
+            if (student.getDateOfBirth().isAfter(LocalDate.now().minusYears(9))) {
+                throw new BusinessRuleException("Student must be at least 9 years old");
+            }
         }
     }
 

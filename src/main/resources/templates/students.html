@@ -106,7 +106,7 @@
             </div>
 
             <!-- Statistics Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div class="stat-card bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                     <div class="flex justify-between items-center">
                         <div>
@@ -143,6 +143,15 @@
                         <i class="fas fa-star text-yellow-500 text-xl"></i>
                     </div>
                 </div>
+                <div class="stat-card bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Without DOB</p>
+                            <p class="text-2xl font-bold text-gray-800" id="noDobCount">0</p>
+                        </div>
+                        <i class="fas fa-birthday-cake text-red-500 text-xl"></i>
+                    </div>
+                </div>
             </div>
 
             <!-- Search and Filters -->
@@ -176,13 +185,20 @@
                                    th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
                                 <i th:unless="${sortBy == 'classRoom.name'}" class="fas fa-sort text-gray-400"></i>
                             </a>
+                            <a th:href="@{/students/sort(sortBy='dateOfBirth', currentSortDir=${sortBy == 'dateOfBirth' ? sortDir : ''}, currentPage=${currentPage}, currentSize=${pageSize}, classRoomId=${classRoomIdFilter}, departmentId=${departmentIdFilter}, specialty=${specialtyFilter})}"
+                               class="flex items-center space-x-1 px-3 py-1 bg-gray-100 rounded text-sm hover:bg-blue-100 hover:text-blue-700 transition-colors">
+                                <span>DOB</span>
+                                <i th:if="${sortBy == 'dateOfBirth'}"
+                                   th:class="${sortDir == 'asc'} ? 'fas fa-sort-up' : 'fas fa-sort-down'"></i>
+                                <i th:unless="${sortBy == 'dateOfBirth'}" class="fas fa-sort text-gray-400"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
 
                 <!-- Filters -->
                 <div class="p-4 bg-gray-50">
-                    <form th:action="@{/students}" method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <form th:action="@{/students}" method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <input type="hidden" name="sortBy" th:value="${sortBy}">
                         <input type="hidden" name="sortDir" th:value="${sortDir}">
                         <input type="hidden" name="page" value="0">
@@ -217,6 +233,14 @@
                                         th:selected="${specialtyFilter != null && specialtyFilter == s}"></option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">DOB Status</label>
+                            <select name="hasDob" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">All</option>
+                                <option value="has">Has DOB</option>
+                                <option value="none">No DOB</option>
+                            </select>
+                        </div>
                         <div class="flex items-end space-x-2">
                             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
                                 <i class="fas fa-filter mr-2"></i>Apply Filters
@@ -246,6 +270,7 @@
                                 <th class="px-4 py-3 font-medium text-gray-700">Student ID</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Full Name</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Gender</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Date of Birth</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Classroom</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Department</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Specialty</th>
@@ -275,21 +300,30 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">
+                                    <span th:if="${student.dateOfBirth != null}"
+                                          class="text-gray-900 font-medium"
+                                          th:text="${#temporals.format(student.dateOfBirth, 'dd/MM/yyyy')}">
+                                    </span>
+                                    <span th:unless="${student.dateOfBirth != null}"
+                                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <i class="fas fa-info-circle mr-1"></i>Not Set
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
                                     <div class="flex items-center space-x-2">
                                         <i class="fas fa-school text-gray-400"></i>
                                         <span th:text="${student.classRoom?.name} ?: 'N/A'"></span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <!-- FIXED: Use departmentCssClass helper method -->
                                     <span th:if="${student.department}"
                                           th:class="${student.departmentCssClass}"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                           th:text="${student.departmentName}">
-    </span>
+                                    </span>
                                     <span th:unless="${student.department}" class="text-gray-500 text-xs">
-        N/A
-    </span>
+                                        N/A
+                                    </span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span th:if="${student.specialty}"
@@ -434,10 +468,12 @@
         let formsCount = 0;
         let sixthFormCount = 0;
         let specialtyCount = 0;
+        let noDobCount = 0;
 
         students.forEach(row => {
-            const classText = row.querySelector('td:nth-child(4)').textContent;
-            const specialtyElement = row.querySelector('td:nth-child(6) span');
+            const classText = row.querySelector('td:nth-child(5)').textContent; // Changed from 4 to 5
+            const specialtyElement = row.querySelector('td:nth-child(7) span'); // Changed from 6 to 7
+            const dobElement = row.querySelector('td:nth-child(4) span'); // DOB is now column 4
 
             if (classText.includes('Form')) {
                 formsCount++;
@@ -448,11 +484,17 @@
             if (specialtyElement && !specialtyElement.textContent.includes('General')) {
                 specialtyCount++;
             }
+
+            // Check if DOB is "Not Set"
+            if (dobElement.textContent.includes('Not Set')) {
+                noDobCount++;
+            }
         });
 
         document.getElementById('formsCount').textContent = formsCount;
         document.getElementById('sixthFormCount').textContent = sixthFormCount;
         document.getElementById('specialtyCount').textContent = specialtyCount;
+        document.getElementById('noDobCount').textContent = noDobCount;
     }
 </script>
 </body>

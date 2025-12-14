@@ -123,6 +123,14 @@ public class Student {
     }
 
     @Transient
+    public Integer getAge() {
+        if (this.dateOfBirth == null) {
+            return null;
+        }
+        return java.time.Period.between(this.dateOfBirth, LocalDate.now()).getYears();
+    }
+
+    @Transient
     public String getSanitizedEmail() {
         if (this.email == null || this.email.trim().isEmpty()) {
             return null;
@@ -293,13 +301,6 @@ public class Student {
         return "Not Set";
     }
 
-    @Transient
-    public Integer getAge() {
-        if (this.dateOfBirth == null) {
-            return null;
-        }
-        return java.time.Period.between(this.dateOfBirth, LocalDate.now()).getYears();
-    }
 
     @Transient
     public String getDisplayEmail() {
