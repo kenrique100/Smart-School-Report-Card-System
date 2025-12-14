@@ -89,7 +89,8 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public ReportDTO getTermReportForStudentAndYear(Long studentId, Integer term, String academicYear) {
-        log.info("Generating term {} report for student ID: {} for academic year: {}", term, studentId, academicYear);
+        log.info("Generating term {} report for student ID: {} for academic year: {}",
+                term, studentId, academicYear);
 
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
@@ -132,6 +133,22 @@ public class ReportServiceImpl implements ReportService {
         ReportDTO reportDTO = reportMapper.toReportDTO(student, subjectReports, term, statistics);
         reportDTO.setAcademicYear(effectiveAcademicYear); // Set to REQUESTED year
 
+        // FIXED: Calculate and set rank for individual student report
+        Integer rank = calculateStudentTermRankForYear(studentId, term, effectiveAcademicYear, subjectReports);
+        reportDTO.setRankInClass(rank != null ? rank : 0);
+
+        // Set total students in class
+        int totalStudents = 0;
+        if (student.getClassRoom() != null) {
+            totalStudents = studentRepository.countByClassRoomIdAndAcademicYear(
+                    student.getClassRoom().getId(), requestedYearStart, requestedYearEnd);
+            // If no students found for that academic year, get total without year filter
+            if (totalStudents == 0) {
+                totalStudents = (int) studentRepository.countByClassRoomId(student.getClassRoom().getId());
+            }
+        }
+        reportDTO.setTotalStudentsInClass(totalStudents);
+
         // Ensure term average is set correctly
         if (reportDTO.getTermAverage() == null || reportDTO.getTermAverage() == 0.0) {
             log.debug("Term average is null or 0.0, recalculating from subject reports...");
@@ -142,8 +159,11 @@ public class ReportServiceImpl implements ReportService {
 
         reportDTO.setAction(generateStudentAction(reportDTO));
 
-        log.info("Successfully generated term report for student {} term {}: Average={}, Subjects={}, AcademicYear={}",
-                studentId, term, reportDTO.getTermAverage(), subjectReports.size(), reportDTO.getAcademicYear());
+        log.info("Successfully generated term report for student {} term {}: " +
+                        "Average={}, Subjects={}, Rank={}/{}, AcademicYear={}",
+                studentId, term, reportDTO.getTermAverage(), subjectReports.size(),
+                reportDTO.getRankInClass(), reportDTO.getTotalStudentsInClass(),
+                reportDTO.getAcademicYear());
 
         return reportDTO;
     }
@@ -210,7 +230,7 @@ public class ReportServiceImpl implements ReportService {
                     .map(Student::getId)
                     .collect(Collectors.toList());
 
-            // FIXED: Fetch assessments with academic year filter
+            // Fetch assessments with academic year filter
             List<Assessment> allAssessments = assessmentRepository.findByStudentIdInAndTermAndAcademicYear(
                     studentIds, term, requestedYearStart, requestedYearEnd);
 
@@ -238,7 +258,7 @@ public class ReportServiceImpl implements ReportService {
                 // Calculate subject reports
                 List<SubjectReport> subjectReports = calculateSubjectReports(student, studentAssessments, term);
 
-                // Calculate term statistics
+                // Calculate term statistics (WITH RANK PLACEHOLDER)
                 Map<String, Object> statistics = calculateTermStatistics(subjectReports, student, term);
 
                 // Generate ReportDTO
@@ -252,20 +272,31 @@ public class ReportServiceImpl implements ReportService {
                     report.setFormattedAverage(String.format("%.2f/20", recalculatedAverage));
                 }
 
+                // Set class name if not set
+                if (report.getClassName() == null || report.getClassName().isEmpty()) {
+                    report.setClassName(student.getClassRoom() != null ? student.getClassRoom().getName() : "");
+                }
+
                 report.setAction(generateStudentAction(report));
                 reports.add(report);
 
+                log.debug("Generated report for student {}: Average={}, Subjects={}",
+                        student.getFullName(), report.getTermAverage(), subjectReports.size());
+
             } catch (Exception e) {
-                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage());
+                log.error("Error generating report for student {}: {}", student.getId(), e.getMessage(), e);
                 reports.add(createEmptyReport(student, term, academicYear)); // Use REQUESTED year
             }
         }
 
-        // Calculate ranks after all reports are generated
+        // FIXED: Calculate ranks for all reports BEFORE returning
         calculateRanksForReports(reports);
 
         // Sort by rank
         reports.sort(Comparator.comparing(ReportDTO::getRankInClass));
+
+        log.info("Successfully generated {} reports for class {} term {} academic year {}",
+                reports.size(), classRoom.getName(), term, academicYear);
 
         return reports;
     }
@@ -904,29 +935,44 @@ public class ReportServiceImpl implements ReportService {
         Long subjectsPassed = gradeService.countPassedSubjects(subjectReports, className);
         int totalSubjects = subjectReports.size();
 
+        // Set statistics - NOTE: rank will be calculated separately
         statistics.put("termAverage", termAverage);
-        statistics.put("formattedAverage", String.format("%.2f/20", termAverage));
-        statistics.put("passRate", passRate);
-        statistics.put("subjectsPassed", subjectsPassed.intValue());
+        statistics.put("formattedAverage", termAverage != null ? String.format("%.2f/20", termAverage) : "0.00/20");
+        statistics.put("passRate", passRate != null ? passRate : 0.0);
+        statistics.put("subjectsPassed", subjectsPassed != null ? subjectsPassed.intValue() : 0);
         statistics.put("totalSubjects", totalSubjects);
         statistics.put("remarks", gradeService.generateRemarks(termAverage));
+
+        // IMPORTANT: For individual student reports, these will be set separately
+        // after rank calculation in getTermReportForStudentAndYear()
+        statistics.put("rankInClass", 0); // Placeholder - will be updated by calculateStudentTermRankForYear()
+        statistics.put("totalStudentsInClass", 0); // Placeholder - will be updated
 
         return statistics;
     }
 
     private void calculateRanksForReports(List<ReportDTO> reports) {
         if (reports == null || reports.isEmpty()) {
+            log.warn("No reports to calculate ranks for");
             return;
         }
 
-        // Sort by average descending
+        log.debug("Calculating ranks for {} reports", reports.size());
+
+        // Sort by average descending (highest average first)
         List<ReportDTO> sorted = reports.stream()
                 .sorted((r1, r2) -> {
-                    Double avg1 = r1.getTermAverage() != null ? r1.getTermAverage() : 0.0;
-                    Double avg2 = r2.getTermAverage() != null ? r2.getTermAverage() : 0.0;
-                    return Double.compare(avg2, avg1);
+                    double avg1 = r1.getTermAverage() != null ? r1.getTermAverage() : 0.0;
+                    double avg2 = r2.getTermAverage() != null ? r2.getTermAverage() : 0.0;
+                    // Sort descending (highest average first)
+                    int compare = Double.compare(avg2, avg1);
+                    if (compare == 0) {
+                        // If averages are equal, sort by student name for consistency
+                        return r1.getStudentFullName().compareToIgnoreCase(r2.getStudentFullName());
+                    }
+                    return compare;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         // Assign ranks (handling ties)
         int currentRank = 0;
@@ -935,14 +981,23 @@ public class ReportServiceImpl implements ReportService {
             ReportDTO report = sorted.get(i);
             Double avg = report.getTermAverage();
 
+            // If this average is different from the last one, increment rank
+            // If it's the same, keep the same rank (tie)
             if (lastAvg == null || Double.compare(avg, lastAvg) != 0) {
-                currentRank = i + 1;
+                currentRank = i + 1; // Rank is 1-based (1st, 2nd, 3rd...)
                 lastAvg = avg;
             }
 
+            // Update the report with rank
             report.setRankInClass(currentRank);
             report.setTotalStudentsInClass(sorted.size());
+
+            log.debug("Assigned rank {} to student {} with average {} (out of {} students)",
+                    currentRank, report.getStudentFullName(), avg, sorted.size());
         }
+
+        log.info("Rank calculation complete. Top student: {} with rank 1 and average {}",
+                sorted.get(0).getStudentFullName(), sorted.get(0).getTermAverage());
     }
 
     private void sortReports(List<ReportDTO> reports, Sort sort) {
@@ -1076,7 +1131,7 @@ public class ReportServiceImpl implements ReportService {
                 .filter(a -> a.getAcademicYearStart() != null && a.getAcademicYearEnd() != null &&
                         a.getAcademicYearStart() == academicYearStart &&
                         a.getAcademicYearEnd() == academicYearEnd)
-                .collect(Collectors.toList());
+                .toList();
 
         Map<Integer, List<Assessment>> assessmentsByTerm = filteredAssessments.stream()
                 .collect(Collectors.groupingBy(Assessment::getTerm));
@@ -1364,6 +1419,8 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private ReportDTO createEmptyReport(Student student, Integer term, String academicYear) {
+        log.warn("Creating empty report for student {} term {}", student.getFullName(), term);
+
         return ReportDTO.builder()
                 .id(student.getId())
                 .student(student)
@@ -1375,14 +1432,16 @@ public class ReportServiceImpl implements ReportService {
                 .term(term)
                 .termAverage(0.0)
                 .formattedAverage("0.00/20")
-                .rankInClass(0)
-                .totalStudentsInClass(0)
+                .rankInClass(0) // Default rank
+                .totalStudentsInClass(0) // Will be set later
                 .passRate(0.0)
                 .subjectsPassed(0)
                 .totalSubjects(0)
                 .remarks("No assessment data available")
                 .subjectReports(new ArrayList<>())
                 .academicYear(academicYear)
+                .classTeacher(student.getClassRoom() != null && student.getClassRoom().getClassTeacher() != null ?
+                        student.getClassRoom().getClassTeacher() : "Not Assigned")
                 .action("No action recommendation available due to missing data")
                 .build();
     }
@@ -1443,16 +1502,30 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private int[] parseAcademicYear(String academicYear) {
-        try {
-            String[] parts = academicYear.split("-");
-            int startYear = Integer.parseInt(parts[0]);
-            int endYear = Integer.parseInt(parts[1]);
-            return new int[]{startYear, endYear};
-        } catch (Exception e) {
-            log.warn("Invalid academic year format: {}, using current year", academicYear);
+        if (academicYear == null || academicYear.trim().isEmpty()) {
+            // Use current year if not provided
             int currentYear = Year.now().getValue();
             return new int[]{currentYear, currentYear + 1};
         }
+
+        try {
+            String[] parts = academicYear.split("-");
+            if (parts.length == 2) {
+                int startYear = Integer.parseInt(parts[0].trim());
+                int endYear = Integer.parseInt(parts[1].trim());
+                return new int[]{startYear, endYear};
+            } else if (parts.length == 1) {
+                // Single year provided, assume it's the start year
+                int startYear = Integer.parseInt(parts[0].trim());
+                return new int[]{startYear, startYear + 1};
+            }
+        } catch (Exception e) {
+            log.warn("Invalid academic year format: {}, using current year", academicYear);
+        }
+
+        // Default to current year
+        int currentYear = Year.now().getValue();
+        return new int[]{currentYear, currentYear + 1};
     }
 
     private Integer calculateStudentTermRank(Long studentId, Integer term, String academicYear,
@@ -1499,6 +1572,109 @@ public class ReportServiceImpl implements ReportService {
             }
         }
 
+        return sortedEntries.size(); // Last rank if not found
+    }
+    private Integer calculateStudentTermRankForYear(Long studentId, Integer term, String academicYear,
+                                                    List<SubjectReport> studentSubjectReports) {
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
+
+        if (student.getClassRoom() == null) {
+            log.warn("Student {} has no class assigned, cannot calculate rank", studentId);
+            return null;
+        }
+
+        // Parse academic year
+        int[] years = parseAcademicYear(academicYear);
+        int yearStart = years[0];
+        int yearEnd = years[1];
+
+        Long classId = student.getClassRoom().getId();
+
+        // Get all students in the same class for this academic year
+        List<Student> classStudents = studentRepository.findByClassRoomIdAndAcademicYear(
+                classId, yearStart, yearEnd);
+
+        // If no students found for that academic year, get all students in class
+        if (classStudents.isEmpty()) {
+            log.debug("No students found for class {} in academic year {}, fetching all students",
+                    classId, academicYear);
+            classStudents = studentRepository.findByClassRoomId(classId);
+        }
+
+        if (classStudents.size() <= 1) {
+            log.debug("Only 1 student in class, rank is 1");
+            return 1;
+        }
+
+        log.debug("Calculating rank for student {} among {} students in class {}",
+                studentId, classStudents.size(), classId);
+
+        // Calculate average for each student
+        Map<Long, Double> studentAverages = new HashMap<>();
+
+        for (Student classStudent : classStudents) {
+            // Skip if it's the same student (we already have their reports)
+            if (classStudent.getId().equals(studentId)) {
+                Double currentStudentAverage = gradeService.calculateWeightedTermAverage(studentSubjectReports);
+                studentAverages.put(studentId, currentStudentAverage);
+                continue;
+            }
+
+            // Get assessments for this student
+            List<Assessment> assessments = assessmentRepository.findByStudentIdAndTermAndAcademicYear(
+                    classStudent.getId(), term, yearStart, yearEnd);
+
+            // If no assessments with academic year filter, try without
+            if (assessments.isEmpty()) {
+                assessments = assessmentRepository.findByStudentIdAndTerm(classStudent.getId(), term);
+            }
+
+            // Calculate subject reports
+            List<SubjectReport> reports = calculateSubjectReports(classStudent, assessments, term);
+
+            // Calculate term average
+            Double average = gradeService.calculateWeightedTermAverage(reports);
+            studentAverages.put(classStudent.getId(), average);
+
+            log.trace("Student {} average: {}", classStudent.getFullName(), average);
+        }
+
+        // Sort students by average descending
+        List<Map.Entry<Long, Double>> sortedEntries = studentAverages.entrySet().stream()
+                .sorted((e1, e2) -> {
+                    // Handle null averages
+                    double avg1 = e1.getValue() != null ? e1.getValue() : 0.0;
+                    double avg2 = e2.getValue() != null ? e2.getValue() : 0.0;
+                    return Double.compare(avg2, avg1); // Descending
+                })
+                .toList();
+
+        // Find the rank
+        for (int i = 0; i < sortedEntries.size(); i++) {
+            if (sortedEntries.get(i).getKey().equals(studentId)) {
+                int rank = i + 1; // Rank is 1-based
+
+                // Check for ties (same average as previous student)
+                if (i > 0) {
+                    Double currentAvg = sortedEntries.get(i).getValue();
+                    Double prevAvg = sortedEntries.get(i - 1).getValue();
+                    if (currentAvg != null && prevAvg != null &&
+                            Double.compare(currentAvg, prevAvg) == 0) {
+                        // Same rank as previous student (tie)
+                        rank = i; // Same as previous student's rank
+                    }
+                }
+
+                log.debug("Student {} rank: {}/{} with average {}",
+                        studentId, rank, sortedEntries.size(),
+                        sortedEntries.get(i).getValue());
+                return rank;
+            }
+        }
+
+        log.warn("Student {} not found in ranking list, assigning last rank", studentId);
         return sortedEntries.size(); // Last rank if not found
     }
 }
