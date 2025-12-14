@@ -7,14 +7,17 @@ import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.model.enums.AssessmentType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Year;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ReportMapper {
 
     private final GradeService gradeService;
@@ -63,6 +66,16 @@ public class ReportMapper {
         Double assessment1 = null;
         Double assessment2 = null;
 
+        // Debug logging
+        if (assessments.isEmpty()) {
+            log.debug("No assessments for subject: {} term {}", subject.getName(), term);
+        } else {
+            log.debug("Found {} assessments for subject: {} term {}",
+                    assessments.size(), subject.getName(), term);
+            assessments.forEach(a ->
+                    log.debug("  Type: {}, Score: {}", a.getType(), a.getScore()));
+        }
+
         // Extract scores based on term
         if (term == 1) {
             assessment1 = extractAssessmentScore(assessments, AssessmentType.ASSESSMENT_1);
@@ -79,23 +92,40 @@ public class ReportMapper {
         Double subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, term);
         String letterGrade = gradeService.calculateLetterGrade(subjectAverage, className);
 
+        // Get coefficient with null check
+        Integer coefficient = subject.getCoefficient();
+        if (coefficient == null) {
+            coefficient = 1;  // Default to 1 if null
+            log.warn("Subject {} has null coefficient, defaulting to 1", subject.getName());
+        }
+
+        log.debug("Subject Report - {}: A1={}, A2={}, Avg={}, Grade={}, Coeff={}",
+                subject.getName(), assessment1, assessment2, subjectAverage, letterGrade, coefficient);
+
         return SubjectReport.builder()
                 .subjectName(subject.getName())
-                .coefficient(subject.getCoefficient())
+                .coefficient(coefficient)  // Use the safe value
                 .assessment1(assessment1)
                 .assessment2(assessment2)
                 .subjectAverage(subjectAverage)
                 .letterGrade(letterGrade)
-                .className(className) // Add className to SubjectReport
+                .className(className)
                 .build();
     }
 
     private Double extractAssessmentScore(List<Assessment> assessments, AssessmentType type) {
-        return assessments.stream()
+        Optional<Assessment> assessment = assessments.stream()
                 .filter(a -> a.getType() == type)
-                .findFirst()
-                .map(Assessment::getScore)
-                .orElse(null);
+                .findFirst();
+
+        if (assessment.isPresent()) {
+            Double score = assessment.get().getScore();
+            log.debug("Extracted score for {}: {}", type, score);
+            return score;
+        } else {
+            log.debug("No assessment found for type: {}", type);
+            return null;
+        }
     }
 
     private String formatScore(Double score) {

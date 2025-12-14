@@ -15,12 +15,6 @@ import java.util.Optional;
 
 public interface AssessmentService {
     // Existing methods...
-
-    // New methods for student assessment summary
-    StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId);
-    List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term);
-
-    // Existing methods...
     Optional<Assessment> findByStudentSubjectTermType(Student student, Subject subject, Integer term, String type);
     Optional<Assessment> getAssessmentByStudentSubjectAndTermAndType(Long studentId, Long subjectId, Integer term, AssessmentType type);
     List<Assessment> getAssessmentsByStudentAndTerm(Long studentId, Integer term);
@@ -36,4 +30,38 @@ public interface AssessmentService {
     List<StudentTermAverageDTO> getTermAveragesForClass(Long classId, Integer term);
     List<StudentYearlyAverageDTO> getYearlyAveragesForClass(Long classId);
     Map<Long, List<Double>> getStudentSubjectScoresByTerm(Long studentId, Integer term);
+
+    // New methods for student assessment summary
+    StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId);
+    List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term);
+
+    // New methods with academic year support
+    Double calculateTermAverageWithAcademicYear(Long studentId, Integer term,
+                                                Integer academicYearStart, Integer academicYearEnd);
+    Double calculateYearlyAverageWithAcademicYear(Long studentId, Integer academicYearStart,
+                                                  Integer academicYearEnd);
+    List<StudentTermAverageDTO> getTermAveragesForClassWithAcademicYear(Long classId, Integer term,
+                                                                        Integer academicYearStart,
+                                                                        Integer academicYearEnd);
+    List<StudentYearlyAverageDTO> getYearlyAveragesForClassWithAcademicYear(Long classId,
+                                                                            Integer academicYearStart,
+                                                                            Integer academicYearEnd);
+    Map<Long, List<Double>> getStudentSubjectScoresByTermAndAcademicYear(Long studentId, Integer term,
+                                                                         Integer academicYearStart,
+                                                                         Integer academicYearEnd);
+    StudentAssessmentSummaryDTO getAssessmentSummaryWithAcademicYear(Long studentId,
+                                                                     Integer academicYearStart,
+                                                                     Integer academicYearEnd);
+    List<TermAssessmentDTO> getTermAssessmentsWithAcademicYear(Long studentId, Integer term,
+                                                               Integer academicYearStart,
+                                                               Integer academicYearEnd);
+
+    // Batch academic year fixing
+    void fixAcademicYearsForStudent(Long studentId, Integer academicYearStart, Integer academicYearEnd);
+    void fixAllAcademicYears(Integer academicYearStart, Integer academicYearEnd);
+
+    // Grouping methods
+    Map<Integer, List<Assessment>> getAssessmentsByStudentGroupedByTerm(Long studentId);
+    Map<Integer, Map<Long, List<Assessment>>> getAssessmentsByStudentGroupedByTermAndSubject(Long studentId);
+
 }

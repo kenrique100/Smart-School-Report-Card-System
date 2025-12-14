@@ -17,6 +17,33 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
+    // ====== FIXED: Add the missing method for batch processing ======
+
+    @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classId " +
+            "AND s.academicYearStart = :academicYearStart " +
+            "AND s.academicYearEnd = :academicYearEnd")
+    List<Student> findByClassRoomIdAndAcademicYear(
+            @Param("classId") Long classId,
+            @Param("academicYearStart") Integer academicYearStart,
+            @Param("academicYearEnd") Integer academicYearEnd);
+
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.classRoom.id = :classId " +
+            "AND s.academicYearStart = :academicYearStart " +
+            "AND s.academicYearEnd = :academicYearEnd")
+    int countByClassRoomIdAndAcademicYear(
+            @Param("classId") Long classId,
+            @Param("academicYearStart") Integer academicYearStart,
+            @Param("academicYearEnd") Integer academicYearEnd);
+
+    // ====== EXISTING METHODS ======
+
+    @Query("SELECT s FROM Student s " +
+            "LEFT JOIN FETCH s.classRoom " +
+            "LEFT JOIN FETCH s.studentSubjects ss " +
+            "LEFT JOIN FETCH ss.subject " +
+            "WHERE s.id = :studentId")
+    Optional<Student> findByIdWithAllRelationships(@Param("studentId") Long studentId);
+
     List<Student> findByClassRoom(ClassRoom classRoom);
     Page<Student> findByClassRoom(ClassRoom classRoom, Pageable pageable);
 
@@ -52,15 +79,12 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     @Query("SELECT COUNT(DISTINCT s.specialty) FROM Student s WHERE s.specialty IS NOT NULL AND s.specialty != ''")
     long countDistinctSpecialties();
 
-    // FIXED: Email query that properly handles null values
     @Query("SELECT s FROM Student s WHERE s.email = :email AND s.email IS NOT NULL")
     Optional<Student> findByEmail(@Param("email") String email);
 
-    // NEW: Find by email ignoring case
     @Query("SELECT s FROM Student s WHERE LOWER(s.email) = LOWER(:email) AND s.email IS NOT NULL")
     Optional<Student> findByEmailIgnoreCase(@Param("email") String email);
 
-    // NEW: Find students with empty emails (to fix the bug)
     @Query("SELECT s FROM Student s WHERE s.email = '' OR TRIM(s.email) = ''")
     List<Student> findByEmptyEmail();
 
@@ -82,7 +106,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                                 @Param("specialty") String specialty,
                                 Pageable pageable);
 
-    // Methods for eager loading
     @Query("SELECT s FROM Student s LEFT JOIN FETCH s.classRoom LEFT JOIN FETCH s.department WHERE s.id = :id")
     Optional<Student> findByIdWithClassRoomAndDepartment(@Param("id") Long id);
 
@@ -100,7 +123,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             "ORDER BY s.firstName, s.lastName")
     List<Student> findAllWithAssociations();
 
-    // Also add a paged version
     @Query(value = "SELECT DISTINCT s FROM Student s " +
             "LEFT JOIN FETCH s.classRoom " +
             "LEFT JOIN FETCH s.department " +
@@ -109,25 +131,21 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             countQuery = "SELECT COUNT(DISTINCT s) FROM Student s")
     Page<Student> findAllWithAssociations(Pageable pageable);
 
-    // NEW: Count students by email status
     @Query("SELECT COUNT(s) FROM Student s WHERE s.email IS NOT NULL AND TRIM(s.email) != ''")
     long countByHasEmail();
 
     @Query("SELECT COUNT(s) FROM Student s WHERE s.email IS NULL OR TRIM(s.email) = ''")
     long countByNoEmail();
 
-    // NEW: Find students by department
     @Query("SELECT s FROM Student s WHERE s.department.id = :departmentId")
     List<Student> findByDepartmentId(@Param("departmentId") Long departmentId);
 
     @Query("SELECT s FROM Student s WHERE s.department.id = :departmentId")
     Page<Student> findByDepartmentId(@Param("departmentId") Long departmentId, Pageable pageable);
 
-    // NEW: Count students by department
     @Query("SELECT COUNT(s) FROM Student s WHERE s.department.id = :departmentId")
     long countByDepartmentId(@Param("departmentId") Long departmentId);
 
-    // NEW: Find students by academic year range
     @Query("SELECT s FROM Student s WHERE " +
             "(:startYear IS NULL OR s.academicYearStart >= :startYear) AND " +
             "(:endYear IS NULL OR s.academicYearEnd <= :endYear)")
@@ -141,11 +159,10 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
                                           @Param("endYear") Integer endYear,
                                           Pageable pageable);
 
-    // ADD THIS MISSING METHOD (needed for ReportServiceImpl)
     Optional<Student> findByClassRoomIdAndRollNumber(@Param("classRoomId") Long classRoomId, @Param("rollNumber") String rollNumber);
 
-    // ADD THIS HELPER QUERY if the above doesn't work with params
     @Query("SELECT s FROM Student s WHERE s.classRoom.id = :classRoomId AND s.rollNumber = :rollNumber")
     Optional<Student> findByClassRoomIdAndRollNumberQuery(@Param("classRoomId") Long classRoomId, @Param("rollNumber") String rollNumber);
 
+    Optional<Student> findById(Long studentId);
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${report.studentFullName} + ' - Term ' + ${report.term} + ' Report'">Student Term Report</title>
+    <title th:text="${report.studentFullName} + ' - Yearly Report'">Student Yearly Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -24,6 +24,26 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .stats-card { transition: all 0.3s ease; }
         .stats-card:hover { transform: scale(1.02); }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         .progress-bar {
             height: 8px;
             border-radius: 4px;
@@ -50,19 +70,24 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center space-x-4">
+                    <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors mr-4">
+                        <i class="fas fa-home"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
                     <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
                         <i class="fas fa-arrow-left"></i>
                         <span class="font-medium">Back to Reports</span>
                     </a>
                     <div class="h-6 w-px bg-gray-300"></div>
-                    <h1 class="text-2xl font-bold text-gray-900">Term <span th:text="${report.term}"></span> Academic Report</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">Yearly Academic Report</h1>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-sm text-gray-500">Academic Year: <span class="font-semibold" th:text="${report.academicYear}"></span></span>
+                    <span class="text-sm text-gray-500">Academic Year: <span class="font-semibold" th:text="${report.student.classRoom.academicYear}"></span></span>
                     <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
                         <i class="fas fa-print mr-1"></i>Print
                     </button>
-                    <button onclick="downloadPdf()" class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
+                    <button onclick="downloadYearlyPdf()" class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
                         <i class="fas fa-file-pdf mr-1"></i>PDF
                     </button>
                 </div>
@@ -74,18 +99,15 @@
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
         <!-- Student Summary Card -->
         <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
-            <div th:class="${'bg-gradient-to-r px-6 py-4 ' +
-                           (report.term == 1 ? 'from-blue-600 to-cyan-600' :
-                            report.term == 2 ? 'from-green-600 to-emerald-600' :
-                            'from-purple-600 to-indigo-600')}">
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-white">Term <span th:text="${report.term}"></span> Performance</h2>
-                        <p class="text-opacity-90 text-white text-sm mt-1" th:text="${report.className} + ' • ' + ${report.department}"></p>
+                        <h2 class="text-xl font-bold text-white">Yearly Academic Performance</h2>
+                        <p class="text-purple-100 text-sm mt-1" th:text="${report.student.classRoom.name} + ' • ' + ${report.student.department.name}"></p>
                     </div>
                     <div class="text-right">
                         <div class="text-white text-sm">Student ID</div>
-                        <div class="text-white font-mono font-semibold" th:text="${report.studentIdString}"></div>
+                        <div class="text-white font-mono font-semibold" th:text="${report.student.studentId}"></div>
                     </div>
                 </div>
             </div>
@@ -96,116 +118,98 @@
                     <div class="space-y-4">
                         <div class="flex items-center space-x-4">
                             <div class="flex-shrink-0">
-                                <div th:class="${'w-16 h-16 rounded-full flex items-center justify-center ' + (report.studentGender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
-                                    <i th:class="${report.studentGender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-2xl'"></i>
+                                <div th:class="${'w-16 h-16 rounded-full flex items-center justify-center ' + (report.student.gender == 'MALE' ? 'bg-blue-100' : 'bg-pink-100')}">
+                                    <i th:class="${report.student.gender == 'MALE' ? 'fas fa-male text-blue-600' : 'fas fa-female text-pink-600'} + ' text-2xl'"></i>
                                 </div>
                             </div>
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-900" th:text="${report.studentFullName}"></h3>
-                                <p class="text-gray-600" th:text="${report.rollNumber}"></p>
+                                <p class="text-gray-600" th:text="${report.student.rollNumber}"></p>
                             </div>
                         </div>
 
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Class:</span>
-                                <span class="font-semibold" th:text="${report.className}"></span>
+                                <span class="font-semibold" th:text="${report.student.classRoom.name}"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Department:</span>
-                                <span class="font-semibold" th:text="${report.department}"></span>
+                                <span class="font-semibold" th:text="${report.student.department.name}"></span>
                             </div>
-                            <div class="flex justify-between" th:if="${report.specialty != 'General'}">
+                            <div class="flex justify-between" th:if="${report.student.specialty}">
                                 <span class="text-gray-500">Specialty:</span>
-                                <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs" th:text="${report.specialty}"></span>
+                                <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs" th:text="${report.student.specialty}"></span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-500">Date of Birth:</span>
-                                <span class="font-semibold" th:text="${report.formattedDateOfBirth}"></span>
+                                <span class="text-gray-500">Class Teacher:</span>
+                                <span class="font-semibold" th:text="${report.student.classRoom.classTeacher}"></span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Term Performance Summary -->
+                    <!-- Yearly Performance Summary -->
                     <div class="space-y-4">
                         <h4 class="text-lg font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-chart-line mr-2" th:class="${report.term == 1 ? 'text-blue-600' : report.term == 2 ? 'text-green-600' : 'text-purple-600'}"></i>Term Performance
+                            <i class="fas fa-chart-line mr-2 text-purple-600"></i>Yearly Performance
                         </h4>
 
                         <div class="space-y-3">
                             <div>
                                 <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-600">Term Average</span>
-                                    <span class="font-semibold" th:text="${report.formattedAverage}"></span>
+                                    <span class="text-gray-600">Yearly Average</span>
+                                    <span class="font-semibold" th:text="${report.formattedYearlyAverage} + '/20'"></span>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" th:style="${report.termAverage != null} ? 'width: ' + ${report.termAverage * 5} + '%;' : 'width: 0%;'"></div>
+                                    <div class="progress-fill" th:style="'width: ' + ${report.yearlyAverage * 5} + '%;'"></div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="text-center bg-blue-50 p-3 rounded-lg">
-                                    <div class="text-2xl font-bold text-blue-600" th:text="${report.rankInClass}"></div>
-                                    <div class="text-xs text-blue-800">Class Rank</div>
+                                    <div class="text-2xl font-bold text-blue-600" th:text="${report.yearlyRank}"></div>
+                                    <div class="text-xs text-blue-800">Yearly Rank</div>
                                     <div class="text-xs text-blue-600">out of <span th:text="${report.totalStudentsInClass}"></span></div>
                                 </div>
-                                <div th:class="${'text-center p-3 rounded-lg ' +
-                                               (report.termAverage != null && report.termAverage >= 15 ? 'bg-green-50' :
-                                                report.termAverage != null && report.termAverage >= 10 ? 'bg-yellow-50' : 'bg-red-50')}">
-                                    <div th:class="${'text-2xl font-bold ' +
-                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-600' :
-                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}"
-                                         th:text="${report.termAverage != null && report.termAverage >= 15 ? 'Excellent' :
-                                                   report.termAverage != null && report.termAverage >= 10 ? 'Good' : 'Needs Improvement'}"></div>
-                                    <div th:class="${'text-xs ' +
-                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-800' :
-                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-800' : 'text-red-800')}">Performance</div>
-                                    <div th:class="${'text-xs ' +
-                                                   (report.termAverage != null && report.termAverage >= 15 ? 'text-green-600' :
-                                                    report.termAverage != null && report.termAverage >= 10 ? 'text-yellow-600' : 'text-red-600')}">
-                                        <span th:text="${report.remarks}"></span>
+                                <div th:class="${'text-center p-3 rounded-lg ' + (report.passed ? 'bg-green-50' : 'bg-red-50')}">
+                                    <div th:class="${'text-2xl font-bold ' + (report.passed ? 'text-green-600' : 'text-red-600')}"
+                                         th:text="${report.passed ? 'PASS' : 'FAIL'}"></div>
+                                    <div th:class="${'text-xs ' + (report.passed ? 'text-green-800' : 'text-red-800')}">Status</div>
+                                    <div th:class="${'text-xs ' + (report.passed ? 'text-green-600' : 'text-red-600')}">
+                                        <span th:text="${report.overallGrade}"></span> Grade
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Term Assessment Details -->
+                    <!-- Term Performance -->
                     <div class="space-y-4">
                         <h4 class="text-lg font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-clipboard-check mr-2 text-gray-600"></i>Assessment Details
+                            <i class="fas fa-calendar-alt mr-2 text-green-600"></i>Term Performance
                         </h4>
 
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="text-sm text-gray-600 mb-2">Term <span th:text="${report.term}"></span> Assessments:</div>
-                            <div class="space-y-2">
-                                <div th:if="${report.term == 1}" class="text-sm">
-                                    <div class="flex justify-between">
-                                        <span>Assessment 1 & 2:</span>
-                                        <span class="font-semibold">Two assessments</span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-1">Term 1 includes Assessment 1 and Assessment 2</p>
-                                </div>
-                                <div th:if="${report.term == 2}" class="text-sm">
-                                    <div class="flex justify-between">
-                                        <span>Assessment 3 & 4:</span>
-                                        <span class="font-semibold">Two assessments</span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-1">Term 2 includes Assessment 3 and Assessment 4</p>
-                                </div>
-                                <div th:if="${report.term == 3}" class="text-sm">
-                                    <div class="flex justify-between">
-                                        <span>Final Exam:</span>
-                                        <span class="font-semibold">One exam</span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-1">Term 3 includes only the final examination</p>
-                                </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="text-center bg-gray-50 p-3 rounded-lg">
+                                <div class="text-lg font-bold text-blue-600" th:text="${report.term1Rank != null ? report.term1Rank : '-'}"></div>
+                                <div class="text-xs text-gray-800">Term 1 Rank</div>
+                                <div class="text-xs text-gray-600">Position</div>
+                            </div>
+                            <div class="text-center bg-gray-50 p-3 rounded-lg">
+                                <div class="text-lg font-bold text-blue-600" th:text="${report.term2Rank != null ? report.term2Rank : '-'}"></div>
+                                <div class="text-xs text-gray-800">Term 2 Rank</div>
+                                <div class="text-xs text-gray-600">Position</div>
+                            </div>
+                            <div class="text-center bg-gray-50 p-3 rounded-lg">
+                                <div class="text-lg font-bold text-blue-600" th:text="${report.term3Rank != null ? report.term3Rank : '-'}"></div>
+                                <div class="text-xs text-gray-800">Term 3 Rank</div>
+                                <div class="text-xs text-gray-600">Position</div>
                             </div>
                         </div>
 
                         <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                             <h5 class="text-sm font-semibold text-yellow-800 flex items-center">
-                                <i class="fas fa-comment mr-1"></i>Teacher's Remarks
+                                <i class="fas fa-comment mr-1"></i>Yearly Remarks
                             </h5>
                             <p class="text-sm text-yellow-700 mt-1" th:text="${report.remarks}"></p>
                         </div>
@@ -214,14 +218,14 @@
             </div>
         </div>
 
-        <!-- Subject Performance -->
+        <!-- Subject Performance Detailed -->
         <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-book-open mr-2"></i>Subject Performance
+                        <i class="fas fa-book-open mr-2"></i>Subject Performance Analysis
                     </h2>
-                    <span class="text-green-100 text-sm" th:text="${report.subjectReports != null ? report.subjectReports.size() : 0} + ' Subjects'"></span>
+                    <span class="text-green-100 text-sm" th:text="${report.subjectReports.size()} + ' Subjects'"></span>
                 </div>
             </div>
 
@@ -229,44 +233,24 @@
                 <!-- Performance Statistics -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="stats-card bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
-                        <div class="text-2xl font-bold text-blue-600" th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}">0</div>
-                        <div class="text-sm font-semibold text-blue-800 mt-1">Total Subjects</div>
-                        <div class="text-xs text-blue-600 mt-1">This Term</div>
+                        <div class="text-2xl font-bold text-blue-600" th:text="${report.totalPassed}">0</div>
+                        <div class="text-sm font-semibold text-blue-800 mt-1">Subjects Passed</div>
+                        <div class="text-xs text-blue-600 mt-1">Out of <span th:text="${report.subjectReports.size()}"></span></div>
                     </div>
                     <div class="stats-card bg-green-50 p-4 rounded-xl text-center border border-green-200">
-                        <div class="text-2xl font-bold text-green-600" th:text="${report.subjectsPassed}">0</div>
-                        <div class="text-sm font-semibold text-green-800 mt-1">Subjects Passed</div>
-                        <div class="text-xs text-green-600 mt-1">
-                            <!-- Display correct passing criteria -->
-                            <span th:if="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
-                                          #strings.containsIgnoreCase(report.className, 'Upper') ||
-                                          #strings.containsIgnoreCase(report.className, 'Lower') ||
-                                          #strings.containsIgnoreCase(report.className, 'Advanced') ||
-                                          #strings.containsIgnoreCase(report.className, 'A Level') ||
-                                          #strings.containsIgnoreCase(report.className, 'AS Level') ||
-                                          #strings.containsIgnoreCase(report.className, 'Higher')}">
-                                A-E are passing
-                            </span>
-                            <span th:unless="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
-                                              #strings.containsIgnoreCase(report.className, 'Upper') ||
-                                              #strings.containsIgnoreCase(report.className, 'Lower') ||
-                                              #strings.containsIgnoreCase(report.className, 'Advanced') ||
-                                              #strings.containsIgnoreCase(report.className, 'A Level') ||
-                                              #strings.containsIgnoreCase(report.className, 'AS Level') ||
-                                              #strings.containsIgnoreCase(report.className, 'Higher')}">
-                                A-C are passing
-                            </span>
-                        </div>
+                        <div class="text-2xl font-bold text-green-600" th:text="${#lists.size(report.subjectReports.?[yearlyGrade == 'A' || yearlyGrade == 'B' || yearlyGrade == 'C'])}">0</div>
+                        <div class="text-sm font-semibold text-green-800 mt-1">Good Grades (A-C)</div>
+                        <div class="text-xs text-green-600 mt-1">Excellent Performance</div>
                     </div>
                     <div class="stats-card bg-purple-50 p-4 rounded-xl text-center border border-purple-200">
-                        <div class="text-2xl font-bold text-purple-600" th:text="${#lists.size(report.subjectReports.?[subjectAverage >= 15])}">0</div>
+                        <div class="text-2xl font-bold text-purple-600" th:text="${#lists.size(report.subjectReports.?[yearlyAverage >= 15])}">0</div>
                         <div class="text-sm font-semibold text-purple-800 mt-1">Above 15/20</div>
-                        <div class="text-xs text-purple-600 mt-1">Strong Performance</div>
+                        <div class="text-xs text-purple-600 mt-1">Strong Subjects</div>
                     </div>
                     <div class="stats-card bg-orange-50 p-4 rounded-xl text-center border border-orange-200">
-                        <div class="text-2xl font-bold text-orange-600" th:text="${#lists.size(report.subjectReports.?[subjectAverage < 10])}">0</div>
-                        <div class="text-sm font-semibold text-orange-800 mt-1">Below 10/20</div>
-                        <div class="text-xs text-orange-600 mt-1">Needs Attention</div>
+                        <div class="text-2xl font-bold text-orange-600" th:text="${#lists.size(report.subjectReports.?[yearlyAverage < 10])}">0</div>
+                        <div class="text-sm font-semibold text-orange-800 mt-1">Needs Improvement</div>
+                        <div class="text-xs text-orange-600 mt-1">Below 10/20</div>
                     </div>
                 </div>
 
@@ -277,14 +261,10 @@
                         <tr>
                             <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subject</th>
                             <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Coeff</th>
-                            <th th:if="${report.term == 1 || report.term == 2}" class="px-6 py-4 text-left font-semibold text-gray-700 border-b">
-                                <span th:text="${report.term == 1 ? 'Assessment 1' : 'Assessment 3'}"></span>
-                            </th>
-                            <th th:if="${report.term == 1 || report.term == 2}" class="px-6 py-4 text-left font-semibold text-gray-700 border-b">
-                                <span th:text="${report.term == 1 ? 'Assessment 2' : 'Assessment 4'}"></span>
-                            </th>
-                            <th th:if="${report.term == 3}" class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Exam</th>
-                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Average</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term 1</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term 2</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term 3</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Yearly Avg</th>
                             <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Grade</th>
                             <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Status</th>
                         </tr>
@@ -298,91 +278,68 @@
                             <td class="px-6 py-4">
                                 <span class="font-semibold text-gray-900" th:text="${subject.coefficient}"></span>
                             </td>
-                            <td th:if="${report.term == 1 || report.term == 2}" class="px-6 py-4">
-                                <div th:if="${subject.assessment1 != null}">
-                                    <span class="font-medium" th:text="${subject.assessment1}"></span>
-                                    <div class="w-12 h-1 bg-gray-200 rounded-full mt-1">
-                                        <div class="h-full bg-blue-500 rounded-full" th:style="'width: ' + ${subject.assessment1 * 5} + '%;'"></div>
+                            <td class="px-6 py-4">
+                                <div th:if="${subject.term1Average > 0}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(subject.term1Average, 1, 1)}"></span>
+                                    <div class="w-16 h-1 bg-gray-200 rounded-full mt-1">
+                                        <div class="h-full bg-blue-500 rounded-full" th:style="'width: ' + ${subject.term1Average * 5} + '%;'"></div>
                                     </div>
                                 </div>
-                                <div th:unless="${subject.assessment1 != null}">
-                                    <span class="text-gray-400 text-sm">-</span>
-                                </div>
-                            </td>
-                            <td th:if="${report.term == 1 || report.term == 2}" class="px-6 py-4">
-                                <div th:if="${subject.assessment2 != null}">
-                                    <span class="font-medium" th:text="${subject.assessment2}"></span>
-                                    <div class="w-12 h-1 bg-gray-200 rounded-full mt-1">
-                                        <div class="h-full bg-green-500 rounded-full" th:style="'width: ' + ${subject.assessment2 * 5} + '%;'"></div>
-                                    </div>
-                                </div>
-                                <div th:unless="${subject.assessment2 != null}">
-                                    <span class="text-gray-400 text-sm">-</span>
-                                </div>
-                            </td>
-                            <td th:if="${report.term == 3}" class="px-6 py-4">
-                                <div th:if="${subject.assessment1 != null}">
-                                    <span class="font-medium" th:text="${subject.assessment1}"></span>
-                                    <div class="w-12 h-1 bg-gray-200 rounded-full mt-1">
-                                        <div class="h-full bg-purple-500 rounded-full" th:style="'width: ' + ${subject.assessment1 * 5} + '%;'"></div>
-                                    </div>
-                                </div>
-                                <div th:unless="${subject.assessment1 != null}">
+                                <div th:unless="${subject.term1Average > 0}">
                                     <span class="text-gray-400 text-sm">-</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div th:if="${subject.subjectAverage != null && subject.subjectAverage > 0}">
-                                    <span class="font-bold text-lg" th:text="${subject.subjectAverage}"></span>
-                                    <div class="w-20 h-2 bg-gray-200 rounded-full mt-1">
-                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                             th:style="'width: ' + ${subject.subjectAverage * 5} + '%;'"></div>
+                                <div th:if="${subject.term2Average > 0}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(subject.term2Average, 1, 1)}"></span>
+                                    <div class="w-16 h-1 bg-gray-200 rounded-full mt-1">
+                                        <div class="h-full bg-green-500 rounded-full" th:style="'width: ' + ${subject.term2Average * 5} + '%;'"></div>
                                     </div>
                                 </div>
-                                <div th:unless="${subject.subjectAverage != null && subject.subjectAverage > 0}">
+                                <div th:unless="${subject.term2Average > 0}">
+                                    <span class="text-gray-400 text-sm">-</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div th:if="${subject.term3Average > 0}">
+                                    <span class="font-medium" th:text="${#numbers.formatDecimal(subject.term3Average, 1, 1)}"></span>
+                                    <div class="w-16 h-1 bg-gray-200 rounded-full mt-1">
+                                        <div class="h-full bg-purple-500 rounded-full" th:style="'width: ' + ${subject.term3Average * 5} + '%;'"></div>
+                                    </div>
+                                </div>
+                                <div th:unless="${subject.term3Average > 0}">
+                                    <span class="text-gray-400 text-sm">-</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div th:if="${subject.yearlyAverage > 0}">
+                                    <span class="font-bold text-lg" th:text="${#numbers.formatDecimal(subject.yearlyAverage, 1, 1)}"></span>
+                                    <div class="w-20 h-2 bg-gray-200 rounded-full mt-1">
+                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                             th:style="'width: ' + ${subject.yearlyAverage * 5} + '%;'"></div>
+                                    </div>
+                                </div>
+                                <div th:unless="${subject.yearlyAverage > 0}">
                                     <span class="text-gray-400">-</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span th:class="${'grade-' + #strings.toLowerCase(subject.letterGrade)} + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'">
-                                    <span th:text="${subject.letterGrade}"></span>
+                                <span th:class="${'grade-' + #strings.toLowerCase(subject.yearlyGrade)} + ' inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold'">
+                                    <span th:text="${subject.yearlyGrade}"></span>
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <!-- Check if this is an advanced level class -->
-                                <span th:if="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
-                                               #strings.containsIgnoreCase(report.className, 'Upper') ||
-                                               #strings.containsIgnoreCase(report.className, 'Lower') ||
-                                               #strings.containsIgnoreCase(report.className, 'Advanced') ||
-                                               #strings.containsIgnoreCase(report.className, 'A Level') ||
-                                               #strings.containsIgnoreCase(report.className, 'AS Level') ||
-                                               #strings.containsIgnoreCase(report.className, 'Higher')}">
-                                    <!-- Advanced level: A, B, C, D, E are passing -->
-                                    <span th:if="${#strings.containsIgnoreCase('ABCDE', subject.letterGrade)}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                        <i class="fas fa-check-circle mr-1"></i>Pass
-                                    </span>
-                                    <span th:if="${#strings.containsIgnoreCase('OF', subject.letterGrade)}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                        <i class="fas fa-times-circle mr-1"></i>Fail
-                                    </span>
+                                <span th:if="${#strings.containsIgnoreCase('ABC', subject.yearlyGrade)}"
+                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Pass
                                 </span>
-                                <span th:unless="${#strings.containsIgnoreCase(report.className, 'Sixth') ||
-                                                   #strings.containsIgnoreCase(report.className, 'Upper') ||
-                                                   #strings.containsIgnoreCase(report.className, 'Lower') ||
-                                                   #strings.containsIgnoreCase(report.className, 'Advanced') ||
-                                                   #strings.containsIgnoreCase(report.className, 'A Level') ||
-                                                   #strings.containsIgnoreCase(report.className, 'AS Level') ||
-                                                   #strings.containsIgnoreCase(report.className, 'Higher')}">
-                                    <!-- Ordinary level: A, B, C are passing -->
-                                    <span th:if="${#strings.containsIgnoreCase('ABC', subject.letterGrade)}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                        <i class="fas fa-check-circle mr-1"></i>Pass
-                                    </span>
-                                    <span th:if="${#strings.containsIgnoreCase('DU', subject.letterGrade)}"
-                                          class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                        <i class="fas fa-times-circle mr-1"></i>Fail
-                                    </span>
+                                <span th:if="${#strings.containsIgnoreCase('DEFU', subject.yearlyGrade)}"
+                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>Fail
+                                </span>
+                                <span th:if="${subject.yearlyGrade == 'O'}"
+                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                    <i class="fas fa-star mr-1"></i>Complimentary
                                 </span>
                             </td>
                         </tr>
@@ -390,42 +347,133 @@
                     </table>
                 </div>
 
-                <!-- Legend and Grading -->
-                <div class="mt-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-semibold text-gray-800 mb-2">Grading System</h4>
-                            <div class="grid grid-cols-3 gap-2 text-sm">
-                                <div class="text-center grade-a rounded p-2">A: 18-20</div>
-                                <div class="text-center grade-b rounded p-2">B: 15-17.9</div>
-                                <div class="text-center grade-c rounded p-2">C: 10-14.9</div>
-                                <div class="text-center grade-d rounded p-2">D: 5-9.9</div>
-                                <div class="text-center grade-u rounded p-2">U: Below 5</div>
-                                <div class="text-center grade-e rounded p-2">E: 10-11.9</div>
-                                <div class="text-center grade-o rounded p-2">O: 8-9.9 (Complimentary)</div>
-                                <div class="text-center grade-f rounded p-2">F: Below 8</div>
+                <!-- Legend -->
+                <div class="mt-6 flex flex-wrap gap-3 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Pass (A-C)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Fail (D-F/U)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-purple-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Complimentary (O)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Term 1 Progress</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Term 2 Progress</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-purple-500 rounded-full mr-1"></div>
+                        <span class="text-gray-600">Term 3 Progress</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Statistics -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-bar mr-2"></i>Class Performance Statistics
+                </h2>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-users mr-2 text-blue-600"></i>Class Distribution
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Total Students</span>
+                                    <span class="font-semibold" th:text="${report.totalStudentsInClass}"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-green-600">Passed Students</span>
+                                    <span class="font-semibold" th:text="${report.totalPassed}"></span>
+                                </div>
+                                <div class="w-full h-2 bg-gray-200 rounded-full">
+                                    <div class="h-full bg-green-500 rounded-full"
+                                         th:style="'width: ' + ${report.totalPassed * 100 / report.totalStudentsInClass} + '%;'"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-red-600">Failed Students</span>
+                                    <span class="font-semibold" th:text="${report.totalFailed}"></span>
+                                </div>
+                                <div class="w-full h-2 bg-gray-200 rounded-full">
+                                    <div class="h-full bg-red-500 rounded-full"
+                                         th:style="'width: ' + ${report.totalFailed * 100 / report.totalStudentsInClass} + '%;'"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-semibold text-gray-800 mb-2">Passing Criteria</h4>
-                            <div class="flex flex-col gap-3 text-sm">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                                    <div>
-                                        <span class="font-medium">Advanced Level:</span>
-                                        <span class="text-gray-600 ml-1">A, B, C, D, E are passing</span>
-                                    </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-trophy mr-2 text-yellow-600"></i>Student Ranking
+                        </h3>
+                        <div class="text-center">
+                            <div class="text-5xl font-bold text-blue-600 mb-2" th:text="${report.yearlyRank}"></div>
+                            <div class="text-sm text-gray-600">Position in Class</div>
+                            <div class="text-xs text-gray-500 mt-1">Out of <span th:text="${report.totalStudentsInClass}"></span> students</div>
+
+                            <div class="mt-6 space-y-2">
+                                <div th:if="${report.yearlyRank <= 3}">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800">
+                                        <i class="fas fa-crown mr-1"></i>Top Performer
+                                    </span>
                                 </div>
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                    <div>
-                                        <span class="font-medium">Ordinary Level:</span>
-                                        <span class="text-gray-600 ml-1">A, B, C are passing</span>
-                                    </div>
+                                <div th:if="${report.yearlyRank > 3 && report.yearlyRank <= 10}">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                        <i class="fas fa-star mr-1"></i>Excellent
+                                    </span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    Advanced level includes: Sixth Form, Upper/Lower, Advanced/A-Level/AS-Level, Higher classes
+                                <div th:if="${report.yearlyRank > 10 && report.yearlyRank <= report.totalStudentsInClass/2}">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Good
+                                    </span>
                                 </div>
+                                <div th:if="${report.yearlyRank > report.totalStudentsInClass/2}">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 text-orange-800">
+                                        <i class="fas fa-exclamation-circle mr-1"></i>Needs Improvement
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-graduation-cap mr-2 text-purple-600"></i>Promotion Status
+                        </h3>
+                        <div class="text-center">
+                            <div th:if="${report.passed}" class="mb-4">
+                                <i class="fas fa-check-circle text-5xl text-green-500 mb-3"></i>
+                                <h4 class="text-xl font-bold text-green-600">PROMOTED</h4>
+                                <p class="text-sm text-gray-600 mt-2">Student has successfully passed the academic year</p>
+                            </div>
+                            <div th:unless="${report.passed}" class="mb-4">
+                                <i class="fas fa-times-circle text-5xl text-red-500 mb-3"></i>
+                                <h4 class="text-xl font-bold text-red-600">NOT PROMOTED</h4>
+                                <p class="text-sm text-gray-600 mt-2">Student needs to improve performance</p>
+                            </div>
+
+                            <div class="mt-6 p-3 bg-blue-50 rounded-lg">
+                                <h5 class="font-semibold text-blue-800 mb-1">Recommendation</h5>
+                                <p class="text-sm text-blue-700" th:text="${report.action}"></p>
                             </div>
                         </div>
                     </div>
@@ -439,21 +487,21 @@
                 Report Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
             </div>
             <div class="flex space-x-3">
-                <a th:href="@{/reports/select}"
+                <a th:href="@{/}"
                    class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Back to Reports</span>
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
                 </a>
                 <button onclick="window.print()"
                         class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
                     <i class="fas fa-print"></i>
                     <span>Print Report</span>
                 </button>
-                <a th:href="@{'/reports/student/yearly/report?studentId=' + ${report.student.id}}"
-                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>View Yearly Report</span>
-                </a>
+                <button onclick="downloadYearlyPdf()"
+                        class="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Download PDF</span>
+                </button>
             </div>
         </div>
     </div>
@@ -510,11 +558,9 @@
         }
     });
 
-    // PDF Download function
-    function downloadPdf() {
-        const url = '/reports/pdf/student/term?studentId=' +
-            [[${report.student.id}]] +
-            '&term=' + [[${report.term}]];
+    // PDF Download function for yearly report
+    function downloadYearlyPdf() {
+        const url = '/reports/pdf/student/yearly?studentId=' + [[${report.student.id}]];
 
         // Show loading indicator
         const button = event.target;
@@ -525,8 +571,8 @@
         // Trigger download
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'Report_Term' + [[${report.term}]] + '_' +
-            [[${report.rollNumber}]] + '.pdf';
+        link.download = 'Yearly_Report_' + [[${report.rollNumber}]] + '_' +
+            [[${report.studentFullName}?.replace(' ', '_')]] + '.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

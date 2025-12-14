@@ -71,6 +71,9 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional
     public Assessment save(Assessment assessment) {
+        // Set academic year if missing
+        assessment = setAcademicYearIfMissing(assessment);
+
         validateAssessment(assessment);
 
         Optional<Assessment> existing = assessmentRepository.findByStudentAndSubjectAndTermAndType(
@@ -82,13 +85,15 @@ public class AssessmentServiceImpl implements AssessmentService {
         }
 
         Assessment saved = assessmentRepository.save(assessment);
-        log.info("Saved assessment: student={} {} subject={} term={} type={} score={}/20",
+        log.info("Saved assessment: student={} {} subject={} term={} type={} score={}/20 academicYear={}-{}",
                 saved.getStudent().getFirstName(),
                 saved.getStudent().getLastName(),
                 saved.getSubject().getName(),
                 saved.getTerm(),
                 saved.getType(),
-                saved.getScore());
+                saved.getScore(),
+                saved.getAcademicYearStart(),
+                saved.getAcademicYearEnd());
 
         try {
             studentPerformanceService.updateStudentSubjectScores(
@@ -107,11 +112,15 @@ public class AssessmentServiceImpl implements AssessmentService {
             return List.of();
         }
 
+        // Set academic years for all assessments
+        List<Assessment> validatedAssessments = new ArrayList<>();
         for (Assessment assessment : assessments) {
-            validateAssessment(assessment);
+            Assessment validated = setAcademicYearIfMissing(assessment);
+            validateAssessment(validated);
+            validatedAssessments.add(validated);
         }
 
-        List<Assessment> saved = assessmentRepository.saveAll(assessments);
+        List<Assessment> saved = assessmentRepository.saveAll(validatedAssessments);
         log.info("Saved {} assessments", saved.size());
 
         if (!saved.isEmpty()) {
@@ -159,6 +168,13 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public Double calculateTermAverage(Long studentId, Integer term) {
+        return calculateTermAverageWithAcademicYear(studentId, term, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Double calculateTermAverageWithAcademicYear(Long studentId, Integer term,
+                                                       Integer academicYearStart, Integer academicYearEnd) {
         List<Subject> studentSubjects = getStudentSubjects(studentId);
 
         if (studentSubjects.isEmpty()) {
@@ -169,8 +185,16 @@ public class AssessmentServiceImpl implements AssessmentService {
         int totalCoefficient = 0;
 
         for (Subject subject : studentSubjects) {
-            List<Assessment> subjectAssessments = getAssessmentsByStudentSubjectAndTerm(
-                    studentId, subject.getId(), term);
+            List<Assessment> subjectAssessments;
+
+            if (academicYearStart != null && academicYearEnd != null) {
+                // Get assessments filtered by academic year
+                subjectAssessments = getAssessmentsByStudentSubjectTermAndAcademicYear(
+                        studentId, subject.getId(), term, academicYearStart, academicYearEnd);
+            } else {
+                // Get all assessments for the term
+                subjectAssessments = getAssessmentsByStudentSubjectAndTerm(studentId, subject.getId(), term);
+            }
 
             if (!subjectAssessments.isEmpty()) {
                 double subjectAverage = gradeService.calculateSubjectAverageForTerm(subjectAssessments, term);
@@ -185,9 +209,16 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public Double calculateYearlyAverage(Long studentId) {
-        double term1Avg = calculateTermAverage(studentId, 1);
-        double term2Avg = calculateTermAverage(studentId, 2);
-        double term3Avg = calculateTermAverage(studentId, 3);
+        return calculateYearlyAverageWithAcademicYear(studentId, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Double calculateYearlyAverageWithAcademicYear(Long studentId, Integer academicYearStart,
+                                                         Integer academicYearEnd) {
+        double term1Avg = calculateTermAverageWithAcademicYear(studentId, 1, academicYearStart, academicYearEnd);
+        double term2Avg = calculateTermAverageWithAcademicYear(studentId, 2, academicYearStart, academicYearEnd);
+        double term3Avg = calculateTermAverageWithAcademicYear(studentId, 3, academicYearStart, academicYearEnd);
 
         return gradeService.calculateYearlyAverage(term1Avg, term2Avg, term3Avg);
     }
@@ -195,11 +226,25 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentTermAverageDTO> getTermAveragesForClass(Long classId, Integer term) {
+        return getTermAveragesForClassWithAcademicYear(classId, term, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentTermAverageDTO> getTermAveragesForClassWithAcademicYear(Long classId, Integer term,
+                                                                               Integer academicYearStart,
+                                                                               Integer academicYearEnd) {
         List<Student> students = studentRepository.findByClassRoomId(classId);
         List<StudentTermAverageDTO> termAverages = new ArrayList<>();
 
         for (Student student : students) {
-            Double average = calculateTermAverage(student.getId(), term);
+            Double average;
+            if (academicYearStart != null && academicYearEnd != null) {
+                average = calculateTermAverageWithAcademicYear(student.getId(), term,
+                        academicYearStart, academicYearEnd);
+            } else {
+                average = calculateTermAverage(student.getId(), term);
+            }
             termAverages.add(new StudentTermAverageDTO(student, average, null));
         }
 
@@ -216,11 +261,25 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentYearlyAverageDTO> getYearlyAveragesForClass(Long classId) {
+        return getYearlyAveragesForClassWithAcademicYear(classId, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentYearlyAverageDTO> getYearlyAveragesForClassWithAcademicYear(Long classId,
+                                                                                   Integer academicYearStart,
+                                                                                   Integer academicYearEnd) {
         List<Student> students = studentRepository.findByClassRoomId(classId);
         List<StudentYearlyAverageDTO> yearlyAverages = new ArrayList<>();
 
         for (Student student : students) {
-            Double yearlyAverage = calculateYearlyAverage(student.getId());
+            Double yearlyAverage;
+            if (academicYearStart != null && academicYearEnd != null) {
+                yearlyAverage = calculateYearlyAverageWithAcademicYear(student.getId(),
+                        academicYearStart, academicYearEnd);
+            } else {
+                yearlyAverage = calculateYearlyAverage(student.getId());
+            }
             yearlyAverages.add(new StudentYearlyAverageDTO(student, yearlyAverage, null));
         }
 
@@ -237,11 +296,26 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public Map<Long, List<Double>> getStudentSubjectScoresByTerm(Long studentId, Integer term) {
+        return getStudentSubjectScoresByTermAndAcademicYear(studentId, term, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, List<Double>> getStudentSubjectScoresByTermAndAcademicYear(Long studentId, Integer term,
+                                                                                Integer academicYearStart,
+                                                                                Integer academicYearEnd) {
         List<Subject> subjects = getStudentSubjects(studentId);
         Map<Long, List<Double>> subjectScores = new HashMap<>();
 
         for (Subject subject : subjects) {
-            List<Assessment> assessments = getAssessmentsByStudentSubjectAndTerm(studentId, subject.getId(), term);
+            List<Assessment> assessments;
+            if (academicYearStart != null && academicYearEnd != null) {
+                assessments = getAssessmentsByStudentSubjectTermAndAcademicYear(
+                        studentId, subject.getId(), term, academicYearStart, academicYearEnd);
+            } else {
+                assessments = getAssessmentsByStudentSubjectAndTerm(studentId, subject.getId(), term);
+            }
+
             List<Double> scores = assessments.stream()
                     .map(Assessment::getScore)
                     .collect(Collectors.toList());
@@ -254,18 +328,31 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     @Transactional(readOnly = true)
     public StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId) {
+        return getAssessmentSummaryWithAcademicYear(studentId, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StudentAssessmentSummaryDTO getAssessmentSummaryWithAcademicYear(Long studentId,
+                                                                            Integer academicYearStart,
+                                                                            Integer academicYearEnd) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
 
-        List<Assessment> assessments = getAssessmentsByStudent(studentId);
+        List<Assessment> assessments;
+        if (academicYearStart != null && academicYearEnd != null) {
+            assessments = getAssessmentsByStudentAndAcademicYearFromRepo(studentId, academicYearStart, academicYearEnd);
+        } else {
+            assessments = getAssessmentsByStudent(studentId);
+        }
 
         Map<Integer, List<Assessment>> assessmentsByTerm = assessments.stream()
                 .collect(Collectors.groupingBy(Assessment::getTerm));
 
-        Double term1Avg = calculateTermAverage(studentId, 1);
-        Double term2Avg = calculateTermAverage(studentId, 2);
-        Double term3Avg = calculateTermAverage(studentId, 3);
-        Double yearlyAvg = calculateYearlyAverage(studentId);
+        Double term1Avg = calculateTermAverageWithAcademicYear(studentId, 1, academicYearStart, academicYearEnd);
+        Double term2Avg = calculateTermAverageWithAcademicYear(studentId, 2, academicYearStart, academicYearEnd);
+        Double term3Avg = calculateTermAverageWithAcademicYear(studentId, 3, academicYearStart, academicYearEnd);
+        Double yearlyAvg = calculateYearlyAverageWithAcademicYear(studentId, academicYearStart, academicYearEnd);
 
         List<StudentSubject> enrolledSubjects = studentSubjectRepository.findByStudentId(studentId);
         int totalSubjects = enrolledSubjects.size();
@@ -292,20 +379,35 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .term1Completed(term1Completed)
                 .term2Completed(term2Completed)
                 .term3Completed(term3Completed)
+                .academicYear(academicYearStart != null && academicYearEnd != null ?
+                        academicYearStart + "-" + academicYearEnd : null)
                 .build();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term) {
+        return getTermAssessmentsWithAcademicYear(studentId, term, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TermAssessmentDTO> getTermAssessmentsWithAcademicYear(Long studentId, Integer term,
+                                                                      Integer academicYearStart,
+                                                                      Integer academicYearEnd) {
         List<StudentSubject> enrolledSubjects = studentSubjectRepository.findByStudentId(studentId);
         List<TermAssessmentDTO> termAssessments = new ArrayList<>();
 
         for (StudentSubject enrollment : enrolledSubjects) {
             Subject subject = enrollment.getSubject();
 
-            List<Assessment> subjectAssessments = getAssessmentsByStudentSubjectAndTerm(
-                    studentId, subject.getId(), term);
+            List<Assessment> subjectAssessments;
+            if (academicYearStart != null && academicYearEnd != null) {
+                subjectAssessments = getAssessmentsByStudentSubjectTermAndAcademicYear(
+                        studentId, subject.getId(), term, academicYearStart, academicYearEnd);
+            } else {
+                subjectAssessments = getAssessmentsByStudentSubjectAndTerm(studentId, subject.getId(), term);
+            }
 
             Map<Integer, Double> scores = new HashMap<>();
             for (Assessment assessment : subjectAssessments) {
@@ -329,6 +431,8 @@ public class AssessmentServiceImpl implements AssessmentService {
                     .termAverage(termAverage)
                     .termGrade(termGrade)
                     .completed(termAverage != null)
+                    .academicYear(academicYearStart != null && academicYearEnd != null ?
+                            academicYearStart + "-" + academicYearEnd : null)
                     .build();
 
             termAssessments.add(dto);
@@ -338,6 +442,70 @@ public class AssessmentServiceImpl implements AssessmentService {
         termAssessments.sort(Comparator.comparing(TermAssessmentDTO::getSubjectName));
 
         return termAssessments;
+    }
+
+    // ========== HELPER METHODS ==========
+
+    private Assessment setAcademicYearIfMissing(Assessment assessment) {
+        if (assessment == null) {
+            return null;
+        }
+
+        // If academic year is already set, return as is
+        if (assessment.getAcademicYearStart() != null && assessment.getAcademicYearEnd() != null) {
+            if (assessment.getAcademicYear() == null) {
+                assessment.setAcademicYear(
+                        assessment.getAcademicYearStart() + "-" + assessment.getAcademicYearEnd()
+                );
+            }
+            return assessment;
+        }
+
+        // Try to get academic year from student
+        if (assessment.getStudent() != null && assessment.getStudent().getId() != null) {
+            Student student = studentRepository.findById(assessment.getStudent().getId()).orElse(null);
+            if (student != null && student.getAcademicYearStart() != null && student.getAcademicYearEnd() != null) {
+                assessment.setAcademicYearStart(student.getAcademicYearStart());
+                assessment.setAcademicYearEnd(student.getAcademicYearEnd());
+                assessment.setAcademicYear(
+                        student.getAcademicYearStart() + "-" + student.getAcademicYearEnd()
+                );
+                log.debug("Set academic year {}-{} for assessment from student {}",
+                        student.getAcademicYearStart(), student.getAcademicYearEnd(),
+                        student.getStudentId());
+            } else if (student != null) {
+                log.warn("Student {} has no academic year set, assessment will not have academic year",
+                        student.getStudentId());
+            }
+        } else {
+            log.warn("Assessment has no student reference, cannot set academic year");
+        }
+
+        return assessment;
+    }
+
+    // Renamed to avoid conflict with interface method
+    private List<Assessment> getAssessmentsByStudentAndAcademicYearFromRepo(Long studentId,
+                                                                            Integer academicYearStart,
+                                                                            Integer academicYearEnd) {
+        List<Assessment> allAssessments = assessmentRepository.findByStudentId(studentId);
+        return allAssessments.stream()
+                .filter(a -> a.getAcademicYearStart() != null && a.getAcademicYearEnd() != null &&
+                        a.getAcademicYearStart().equals(academicYearStart) &&
+                        a.getAcademicYearEnd().equals(academicYearEnd))
+                .collect(Collectors.toList());
+    }
+
+    private List<Assessment> getAssessmentsByStudentSubjectTermAndAcademicYear(Long studentId, Long subjectId,
+                                                                               Integer term,
+                                                                               Integer academicYearStart,
+                                                                               Integer academicYearEnd) {
+        List<Assessment> allAssessments = assessmentRepository.findByStudentIdAndSubjectIdAndTerm(studentId, subjectId, term);
+        return allAssessments.stream()
+                .filter(a -> a.getAcademicYearStart() != null && a.getAcademicYearEnd() != null &&
+                        a.getAcademicYearStart().equals(academicYearStart) &&
+                        a.getAcademicYearEnd().equals(academicYearEnd))
+                .collect(Collectors.toList());
     }
 
     private Double calculateSubjectTermAverage(Map<Integer, Double> scores, Integer term) {
@@ -433,5 +601,80 @@ public class AssessmentServiceImpl implements AssessmentService {
         if (!type.getTerm().equals(assessment.getTerm())) {
             throw new BusinessRuleException("Assessment type " + type + " is not valid for term " + assessment.getTerm());
         }
+
+        // Academic year validation - warn but don't fail if not set
+        if (assessment.getAcademicYearStart() == null || assessment.getAcademicYearEnd() == null) {
+            log.warn("Assessment for student {} subject {} term {} type {} has no academic year set",
+                    assessment.getStudent().getId(), assessment.getSubject().getName(),
+                    assessment.getTerm(), assessment.getType());
+        } else if (assessment.getAcademicYearStart() >= assessment.getAcademicYearEnd()) {
+            throw new BusinessRuleException("Academic year start must be before academic year end");
+        }
+    }
+
+    // ========== NEW METHODS FOR ACADEMIC YEAR SUPPORT ==========
+
+    @Override
+    @Transactional
+    public void fixAcademicYearsForStudent(Long studentId, Integer academicYearStart, Integer academicYearEnd) {
+        List<Assessment> assessments = assessmentRepository.findByStudentId(studentId);
+        int fixedCount = 0;
+
+        for (Assessment assessment : assessments) {
+            if (assessment.getAcademicYearStart() == null || assessment.getAcademicYearEnd() == null) {
+                assessment.setAcademicYearStart(academicYearStart);
+                assessment.setAcademicYearEnd(academicYearEnd);
+                assessment.setAcademicYear(academicYearStart + "-" + academicYearEnd);
+                assessmentRepository.save(assessment);
+                fixedCount++;
+                log.info("Fixed academic year for assessment {}: student {}, subject {}, term {}, type {}",
+                        assessment.getId(), studentId, assessment.getSubject().getName(),
+                        assessment.getTerm(), assessment.getType());
+            }
+        }
+
+        log.info("Fixed academic years for {} assessments for student {}", fixedCount, studentId);
+    }
+
+    @Override
+    @Transactional
+    public void fixAllAcademicYears(Integer academicYearStart, Integer academicYearEnd) {
+        List<Assessment> assessments = assessmentRepository.findAll();
+        int fixedCount = 0;
+
+        for (Assessment assessment : assessments) {
+            if (assessment.getAcademicYearStart() == null || assessment.getAcademicYearEnd() == null) {
+                assessment.setAcademicYearStart(academicYearStart);
+                assessment.setAcademicYearEnd(academicYearEnd);
+                assessment.setAcademicYear(academicYearStart + "-" + academicYearEnd);
+                assessmentRepository.save(assessment);
+                fixedCount++;
+            }
+        }
+
+        log.info("Fixed academic years for {} assessments", fixedCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, List<Assessment>> getAssessmentsByStudentGroupedByTerm(Long studentId) {
+        List<Assessment> assessments = assessmentRepository.findByStudentId(studentId);
+        return assessments.stream()
+                .collect(Collectors.groupingBy(Assessment::getTerm));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, Map<Long, List<Assessment>>> getAssessmentsByStudentGroupedByTermAndSubject(Long studentId) {
+        List<Assessment> assessments = assessmentRepository.findByStudentId(studentId);
+
+        Map<Integer, Map<Long, List<Assessment>>> result = new HashMap<>();
+        for (Assessment assessment : assessments) {
+            result.computeIfAbsent(assessment.getTerm(), k -> new HashMap<>())
+                    .computeIfAbsent(assessment.getSubject().getId(), k -> new ArrayList<>())
+                    .add(assessment);
+        }
+
+        return result;
     }
 }

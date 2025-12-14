@@ -22,4 +22,5 @@ public class TermAssessmentDTO {
     private Double termAverage;
     private String termGrade;
     private Boolean completed;
+    private String academicYear;
 }

@@ -345,19 +345,13 @@ public class StudentService {
         }
     }
 
-    // Set default academic year based on current year
     private void setDefaultAcademicYear(Student student) {
-        int currentYear = LocalDate.now().getYear();
-        int currentMonth = LocalDate.now().getMonthValue();
+        // FIX: Hardcode to 2025-2026
+        student.setAcademicYearStart(2025);
+        student.setAcademicYearEnd(2026);
 
-        // If it's after July, assume next academic year
-        if (currentMonth >= 7) {
-            student.setAcademicYearStart(currentYear);
-            student.setAcademicYearEnd(currentYear + 1);
-        } else {
-            student.setAcademicYearStart(currentYear - 1);
-            student.setAcademicYearEnd(currentYear);
-        }
+        log.debug("Set academic year to {}-{} for student {}",
+                2025, 2026, student.getFullName());
     }
 
     // FIXED: Ensure the return value is used by returning the result

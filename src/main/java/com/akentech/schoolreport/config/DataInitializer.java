@@ -920,20 +920,20 @@ public class DataInitializer implements CommandLineRunner {
                 ));
 
         // S5: Chemistry, Biology, Mathematics with Mechanics
-        createScienceSpecialty(subjects, department, lowerSixth, "S5", "Chemistry, Biology, Mathematics with Mechanics",
+        createScienceSpecialty(subjects, department, lowerSixth, "S5", "Chemistry, Biology, Pure Mathematics with Statistics",
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "L6-SCI-S5-CHEM"),
                         new SubjectSpec("Biology", 5, "L6-SCI-S5-BIO"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "L6-SCI-S5-MATH-MECH"),
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "L6-SCI-S5-MATH-STAT"),
                         new SubjectSpec("Computer Science", 5, "L6-SCI-S5-COMP"),
                         new SubjectSpec("ICT", 5, "L6-SCI-S5-ICT")
                 ));
 
-        createScienceSpecialty(subjects, department, upperSixth, "S5", "Chemistry, Biology, Mathematics with Mechanics",
+        createScienceSpecialty(subjects, department, upperSixth, "S5", "Chemistry, Biology, Pure Mathematics with Statistics",
                 Arrays.asList(
                         new SubjectSpec("Chemistry", 5, "U6-SCI-S5-CHEM"),
                         new SubjectSpec("Biology", 5, "U6-SCI-S5-BIO"),
-                        new SubjectSpec("Mathematics with Mechanics", 5, "U6-SCI-S5-MATH-MECH"),
+                        new SubjectSpec("Pure Mathematics with Statistics", 5, "U6-SCI-S5-MATH-STAT"),
                         new SubjectSpec("Computer Science", 5, "U6-SCI-S5-COMP"),
                         new SubjectSpec("ICT", 5, "U6-SCI-S5-ICT")
                 ));

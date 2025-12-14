@@ -159,17 +159,44 @@ public class GradeServiceImpl implements GradeService {
             return 0.0;
         }
 
+        log.debug("Calculating weighted term average for {} subjects", subjectReports.size());
+
         double totalWeightedScore = 0.0;
         int totalCoefficient = 0;
+        int validSubjects = 0;
 
         for (SubjectReport subject : subjectReports) {
-            if (subject.getSubjectAverage() != null && subject.getCoefficient() != null) {
-                totalWeightedScore += subject.getSubjectAverage() * subject.getCoefficient();
-                totalCoefficient += subject.getCoefficient();
+            Double subjectAverage = subject.getSubjectAverage();
+            Integer coefficient = subject.getCoefficient();
+
+            log.debug("Subject: {} - Average: {}, Coefficient: {}",
+                    subject.getSubjectName(), subjectAverage, coefficient);
+
+            if (subjectAverage != null) {
+                // Use coefficient if available, otherwise default to 1
+                int coeff = coefficient != null ? coefficient : 1;
+                totalWeightedScore += subjectAverage * coeff;
+                totalCoefficient += coeff;
+                validSubjects++;
+
+                log.debug("Added: {} * {} = {} (Total so far: {}, Coeff: {})",
+                        subjectAverage, coeff, subjectAverage * coeff,
+                        totalWeightedScore, totalCoefficient);
+            } else {
+                log.debug("Subject {} has null average, skipping", subject.getSubjectName());
             }
         }
 
-        return totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0.0;
+        if (totalCoefficient == 0) {
+            log.warn("Total coefficient is 0 for {} subjects ({} valid)",
+                    subjectReports.size(), validSubjects);
+            return 0.0;
+        }
+
+        double average = totalWeightedScore / totalCoefficient;
+        log.debug("Final calculation: {} / {} = {}", totalWeightedScore, totalCoefficient, average);
+
+        return average;
     }
 
     @Override

@@ -32,4 +32,6 @@ public interface ClassRoomRepository extends JpaRepository<ClassRoom, Long> {
     // Add this method to fetch all classes with students
     @Query("SELECT DISTINCT c FROM ClassRoom c LEFT JOIN FETCH c.students")
     List<ClassRoom> findAllWithStudents();
+    @Query("SELECT c FROM ClassRoom c WHERE c.academicYear LIKE CONCAT(:startYear, '-%')")
+    List<ClassRoom> findByAcademicYearStartingWith(@Param("startYear") String startYear);
 }

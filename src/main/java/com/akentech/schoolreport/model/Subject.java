@@ -43,6 +43,13 @@ public class Subject {
     @Column(name = "is_optional")
     private Boolean optional = false;
 
+    @PrePersist
+    protected void onCreate() {
+        if (coefficient == null) {
+            coefficient = 1; // Default to 1 if not set
+        }
+    }
+
     // FIXED: Add getter for department name
     @Transient
     public String getDepartmentName() {

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${classRoom.name + ' - Performance Summary'}">Class Performance Summary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-card { transition: all 0.3s ease; }
+        .stats-card:hover { transform: scale(1.02); }
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #E5E7EB;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease-in-out;
+        }
+        .subject-card { transition: all 0.3s ease; }
+        .subject-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header with Navigation -->
+    <div class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors mr-4">
+                        <i class="fas fa-home"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Reports</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <h1 class="text-2xl font-bold text-gray-900" th:text="${classRoom.name + ' Performance Summary'}"></h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-500">Term: <span class="font-semibold" th:text="${term}"></span></span>
+                    <span class="text-sm text-gray-500">Year: <span class="font-semibold" th:text="${academicYear}"></span></span>
+                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        <!-- Overall Statistics -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-pie mr-2"></i>Class Performance Overview
+                </h2>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="stats-card bg-blue-50 p-5 rounded-xl text-center border border-blue-200">
+                        <div class="text-3xl font-bold text-blue-600" th:text="${totalStudents}">0</div>
+                        <div class="text-sm font-semibold text-blue-800 mt-1">Total Students</div>
+                        <div class="text-xs text-blue-600 mt-1">In Class</div>
+                    </div>
+                    <div class="stats-card bg-green-50 p-5 rounded-xl text-center border border-green-200">
+                        <div class="text-3xl font-bold text-green-600" th:text="${#numbers.formatDecimal(classAverage, 1, 2)}">0.0</div>
+                        <div class="text-sm font-semibold text-green-800 mt-1">Class Average</div>
+                        <div class="text-xs text-green-600 mt-1">Out of 20</div>
+                    </div>
+                    <div class="stats-card bg-purple-50 p-5 rounded-xl text-center border border-purple-200">
+                        <div class="text-3xl font-bold text-purple-600" th:text="${passedStudents}">0</div>
+                        <div class="text-sm font-semibold text-purple-800 mt-1">Students Passed</div>
+                        <div class="text-xs text-purple-600 mt-1">
+                            <span th:text="${passedStudents}"></span> of <span th:text="${totalStudents}"></span>
+                        </div>
+                    </div>
+                    <div class="stats-card bg-orange-50 p-5 rounded-xl text-center border border-orange-200">
+                        <div class="text-3xl font-bold text-orange-600" th:text="${#numbers.formatDecimal(passRate, 1, 2) + '%'}">0%</div>
+                        <div class="text-sm font-semibold text-orange-800 mt-1">Pass Rate</div>
+                        <div class="text-xs text-orange-600 mt-1">Percentage of Students</div>
+                    </div>
+                </div>
+
+                <!-- Pass Rate Visualization -->
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Pass Rate Distribution</h3>
+                        <span class="text-sm text-gray-500">
+                            <span th:text="${passedStudents}"></span> Passed /
+                            <span th:text="${totalStudents - passedStudents}"></span> Failed
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-4">
+                        <div class="bg-green-600 h-4 rounded-full" th:style="'width: ' + ${passRate} + '%;'"></div>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600 mt-2">
+                        <span>0%</span>
+                        <span th:text="${#numbers.formatDecimal(passRate, 1, 2) + '%'}"></span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Distribution -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Performers -->
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+                <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-crown mr-2"></i>Top 5 Performers
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div th:each="student, stat : ${topStudents}" th:if="${stat.index < 5}">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div th:class="${'w-10 h-10 rounded-full flex items-center justify-center font-bold ' +
+                                            (stat.index == 0 ? 'bg-yellow-100 text-yellow-800' :
+                                             stat.index == 1 ? 'bg-gray-100 text-gray-800' :
+                                             stat.index == 2 ? 'bg-orange-100 text-orange-800' :
+                                             'bg-blue-100 text-blue-800')}">
+                                        <span th:text="${stat.index + 1}"></span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900" th:text="${student.studentFullName}"></h4>
+                                        <p class="text-sm text-gray-600" th:text="${student.rollNumber}"></p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-lg" th:class="${student.termAverage >= 15 ? 'text-green-600' :
+                                                                           student.termAverage >= 10 ? 'text-blue-600' :
+                                                                           'text-orange-600'}"
+                                         th:text="${student.formattedAverage}"></div>
+                                    <div class="text-xs text-gray-500" th:text="${student.remarks}"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${topStudents.isEmpty()}" class="text-center py-8">
+                            <i class="fas fa-chart-line text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-600">No performance data available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Performers -->
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+                <div class="bg-gradient-to-r from-red-600 to-pink-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Need Improvement (Bottom 5)
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div th:each="student : ${bottomStudents}" th:if="${student.termAverage < 10}">
+                            <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-red-100 text-red-800 font-bold">
+                                        <i class="fas fa-exclamation"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900" th:text="${student.studentFullName}"></h4>
+                                        <p class="text-sm text-gray-600" th:text="${student.rollNumber}"></p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-lg text-red-600" th:text="${student.formattedAverage}"></div>
+                                    <div class="text-xs text-red-600" th:text="${student.remarks}"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${bottomStudents.?[termAverage < 10].isEmpty()}" class="text-center py-8">
+                            <i class="fas fa-check-circle text-4xl text-green-300 mb-3"></i>
+                            <p class="text-green-600 font-semibold">Excellent! No students below 10/20</p>
+                            <p class="text-gray-600 text-sm mt-1">All students are performing well</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Performance -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-book-open mr-2"></i>Subject-wise Performance
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div th:each="entry : ${subjectAverages}" class="subject-card bg-gray-50 p-5 rounded-xl border border-gray-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-semibold text-gray-900 text-sm" th:text="${entry.key}"></h4>
+                            <span th:class="${'text-xs font-bold px-2 py-1 rounded ' +
+                                           (entry.value >= 15 ? 'bg-green-100 text-green-800' :
+                                            entry.value >= 10 ? 'bg-blue-100 text-blue-800' :
+                                            entry.value >= 5 ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-red-100 text-red-800')}"
+                                  th:text="${#numbers.formatDecimal(entry.value, 1, 2)} + '/20'">
+                            </span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" th:class="${entry.value >= 15 ? 'bg-green-500' :
+                                                                  entry.value >= 10 ? 'bg-blue-500' :
+                                                                  entry.value >= 5 ? 'bg-yellow-500' :
+                                                                  'bg-red-500'}"
+                                 th:style="'width: ' + ${entry.value * 5} + '%;'"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>0</span>
+                            <span th:text="${entry.value >= 10 ? 'PASSING' : 'NEEDS WORK'}"></span>
+                            <span>20</span>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${subjectAverages.isEmpty()}" class="text-center py-8">
+                    <i class="fas fa-book text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-600">No subject data available</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-bar mr-2"></i>Performance Distribution Chart
+                </h2>
+            </div>
+            <div class="p-6">
+                <canvas id="performanceChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-lightbulb mr-2"></i>Recommendations & Action Plan
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-green-50 p-5 rounded-xl border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-3 flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i>Strengths
+                        </h4>
+                        <ul class="space-y-2 text-green-700 text-sm">
+                            <li class="flex items-start" th:if="${passRate >= 70}">
+                                <i class="fas fa-star mt-1 mr-2"></i>
+                                <span>High pass rate indicates effective teaching</span>
+                            </li>
+                            <li class="flex items-start" th:if="${classAverage >= 12}">
+                                <i class="fas fa-star mt-1 mr-2"></i>
+                                <span>Good class average shows overall competence</span>
+                            </li>
+                            <li class="flex items-start" th:if="${bottomStudents.?[termAverage < 10].isEmpty()}">
+                                <i class="fas fa-star mt-1 mr-2"></i>
+                                <span>All students are performing adequately</span>
+                            </li>
+                            <li class="flex items-start" th:if="${passRate < 70 and classAverage < 12}">
+                                <i class="fas fa-info-circle mt-1 mr-2"></i>
+                                <span>Room for improvement across the board</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-yellow-50 p-5 rounded-xl border border-yellow-200">
+                        <h4 class="font-semibold text-yellow-800 mb-3 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Areas for Improvement
+                        </h4>
+                        <ul class="space-y-2 text-yellow-700 text-sm">
+                            <li class="flex items-start" th:if="${passRate < 60}">
+                                <i class="fas fa-exclamation mt-1 mr-2"></i>
+                                <span>Low pass rate requires immediate attention</span>
+                            </li>
+                            <li class="flex items-start" th:if="${classAverage < 10}">
+                                <i class="fas fa-exclamation mt-1 mr-2"></i>
+                                <span>Class average below passing threshold</span>
+                            </li>
+                            <li class="flex items-start" th:if="${!bottomStudents.isEmpty()}">
+                                <i class="fas fa-exclamation mt-1 mr-2"></i>
+                                <span th:text="${bottomStudents.size()} + ' students need extra support'"></span>
+                            </li>
+                            <li class="flex items-start" th:if="${subjectAverages.?[value < 10].size() > 0}">
+                                <i class="fas fa-exclamation mt-1 mr-2"></i>
+                                <span th:text="${subjectAverages.?[value < 10].size()} + ' subjects need improvement'"></span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-50 p-5 rounded-xl border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                            <i class="fas fa-clipboard-check mr-2"></i>Action Items
+                        </h4>
+                        <ul class="space-y-2 text-blue-700 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check mt-1 mr-2"></i>
+                                <span>Schedule parent-teacher meetings</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check mt-1 mr-2"></i>
+                                <span>Organize remedial classes</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check mt-1 mr-2"></i>
+                                <span>Review teaching methodologies</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check mt-1 mr-2"></i>
+                                <span>Monitor progress weekly</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+            <div class="text-sm text-gray-500">
+                Report Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span> |
+                Class: <span th:text="${classRoom.name}"></span> |
+                Students: <span th:text="${totalStudents}"></span>
+            </div>
+            <div class="flex space-x-3">
+                <a th:href="@{/reports/select}"
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Reports</span>
+                </a>
+                <button onclick="window.print()"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-print"></i>
+                    <span>Print Summary</span>
+                </button>
+                <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term} + '&academicYear=' + ${academicYear}}"
+                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-list"></i>
+                    <span>View Detailed Reports</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize performance chart
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+
+        // Calculate distribution
+        const reports = [[${reports}]];
+        let excellent = 0, good = 0, average = 0, poor = 0, fail = 0;
+
+        // You would need to pass these values from controller
+        // For now, using placeholders
+        excellent = [[${reports != null ? reports.?[termAverage >= 18].size() : 0}]];
+        good = [[${reports != null ? reports.?[termAverage >= 15 and termAverage < 18].size() : 0}]];
+        average = [[${reports != null ? reports.?[termAverage >= 10 and termAverage < 15].size() : 0}]];
+        poor = [[${reports != null ? reports.?[termAverage >= 5 and termAverage < 10].size() : 0}]];
+        fail = [[${reports != null ? reports.?[termAverage < 5].size() : 0}]];
+
+        const performanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Excellent (≥18)', 'Good (15-17.9)', 'Average (10-14.9)', 'Poor (5-9.9)', 'Fail (<5)'],
+                datasets: [{
+                    label: 'Number of Students',
+                    data: [excellent, good, average, poor, fail],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.7)',
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(249, 115, 22, 0.7)',
+                        'rgba(239, 68, 68, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(34, 197, 94)',
+                        'rgb(59, 130, 246)',
+                        'rgb(245, 158, 11)',
+                        'rgb(249, 115, 22)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Student Performance Distribution'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Students'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        // Animate progress bars
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const currentWidth = bar.style.width;
+            bar.style.width = '0';
+            setTimeout(() => {
+                bar.style.width = currentWidth;
+            }, 300);
+        });
+
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+    });
+</script>
+</body>
+</html>

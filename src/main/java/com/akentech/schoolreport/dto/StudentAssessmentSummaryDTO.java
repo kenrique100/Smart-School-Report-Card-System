@@ -29,4 +29,5 @@ public class StudentAssessmentSummaryDTO {
     private Boolean term1Completed;
     private Boolean term2Completed;
     private Boolean term3Completed;
+    private String academicYear;
 }

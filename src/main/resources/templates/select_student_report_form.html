@@ -6,14 +6,31 @@
     <title>Select Student Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body class="bg-gray-50">
 <div class="min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl">
+    <div class="bg-white shadow-2xl rounded-2xl w-full max-w-2xl fade-in">
         <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-8 py-6 rounded-t-2xl">
-            <h1 class="text-2xl font-bold text-white flex items-center">
-                <i class="fas fa-file-alt mr-3"></i>Generate Student Report
-            </h1>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/}" class="text-white hover:text-gray-200 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-home"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <a th:href="@{/reports/select}" class="text-white hover:text-gray-200 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Reports</span>
+                    </a>
+                </div>
+                <h1 class="text-2xl font-bold text-white flex items-center">
+                    <i class="fas fa-file-alt mr-3"></i>Generate Student Report
+                </h1>
+            </div>
             <p class="text-blue-100 mt-2">Select class and term to generate individual student reports</p>
         </div>
 
@@ -24,7 +41,7 @@
                         <i class="fas fa-users mr-2"></i>Select Class
                     </label>
                     <select name="classId" required
-                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         <option value="">Choose Class</option>
                         <option th:each="c : ${classes}"
                                 th:value="${c.id}"
@@ -37,26 +54,102 @@
                         <i class="fas fa-calendar-alt mr-2"></i>Select Term
                     </label>
                     <select name="term" required
-                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        <option value="">Choose Term</option>
                         <option value="1">Term 1</option>
                         <option value="2">Term 2</option>
                         <option value="3">Term 3</option>
                     </select>
                 </div>
 
-                <div class="flex space-x-4 pt-4">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                    <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>Report Information
+                    </h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                            <span>Term 1: Assessment 1 & 2</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                            <span>Term 2: Assessment 3 & 4</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                            <span>Term 3: Final Examination</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex space-x-4 pt-6">
                     <a th:href="@{/reports/select}"
-                       class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-center font-medium">
+                       class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-center font-medium transition-all hover:border-gray-400">
                         <i class="fas fa-arrow-left mr-2"></i>Back to Reports
                     </a>
                     <button type="submit"
-                            class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-medium">
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-medium transition-all shadow-lg hover:shadow-xl">
                         <i class="fas fa-arrow-right mr-2"></i>Next: Select Student
                     </button>
                 </div>
             </form>
         </div>
+
+        <div class="px-8 pb-8">
+            <div class="border-t border-gray-200 pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-question-circle mr-2 text-gray-500"></i>Need Help?
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <h4 class="font-medium text-gray-700 mb-1">For Individual Reports</h4>
+                        <p class="text-gray-600">Select a class and term, then choose a specific student to view their detailed performance report.</p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <h4 class="font-medium text-gray-700 mb-1">For Yearly Reports</h4>
+                        <p class="text-gray-600">Use the "Yearly Report by Student ID" option on the main reports page for comprehensive yearly analysis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add form validation
+        const form = document.querySelector('form');
+        const classSelect = form.querySelector('select[name="classId"]');
+        const termSelect = form.querySelector('select[name="term"]');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', function(e) {
+            if (!classSelect.value || !termSelect.value) {
+                e.preventDefault();
+                alert('Please select both class and term to continue.');
+                return;
+            }
+
+            // Show loading state
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            submitButton.disabled = true;
+
+            // Reset button after 3 seconds in case of error
+            setTimeout(() => {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }, 3000);
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape key to go back
+            if (e.key === 'Escape') {
+                window.location.href = '/reports/select';
+            }
+        });
+    });
+</script>
 </body>
 </html>

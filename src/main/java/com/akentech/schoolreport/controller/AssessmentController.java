@@ -153,6 +153,15 @@ public class AssessmentController {
                             RedirectAttributes redirectAttributes) {
         try {
             Student student = studentService.getStudentByIdOrThrow(studentId);
+
+            // Get student's academic year
+            Integer academicYearStart = student.getAcademicYearStart();
+            Integer academicYearEnd = student.getAcademicYearEnd();
+
+            if (academicYearStart == null || academicYearEnd == null) {
+                throw new IllegalArgumentException("Student's academic year is not set. Student: " + studentId);
+            }
+
             List<Assessment> assessments = new ArrayList<>();
 
             // Validate assessment type before proceeding
@@ -196,13 +205,16 @@ public class AssessmentController {
                                 assessment = existingAssessment.get();
                                 assessment.setScore(score);
                             } else {
-                                // Create new assessment
+                                // Create new assessment WITH ACADEMIC YEAR
                                 assessment = Assessment.builder()
                                         .student(student)
                                         .subject(subject)
                                         .term(term)
                                         .type(assessmentType)
                                         .score(score)
+                                        .academicYearStart(academicYearStart)
+                                        .academicYearEnd(academicYearEnd)
+                                        .academicYear(academicYearStart + "-" + academicYearEnd)
                                         .build();
                             }
                             assessments.add(assessment);

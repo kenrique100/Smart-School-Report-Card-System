@@ -10,6 +10,7 @@
         .fade-in { animation: fadeIn 0.6s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .year-picker { max-width: 300px; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -20,15 +21,63 @@
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center space-x-4">
                     <a th:href="@{/}" class="text-white hover:text-gray-200 flex items-center space-x-2 transition-colors">
-                        <i class="fas fa-arrow-left"></i>
-                        <span class="font-medium">Back to Home</span>
+                        <i class="fas fa-home"></i>
+                        <span class="font-medium">Dashboard</span>
                     </a>
                     <div class="h-6 w-px bg-white/30"></div>
                     <h1 class="text-2xl font-bold text-white">School Report System</h1>
                 </div>
-                <div class="text-white text-sm">
-                    <i class="fas fa-calendar-alt mr-1"></i>
-                    <span>Academic Year: 2024-2025</span>
+                <div class="text-white text-sm flex items-center space-x-4">
+                    <!-- Year Picker -->
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="relative">
+                            <button id="yearPickerBtn"
+                                    class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg flex items-center space-x-2 transition-colors">
+                                <span id="selectedYear" th:text="${currentAcademicYear}">2025-2026</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="yearDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200">
+                                <div class="p-2">
+                                    <h4 class="font-semibold text-gray-800 text-sm mb-2 px-2">Select Academic Year</h4>
+                                    <div class="space-y-1 max-h-60 overflow-y-auto">
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option"
+                                                data-year="2025-2026">
+                                            2025-2026
+                                        </button>
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option"
+                                                data-year="2026-2027">
+                                            2026-2027
+                                        </button>
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option"
+                                                data-year="2027-2028">
+                                            2027-2028
+                                        </button>
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option"
+                                                data-year="2028-2029">
+                                            2028-2029
+                                        </button>
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option"
+                                                data-year="2029-2030">
+                                            2029-2030
+                                        </button>
+                                    </div>
+                                    <div class="border-t border-gray-200 mt-2 pt-2">
+                                        <button type="button"
+                                                onclick="showCustomYearPicker()"
+                                                class="w-full text-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                            <i class="fas fa-plus mr-1"></i>Custom Year
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -63,9 +112,9 @@
                         <p class="text-sm text-gray-600 text-center">Select a student from any class to generate term or yearly report</p>
                     </div>
 
-                    <!-- Yearly Report Form -->
+                    <!-- Yearly Report by Student ID -->
                     <div class="pt-6 border-t border-gray-200">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report by ID</h4>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report by Student ID</h4>
                         <form th:action="@{/reports/student/yearly/report}" method="get" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
@@ -73,10 +122,88 @@
                                        placeholder="Enter Student ID"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
-                            <button type="submit"
-                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                <i class="fas fa-calendar-alt mr-2"></i>Generate Yearly Report
-                            </button>
+                            <!-- Year Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                                <div class="relative">
+                                    <select name="academicYear" required
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="" disabled selected>Select Academic Year</option>
+                                        <option value="2024-2025">2025-2026</option>
+                                        <option value="2023-2024">2026-2027</option>
+                                        <option value="2022-2023">2027-2028</option>
+                                        <option value="2021-2022">2028-2029</option>
+                                        <option value="2021-2022">2029-2030</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="submit" name="action" value="view"
+                                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Report
+                                </button>
+                                <button type="submit" name="action" value="download"
+                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                                </button>
+                            </div>
+                            <div class="pt-6 border-t border-gray-200">
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report Selection</h4>
+                                <div class="text-center mb-4">
+                                    <a th:href="@{/reports/student/yearly/select}"
+                                       class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                                        <i class="fas fa-calendar-alt mr-2"></i>Select Student for Yearly Report
+                                    </a>
+                                </div>
+                                <p class="text-sm text-gray-600 text-center">Select a student from any class to generate yearly report</p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Term Report by Student ID -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Term Report by Student ID</h4>
+                        <form th:action="@{/reports/student/term/report}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                                <input type="number" name="studentId" required
+                                       placeholder="Enter Student ID"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
+                                    <select name="term" required
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select Term</option>
+                                        <option value="1">Term 1</option>
+                                        <option value="2">Term 2</option>
+                                        <option value="3">Term 3</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                                    <select name="academicYear" required
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="" disabled selected>Select Year</option>
+                                        <option value="2024-2025">2025-2026</option>
+                                        <option value="2023-2024">2026-2027</option>
+                                        <option value="2022-2023">2027-2028</option>
+                                        <option value="2021-2022">2028-2029</option>
+                                        <option value="2021-2022">2029-2030</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="submit" name="action" value="view"
+                                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Report
+                                </button>
+                                <button type="submit" name="action" value="download"
+                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -102,23 +229,44 @@
                                     <option value="">Choose Class</option>
                                     <option th:each="c : ${classes}"
                                             th:value="${c.id}"
-                                            th:text="${c.name} + ' (' + c.academicYear + ')'">
+                                            th:text="${c.name}">
                                     </option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
-                                <select name="term"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                    <option value="1">Term 1</option>
-                                    <option value="2">Term 2</option>
-                                    <option value="3">Term 3</option>
-                                </select>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
+                                    <select name="term"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                        <option value="">Select Term</option>
+                                        <option value="1">Term 1</option>
+                                        <option value="2">Term 2</option>
+                                        <option value="3">Term 3</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                                    <select name="academicYear"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                        <option value="" disabled selected>Select Year</option>
+                                        <option value="2024-2025">2025-2026</option>
+                                        <option value="2023-2024">2026-2027</option>
+                                        <option value="2022-2023">2027-2028</option>
+                                        <option value="2021-2022">2028-2029</option>
+                                        <option value="2021-2022">2029-2030</option>
+                                    </select>
+                                </div>
                             </div>
-                            <button type="submit"
-                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                <i class="fas fa-file-alt mr-2"></i>Generate Class Report
-                            </button>
+                            <div class="flex space-x-3">
+                                <button type="submit" name="action" value="view"
+                                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Report
+                                </button>
+                                <button type="submit" name="action" value="download"
+                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                                </button>
+                            </div>
                         </form>
                     </div>
 
@@ -133,13 +281,86 @@
                                     <option value="">Choose Class</option>
                                     <option th:each="c : ${classes}"
                                             th:value="${c.id}"
-                                            th:text="${c.name} + ' (' + c.academicYear + ')'">
+                                            th:text="${c.name}">
                                     </option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                                <select name="academicYear"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Select Year</option>
+                                    <option value="2024-2025">2025-2026</option>
+                                    <option value="2023-2024">2026-2027</option>
+                                    <option value="2022-2023">2027-2028</option>
+                                    <option value="2021-2022">2028-2029</option>
+                                    <option value="2021-2022">2029-2030</option>
+                                </select>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="submit" name="action" value="view"
+                                        class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                                    <i class="fas fa-eye mr-2"></i>View Report
+                                </button>
+                                <button type="submit" name="action" value="download"
+                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Batch PDF Generation -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Batch PDF Generation</h4>
+                        <form th:action="@{/reports/batch/pdf}" method="get" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                                <select name="classId" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Choose Class</option>
+                                    <option th:each="c : ${classes}"
+                                            th:value="${c.id}"
+                                            th:text="${c.name}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                                    <select name="reportType" required
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                        <option value="">Select Type</option>
+                                        <option value="term">Term Report</option>
+                                        <option value="yearly">Yearly Report</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Term (if applicable)</label>
+                                    <select name="term"
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                        <option value="">Select Term</option>
+                                        <option value="1">Term 1</option>
+                                        <option value="2">Term 2</option>
+                                        <option value="3">Term 3</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                                <select name="academicYear" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="" disabled selected>Select Year</option>
+                                    <option value="2024-2025">2025-2026</option>
+                                    <option value="2023-2024">2026-2027</option>
+                                    <option value="2022-2023">2027-2028</option>
+                                    <option value="2021-2022">2028-2029</option>
+                                    <option value="2021-2022">2029-2030</option>
+                                </select>
+                            </div>
                             <button type="submit"
-                                    class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
-                                <i class="fas fa-calendar-alt mr-2"></i>Generate Yearly Class Report
+                                    class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium">
+                                <i class="fas fa-download mr-2"></i>Generate All PDFs (ZIP)
                             </button>
                         </form>
                     </div>
@@ -148,7 +369,7 @@
         </div>
 
         <!-- Statistics Section -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center justify-between">
                     <div>
@@ -163,8 +384,8 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-500">Academic Year</p>
-                        <p class="text-2xl font-bold text-gray-900">2024-2025</p>
+                        <p class="text-sm text-gray-500">Current Year</p>
+                        <p class="text-2xl font-bold text-gray-900" id="currentYearDisplay" th:text="${currentAcademicYear}">2024-2025</p>
                     </div>
                     <div class="p-3 bg-green-100 rounded-lg">
                         <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
@@ -174,12 +395,83 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center justify-between">
                     <div>
+                        <p class="text-sm text-gray-500">Available Years</p>
+                        <p class="text-2xl font-bold text-gray-900">4</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-history text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
                         <p class="text-sm text-gray-500">Available Terms</p>
                         <p class="text-2xl font-bold text-gray-900">3</p>
                     </div>
-                    <div class="p-3 bg-purple-100 rounded-lg">
-                        <i class="fas fa-file-alt text-purple-600 text-xl"></i>
+                    <div class="p-3 bg-orange-100 rounded-lg">
+                        <i class="fas fa-file-alt text-orange-600 text-xl"></i>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links Section -->
+        <div class="mt-8 bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-bolt mr-2"></i>Quick Links
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <a th:href="@{/students}" class="group">
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 hover:border-blue-400 hover:bg-blue-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-blue-800 group-hover:text-blue-900">Student Management</h4>
+                                    <p class="text-sm text-blue-600 mt-1">View and manage students</p>
+                                </div>
+                                <i class="fas fa-users text-blue-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a th:href="@{/assessments}" class="group">
+                        <div class="bg-green-50 p-6 rounded-xl border border-green-200 hover:border-green-400 hover:bg-green-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-green-800 group-hover:text-green-900">Assessment Entry</h4>
+                                    <p class="text-sm text-green-600 mt-1">Enter student assessments</p>
+                                </div>
+                                <i class="fas fa-chart-bar text-green-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="#" onclick="downloadYearlySummary()" class="group">
+                        <div class="bg-purple-50 p-6 rounded-xl border border-purple-200 hover:border-purple-400 hover:bg-purple-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-purple-800 group-hover:text-purple-900">Year Summary</h4>
+                                    <p class="text-sm text-purple-600 mt-1">Download yearly summary</p>
+                                </div>
+                                <i class="fas fa-download text-purple-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a th:href="@{/}" class="group">
+                        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:border-gray-400 hover:bg-gray-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800 group-hover:text-gray-900">Dashboard</h4>
+                                    <p class="text-sm text-gray-600 mt-1">Return to main dashboard</p>
+                                </div>
+                                <i class="fas fa-tachometer-alt text-gray-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -201,6 +493,14 @@
                             <i class="fas fa-check-circle mt-1 mr-2"></i>
                             <span>Yearly Report: Comprehensive yearly performance analysis</span>
                         </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>PDF Export: Download printable PDF versions</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Year Selection: Choose from multiple academic years</span>
+                        </li>
                     </ul>
                 </div>
                 <div>
@@ -214,6 +514,14 @@
                             <i class="fas fa-check-circle mt-1 mr-2"></i>
                             <span>Yearly Class Report: Yearly analysis with statistics</span>
                         </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Batch PDF Generation: Download all reports as ZIP</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle mt-1 mr-2"></i>
+                            <span>Year Filter: View reports from different academic years</span>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -221,26 +529,226 @@
     </div>
 </div>
 
+<!-- Custom Year Picker Modal -->
+<div id="customYearModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md">
+            <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 rounded-t-2xl">
+                <h3 class="text-xl font-bold text-white">Custom Academic Year</h3>
+            </div>
+            <div class="p-6">
+                <form id="customYearForm" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Year</label>
+                            <input type="number" id="startYear" min="2000" max="2100"
+                                   value="2024"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Year</label>
+                            <input type="number" id="endYear" min="2001" max="2101"
+                                   value="2025"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" onclick="hideCustomYearPicker()"
+                                class="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-center font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 font-medium">
+                            Set Year
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add some interactivity
+        // Year picker functionality
+        const yearPickerBtn = document.getElementById('yearPickerBtn');
+        const yearDropdown = document.getElementById('yearDropdown');
+        const selectedYear = document.getElementById('selectedYear');
+        const yearOptions = document.querySelectorAll('.year-option');
+        const currentYearDisplay = document.getElementById('currentYearDisplay');
+
+        // Toggle year dropdown
+        yearPickerBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            yearDropdown.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+            yearDropdown.classList.add('hidden');
+        });
+
+        // Handle year selection
+        yearOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const year = this.getAttribute('data-year');
+                selectedYear.textContent = year;
+                currentYearDisplay.textContent = year;
+                yearDropdown.classList.add('hidden');
+
+                // Update all form selects with this year
+                updateAllYearSelects(year);
+            });
+        });
+
+        // Add fade-in animation to all cards
+        const cards = document.querySelectorAll('.fade-in');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Form submission handling
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             form.addEventListener('submit', function(e) {
-                const button = this.querySelector('button[type="submit"]');
-                if (button) {
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
-                    button.disabled = true;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                    submitBtn.disabled = true;
 
-                    // Reset button after 3 seconds in case of error
+                    // Reset button after 5 seconds in case of error
                     setTimeout(() => {
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    }, 3000);
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }, 5000);
                 }
             });
         });
+
+        // Custom year form
+        const customYearForm = document.getElementById('customYearForm');
+        customYearForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+
+            if (parseInt(endYear) <= parseInt(startYear)) {
+                alert('End year must be greater than start year');
+                return;
+            }
+
+            const customYear = `${startYear}-${endYear}`;
+            selectedYear.textContent = customYear;
+            currentYearDisplay.textContent = customYear;
+            hideCustomYearPicker();
+
+            // Add custom year to dropdown
+            addCustomYearToDropdown(customYear);
+            updateAllYearSelects(customYear);
+        });
+    });
+
+    function showCustomYearPicker() {
+        document.getElementById('customYearModal').classList.remove('hidden');
+    }
+
+    function hideCustomYearPicker() {
+        document.getElementById('customYearModal').classList.add('hidden');
+    }
+
+    function addCustomYearToDropdown(year) {
+        const yearOptionsContainer = document.querySelector('#yearDropdown .space-y-1');
+
+        // Check if year already exists
+        const existing = Array.from(document.querySelectorAll('.year-option'))
+            .some(opt => opt.getAttribute('data-year') === year);
+
+        if (!existing) {
+            const newOption = document.createElement('button');
+            newOption.type = 'button';
+            newOption.className = 'w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 hover:text-blue-700 transition-colors year-option';
+            newOption.setAttribute('data-year', year);
+            newOption.textContent = year;
+
+            // Add click handler
+            newOption.addEventListener('click', function() {
+                const selectedYear = document.getElementById('selectedYear');
+                const currentYearDisplay = document.getElementById('currentYearDisplay');
+                selectedYear.textContent = year;
+                currentYearDisplay.textContent = year;
+                document.getElementById('yearDropdown').classList.add('hidden');
+                updateAllYearSelects(year);
+            });
+
+            yearOptionsContainer.insertBefore(newOption, yearOptionsContainer.firstChild);
+        }
+    }
+
+    function updateAllYearSelects(year) {
+        // Update all year select inputs
+        document.querySelectorAll('select[name="academicYear"]').forEach(select => {
+            // Check if option exists
+            let exists = false;
+            Array.from(select.options).forEach(option => {
+                if (option.value === year) {
+                    exists = true;
+                }
+            });
+
+            // Add if doesn't exist
+            if (!exists) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            }
+
+            // Set as selected
+            select.value = year;
+        });
+    }
+
+    function downloadYearlySummary() {
+        const year = document.getElementById('selectedYear').textContent;
+        const url = `/reports/summary/yearly?academicYear=${encodeURIComponent(year)}`;
+
+        // Show loading
+        const button = event.target.closest('a');
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Yearly_Summary_${year}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reset button
+        setTimeout(() => {
+            button.innerHTML = originalHtml;
+        }, 3000);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Y for year picker
+        if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            document.getElementById('yearPickerBtn').click();
+        }
+        // Ctrl+F for find
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            document.querySelector('input[type="number"]')?.focus();
+        }
+        // Escape to close modals
+        if (e.key === 'Escape') {
+            hideCustomYearPicker();
+            document.getElementById('yearDropdown').classList.add('hidden');
+        }
     });
 </script>
 </body>

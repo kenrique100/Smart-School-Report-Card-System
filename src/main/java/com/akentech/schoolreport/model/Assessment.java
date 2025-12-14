@@ -45,6 +45,17 @@ public class Assessment {
     @Column(name = "created_date", updatable = false)
     private LocalDateTime createdDate;
 
+    // In Assessment.java, add these fields:
+    @Column(name = "academic_year_start")
+    private Integer academicYearStart;
+
+    @Column(name = "academic_year_end")
+    private Integer academicYearEnd;
+
+    // Or use a single string field:
+    @Column(name = "academic_year")
+    private String academicYear;
+
     // Helper method to get assessment number
     public Integer getAssessmentNumber() {
         return type.getAssessmentNumber();
