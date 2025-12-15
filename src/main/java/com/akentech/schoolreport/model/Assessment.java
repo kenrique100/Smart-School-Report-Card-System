@@ -1,6 +1,7 @@
 package com.akentech.schoolreport.model;
 
 import com.akentech.schoolreport.model.enums.AssessmentType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -33,11 +34,12 @@ public class Assessment {
     @Column(nullable = false)
     private Double score; // Score out of 20
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
+    @JsonBackReference("student-assessments")
     private Student student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
@@ -45,7 +47,6 @@ public class Assessment {
     @Column(name = "created_date", updatable = false)
     private LocalDateTime createdDate;
 
-    // In Assessment.java, add these fields:
     @Column(name = "academic_year_start")
     private Integer academicYearStart;
 
@@ -58,7 +59,7 @@ public class Assessment {
 
     // Helper method to get assessment number
     public Integer getAssessmentNumber() {
-        return type.getAssessmentNumber();
+        return type != null ? type.getAssessmentNumber() : null;
     }
 
     @PrePersist

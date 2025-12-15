@@ -87,6 +87,12 @@ public class Student {
     @JsonManagedReference("student-subjects")
     private List<StudentSubject> studentSubjects = new ArrayList<>();
 
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @ToString.Exclude
+    @JsonManagedReference("student-assessments")
+    private List<Assessment> assessments = new ArrayList<>();
+
     @PrePersist
     @PreUpdate
     public void sanitizeFields() {
@@ -120,14 +126,6 @@ public class Student {
             return "";
         }
         return this.dateOfBirth.toString();
-    }
-
-    @Transient
-    public Integer getAge() {
-        if (this.dateOfBirth == null) {
-            return null;
-        }
-        return java.time.Period.between(this.dateOfBirth, LocalDate.now()).getYears();
     }
 
     @Transient
@@ -301,6 +299,13 @@ public class Student {
         return "Not Set";
     }
 
+    @Transient
+    public Integer getAge() {
+        if (this.dateOfBirth == null) {
+            return null;
+        }
+        return java.time.Period.between(this.dateOfBirth, LocalDate.now()).getYears();
+    }
 
     @Transient
     public String getDisplayEmail() {
@@ -334,5 +339,4 @@ public class Student {
             this.email = email;
         }
     }
-
 }

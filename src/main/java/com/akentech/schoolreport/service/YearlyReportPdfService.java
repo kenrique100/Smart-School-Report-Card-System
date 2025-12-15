@@ -108,7 +108,7 @@ public class YearlyReportPdfService extends BasePdfService {
         badgeCell.setCellEvent(new RoundedBorderCellEvent(8, new Color(200, 200, 200), 0.5f));
 
         Paragraph academicInfo = new Paragraph(
-                String.format("Academic Year: %s | YEARLY REPORT", report.getAcademicYear()),
+                "Academic Year: 2025-2026 | YEARLY REPORT",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, INFO_COLOR));
         academicInfo.setAlignment(Element.ALIGN_CENTER);
         badgeCell.addElement(academicInfo);
@@ -169,7 +169,7 @@ public class YearlyReportPdfService extends BasePdfService {
         infoCell.setCellEvent(new RoundedBorderCellEvent(8, PRIMARY_COLOR, 1f));
 
         Paragraph academicInfo = new Paragraph(
-                String.format("ACADEMIC YEAR: %s | YEARLY REPORT", report.getAcademicYear()),
+                "ACADEMIC YEAR: 2025-2026 | YEARLY REPORT",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, INFO_COLOR));
         academicInfo.setAlignment(Element.ALIGN_CENTER);
         infoCell.addElement(academicInfo);
@@ -472,11 +472,19 @@ public class YearlyReportPdfService extends BasePdfService {
         vpSignature.setSpacingBefore(3);
         vpCell.addElement(vpSignature);
 
+        // Title
         Paragraph vpTitle = new Paragraph("VICE PRINCIPAL",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, PRIMARY_COLOR));
         vpTitle.setAlignment(Element.ALIGN_RIGHT);
         vpTitle.setSpacingBefore(3);
         vpCell.addElement(vpTitle);
+
+        Paragraph vpName = new Paragraph("Kohsu Rodolphe Rinwi",
+                FontFactory.getFont(FontFactory.HELVETICA, 9, PRIMARY_COLOR));
+        vpName.setAlignment(Element.ALIGN_RIGHT);
+        vpName.setSpacingBefore(2);
+        vpCell.addElement(vpName);
+
 
         Paragraph stamp = new Paragraph("\nOFFICIAL STAMP",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, SECONDARY_COLOR));

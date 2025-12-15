@@ -86,7 +86,8 @@
                     <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
                         <i class="fas fa-print mr-1"></i>Print
                     </button>
-                    <button onclick="downloadClassTermPdf()" class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
+                    <button onclick="downloadClassTermPdf()"
+                            class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
                         <i class="fas fa-file-pdf mr-1"></i>PDF
                     </button>
                 </div>
@@ -609,6 +610,34 @@
             window.history.back();
         }
     });
+
+    function downloadClassTermPdf() {
+        const classId = [[${classRoom.id}]];
+        const term = [[${term}]];
+        const academicYear = [[${academicYear}]] || '2025-2026'; // Default to 2025-2026
+
+        const url = `/reports/pdf/class?classId=${classId}&term=${term}&academicYear=${encodeURIComponent(academicYear)}`;
+
+        // Show loading
+        const button = event.target;
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Generating...';
+        button.disabled = true;
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Class_Term_${term}_Report_${classId}_${academicYear}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reset button
+        setTimeout(() => {
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        }, 2000);
+    }
 </script>
 </body>
 </html>

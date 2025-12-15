@@ -1,10 +1,8 @@
 package com.akentech.schoolreport.controller;
 
 import com.akentech.schoolreport.dto.*;
-import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.ClassRoom;
 import com.akentech.schoolreport.model.Student;
-import com.akentech.schoolreport.model.StudentSubject;
 import com.akentech.schoolreport.repository.AssessmentRepository;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
@@ -32,7 +30,6 @@ import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Year;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,11 +56,7 @@ public class ReportController {
     public String selectView(Model model) {
         List<ClassRoom> classes = classRoomRepository.findAll();
         model.addAttribute("classes", classes);
-
-        // FIX: Hardcode to 2025-2026 instead of current year
-        String currentYear = "2025-2026";
-        model.addAttribute("currentAcademicYear", currentYear);
-
+        model.addAttribute("currentAcademicYear", "2025-2026");
         return "select_report";
     }
 
@@ -86,6 +79,8 @@ public class ReportController {
         redirectAttributes.addAttribute("term", term);
         if (academicYear != null && !academicYear.isEmpty()) {
             redirectAttributes.addAttribute("academicYear", academicYear);
+        } else {
+            redirectAttributes.addAttribute("academicYear", "2025-2026");
         }
         return "redirect:/reports/student/list";
     }
@@ -105,7 +100,7 @@ public class ReportController {
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("term", term);
         model.addAttribute("students", students);
-        model.addAttribute("academicYear", academicYear);
+        model.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
 
         return "select_student";
     }
@@ -126,26 +121,19 @@ public class ReportController {
             if (studentId == null) {
                 redirectAttributes.addAttribute("classId", classId);
                 redirectAttributes.addAttribute("term", term);
-                if (academicYear != null) {
-                    redirectAttributes.addAttribute("academicYear", academicYear);
-                }
-                return "redirect:/reports/student/list?classId=" + classId + "&term=" + term +
-                        (academicYear != null ? "&academicYear=" + academicYear : "");
+                redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
+                return "redirect:/reports/student/list";
             }
 
             if ("download".equals(action)) {
-                // Redirect to PDF download
-                return "redirect:/reports/pdf/student/term?studentId=" + studentId +
-                        "&term=" + term +
-                        (academicYear != null ? "&academicYear=" + academicYear : "");
+                redirectAttributes.addAttribute("studentId", studentId);
+                redirectAttributes.addAttribute("term", term);
+                redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
+                return "redirect:/reports/pdf/student/term";
             }
 
-            ReportDTO report;
-            if (academicYear != null && !academicYear.isEmpty()) {
-                report = reportService.getTermReportForStudentAndYear(studentId, term, academicYear);
-            } else {
-                report = reportService.generateReportForStudent(studentId, term);
-            }
+            ReportDTO report = reportService.getTermReportForStudentAndYear(
+                    studentId, term, academicYear != null ? academicYear : "2025-2026");
 
             model.addAttribute("report", report);
             return "report_term";
@@ -157,142 +145,9 @@ public class ReportController {
                     "Error generating report: " + e.getMessage());
             redirectAttributes.addAttribute("classId", classId);
             redirectAttributes.addAttribute("term", term);
-            if (academicYear != null) {
-                redirectAttributes.addAttribute("academicYear", academicYear);
-            }
+            redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
             return "redirect:/reports/student/list";
         }
-    }
-
-    @GetMapping("/student/yearly/report")
-    public String generateStudentYearlyReport(
-            @RequestParam Long studentId,
-            @RequestParam(required = false) String academicYear,
-            @RequestParam(required = false, defaultValue = "view") String action,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-
-        try {
-            if ("download".equals(action)) {
-                // Redirect to PDF download
-                return "redirect:/reports/pdf/student/yearly?studentId=" + studentId +
-                        (academicYear != null ? "&academicYear=" + academicYear : "");
-            }
-
-            YearlyReportDTO report;
-            if (academicYear != null && !academicYear.isEmpty()) {
-                report = reportService.getYearlyReportForStudentAndYear(studentId, academicYear);
-            } else {
-                report = reportService.generateYearlyReportForStudent(studentId);
-            }
-
-            model.addAttribute("report", report);
-            return "report_yearly";
-
-        } catch (Exception e) {
-            log.error("Error generating yearly report for student {}: {}",
-                    studentId, e.getMessage());
-            redirectAttributes.addFlashAttribute("error",
-                    "Error generating yearly report: " + e.getMessage());
-            return "redirect:/reports/select";
-        }
-    }
-
-    // ====== CLASS REPORTS ======
-
-    @GetMapping("/class")
-    public String classReport(@RequestParam Long classId,
-                              @RequestParam(defaultValue = "1") Integer term,
-                              @RequestParam(required = false) String academicYear,
-                              @RequestParam(required = false, defaultValue = "view") String action,
-                              @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "20") int size,
-                              @RequestParam(defaultValue = "rankInClass") String sortBy,
-                              @RequestParam(defaultValue = "asc") String sortDir,
-                              Model model) {
-
-        ClassRoom classRoom = classRoomRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
-
-        if ("download".equals(action)) {
-            // Redirect to PDF download
-            return "redirect:/reports/pdf/class?classId=" + classId +
-                    "&term=" + term +
-                    (academicYear != null ? "&academicYear=" + academicYear : "");
-        }
-
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<ReportDTO> reportPage;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            reportPage = reportService.getPaginatedTermReportsForClassAndYear(classId, term, academicYear, pageable);
-        } else {
-            reportPage = reportService.generatePaginatedReportsForClass(classId, term, pageable);
-        }
-
-        List<ReportDTO> reports = reportPage.getContent();
-
-        model.addAttribute("reports", reports);
-        model.addAttribute("classRoom", classRoom);
-        model.addAttribute("term", term);
-        model.addAttribute("academicYear", academicYear);
-
-        // Pagination attributes
-        model.addAttribute("currentPage", reportPage.getNumber());
-        model.addAttribute("totalPages", reportPage.getTotalPages());
-        model.addAttribute("totalItems", reportPage.getTotalElements());
-        model.addAttribute("pageSize", size);
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("sortDir", sortDir);
-
-        return "class_reports_term";
-    }
-
-    @GetMapping("/class/yearly")
-    public String classYearlyReport(@RequestParam Long classId,
-                                    @RequestParam(required = false) String academicYear,
-                                    @RequestParam(required = false, defaultValue = "view") String action,
-                                    @RequestParam(defaultValue = "0") int page,
-                                    @RequestParam(defaultValue = "20") int size,
-                                    @RequestParam(defaultValue = "yearlyRank") String sortBy,
-                                    @RequestParam(defaultValue = "asc") String sortDir,
-                                    Model model) {
-
-        ClassRoom classRoom = classRoomRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
-
-        if ("download".equals(action)) {
-            // Redirect to PDF download
-            return "redirect:/reports/pdf/class/yearly?classId=" + classId +
-                    (academicYear != null ? "&academicYear=" + academicYear : "");
-        }
-
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<YearlyReportDTO> reportPage;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            reportPage = reportService.getPaginatedYearlyReportsForClassAndYear(classId, academicYear, pageable);
-        } else {
-            reportPage = reportService.generatePaginatedYearlyReportsForClass(classId, pageable);
-        }
-
-        List<YearlyReportDTO> reports = reportPage.getContent();
-
-        model.addAttribute("reports", reports);
-        model.addAttribute("classRoom", classRoom);
-        model.addAttribute("academicYear", academicYear);
-
-        // Pagination attributes
-        model.addAttribute("currentPage", reportPage.getNumber());
-        model.addAttribute("totalPages", reportPage.getTotalPages());
-        model.addAttribute("totalItems", reportPage.getTotalElements());
-        model.addAttribute("pageSize", size);
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("sortDir", sortDir);
-
-        return "class_reports_yearly";
     }
 
     // ====== PDF DOWNLOAD ENDPOINTS ======
@@ -303,15 +158,13 @@ public class ReportController {
             @RequestParam Integer term,
             @RequestParam(required = false) String academicYear) throws IOException, DocumentException {
 
-        log.info("Generating PDF report for student {} term {}", studentId, term);
+        log.info("Generating PDF report for student {} term {} academic year {}",
+                studentId, term, academicYear);
 
-        ReportDTO report;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            report = reportService.getTermReportForStudentAndYear(studentId, term, academicYear);
-        } else {
-            report = reportService.generateReportForStudent(studentId, term);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
 
+        ReportDTO report = reportService.getTermReportForStudentAndYear(studentId, term, effectiveAcademicYear);
         byte[] pdfBytes = termReportPdfService.generateTermReportPdf(report);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(pdfBytes);
@@ -321,7 +174,7 @@ public class ReportController {
                 term,
                 report.getRollNumber(),
                 report.getStudentFullName().replace(" ", "_"),
-                academicYear != null ? academicYear : report.getAcademicYear());
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -337,15 +190,13 @@ public class ReportController {
             @RequestParam Integer term,
             @RequestParam(required = false) String academicYear) throws IOException, DocumentException {
 
-        log.info("Generating PDF report for student {} in class {} term {}", studentId, classId, term);
+        log.info("Generating PDF report for student {} in class {} term {} academic year {}",
+                studentId, classId, term, academicYear);
 
-        ReportDTO report;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            report = reportService.getTermReportForStudentAndYear(studentId, term, academicYear);
-        } else {
-            report = reportService.generateReportForStudent(studentId, term);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
 
+        ReportDTO report = reportService.getTermReportForStudentAndYear(studentId, term, effectiveAcademicYear);
         byte[] pdfBytes = termReportPdfService.generateTermReportPdf(report);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(pdfBytes);
@@ -355,7 +206,7 @@ public class ReportController {
                 report.getClassName().replace(" ", "_"),
                 term,
                 report.getRollNumber(),
-                academicYear != null ? academicYear : report.getAcademicYear());
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -369,15 +220,12 @@ public class ReportController {
             @RequestParam Long studentId,
             @RequestParam(required = false) String academicYear) throws IOException, DocumentException {
 
-        log.info("Generating PDF yearly report for student {}", studentId);
+        log.info("Generating PDF yearly report for student {} academic year {}", studentId, academicYear);
 
-        YearlyReportDTO report;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            report = reportService.getYearlyReportForStudentAndYear(studentId, academicYear);
-        } else {
-            report = reportService.generateYearlyReportForStudent(studentId);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
 
+        YearlyReportDTO report = reportService.getYearlyReportForStudentAndYear(studentId, effectiveAcademicYear);
         byte[] pdfBytes = yearlyReportPdfService.generateYearlyReportPdf(report);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(pdfBytes);
@@ -386,7 +234,7 @@ public class ReportController {
         String filename = String.format("Yearly_Report_%s_%s_%s.pdf",
                 report.getRollNumber(),
                 report.getStudentFullName().replace(" ", "_"),
-                academicYear != null ? academicYear : report.getAcademicYear());
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -401,23 +249,22 @@ public class ReportController {
             @RequestParam Integer term,
             @RequestParam(required = false) String academicYear) throws IOException, DocumentException {
 
-        List<ReportDTO> reports;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            reports = reportService.getTermReportsForClassAndYear(classId, term, academicYear);
-        } else {
-            reports = reportService.generateReportsForClass(classId, term);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
+
+        List<ReportDTO> reports = reportService.getTermReportsForClassAndYear(
+                classId, term, effectiveAcademicYear);
 
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        // Generate combined PDF for all students in class
-        byte[] pdfBytes = classTermReportPdfService.generateClassTermReportPdf(reports, classRoom, term, academicYear);
+        byte[] pdfBytes = classTermReportPdfService.generateClassTermReportPdf(
+                reports, classRoom, term, effectiveAcademicYear);
 
         String filename = String.format("Class_Term_%d_Report_%s_%s.pdf",
                 term,
                 classRoom.getName().replace(" ", "_"),
-                academicYear != null ? academicYear : "Current");
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -430,22 +277,21 @@ public class ReportController {
             @RequestParam Long classId,
             @RequestParam(required = false) String academicYear) throws IOException, DocumentException {
 
-        List<YearlyReportDTO> reports;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            reports = reportService.getYearlyReportsForClassAndYear(classId, academicYear);
-        } else {
-            reports = reportService.generateYearlyReportsForClass(classId);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
+
+        List<YearlyReportDTO> reports = reportService.getYearlyReportsForClassAndYear(
+                classId, effectiveAcademicYear);
 
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        // Generate combined PDF for all students in class
-        byte[] pdfBytes = classYearlyReportPdfService.generateClassYearlyReportPdf(reports, classRoom, academicYear);
+        byte[] pdfBytes = classYearlyReportPdfService.generateClassYearlyReportPdf(
+                reports, classRoom, effectiveAcademicYear);
 
         String filename = String.format("Class_Yearly_Report_%s_%s.pdf",
                 classRoom.getName().replace(" ", "_"),
-                academicYear != null ? academicYear : "Current");
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -463,13 +309,15 @@ public class ReportController {
         log.info("Generating batch PDF for class {} - Type: {}, Term: {}, Year: {}",
                 classId, reportType, term, academicYear);
 
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
+
         List<Student> students = studentRepository.findByClassRoomId(classId);
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
         log.info("Found {} students in class {}", students.size(), classRoom.getName());
 
-        // Create ZIP file with all reports
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
 
@@ -483,48 +331,28 @@ public class ReportController {
 
                 try {
                     if ("yearly".equals(reportType)) {
-                        log.debug("Generating yearly report for student {}", student.getId());
                         YearlyReportDTO report = reportService.getYearlyReportForStudentAndYear(
-                                student.getId(), academicYear);
-
-                        if (report == null || report.getSubjectReports() == null || report.getSubjectReports().isEmpty()) {
-                            log.warn("Empty yearly report generated for student {} (ID: {})",
-                                    student.getFullName(), student.getId());
-                            throw new RuntimeException("Yearly report has no subject data");
-                        }
-
-                        log.debug("Yearly report generated - Subjects: {}, Average: {}",
-                                report.getSubjectReports().size(), report.getYearlyAverage());
+                                student.getId(), effectiveAcademicYear);
 
                         pdfBytes = yearlyReportPdfService.generateYearlyReportPdf(report);
                         filename = String.format("%s_%s_Yearly_%s.pdf",
                                 student.getRollNumber(),
                                 student.getFullName().replace(" ", "_"),
-                                academicYear);
+                                effectiveAcademicYear);
                     } else {
                         if (term == null) {
                             throw new IllegalArgumentException("Term is required for term reports");
                         }
 
-                        log.debug("Generating term {} report for student {}", term, student.getId());
                         ReportDTO report = reportService.getTermReportForStudentAndYear(
-                                student.getId(), term, academicYear);
-
-                        if (report == null || report.getSubjectReports() == null || report.getSubjectReports().isEmpty()) {
-                            log.warn("Empty term report generated for student {} (ID: {}) Term: {}",
-                                    student.getFullName(), student.getId(), term);
-                            throw new RuntimeException("Term report has no subject data");
-                        }
-
-                        log.debug("Term report generated - Subjects: {}, Average: {}",
-                                report.getSubjectReports().size(), report.getTermAverage());
+                                student.getId(), term, effectiveAcademicYear);
 
                         pdfBytes = termReportPdfService.generateTermReportPdf(report);
                         filename = String.format("%s_%s_Term_%d_%s.pdf",
                                 student.getRollNumber(),
                                 student.getFullName().replace(" ", "_"),
                                 term,
-                                academicYear);
+                                effectiveAcademicYear);
                     }
 
                     ZipEntry zipEntry = new ZipEntry(filename);
@@ -533,19 +361,16 @@ public class ReportController {
                     zipOut.closeEntry();
                     processedCount++;
 
-                    log.debug("Successfully added PDF for student {}", student.getFullName());
-
                 } catch (Exception e) {
                     log.error("Error generating report for student {} (ID: {}): {}",
                             student.getFullName(), student.getId(), e.getMessage(), e);
                     errorCount++;
 
-                    // Create an error placeholder PDF with more details
-                    byte[] errorPdf = createErrorPdf(student, reportType, term, academicYear, e);
+                    byte[] errorPdf = createErrorPdf(student, reportType, term, effectiveAcademicYear, e);
                     String errorFilename = String.format("ERROR_%s_%s_%s.pdf",
                             student.getRollNumber(),
                             student.getFullName().replace(" ", "_"),
-                            academicYear);
+                            effectiveAcademicYear);
                     ZipEntry zipEntry = new ZipEntry(errorFilename);
                     zipOut.putNextEntry(zipEntry);
                     zipOut.write(errorPdf);
@@ -561,9 +386,7 @@ public class ReportController {
         String zipFilename = String.format("Batch_Reports_%s_%s_%s.zip",
                 classRoom.getName().replace(" ", "_"),
                 "yearly".equals(reportType) ? "Yearly" : "Term_" + term,
-                academicYear);
-
-        log.info("Returning ZIP file: {}", zipFilename);
+                effectiveAcademicYear);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFilename + "\"")
@@ -591,7 +414,7 @@ public class ReportController {
         document.add(new Paragraph("Name: " + student.getFullName(), contentFont));
         document.add(new Paragraph("Roll Number: " + student.getRollNumber(), contentFont));
         document.add(new Paragraph("Student ID: " + student.getStudentId(), contentFont));
-        document.add(new Paragraph("Class: " + (student.getClassRoom() != null ? student.getClassRoom().getName() : "N/A"), contentFont));
+        document.add(new Paragraph("Academic Year: " + academicYear, contentFont));
         document.add(new Paragraph("\n"));
 
         document.add(new Paragraph("Report Details:", headerFont));
@@ -604,40 +427,132 @@ public class ReportController {
 
         document.add(new Paragraph("Error Information:", headerFont));
         document.add(new Paragraph("Error Message: " + exception.getMessage(), contentFont));
-        document.add(new Paragraph("Error Type: " + exception.getClass().getSimpleName(), contentFont));
-        document.add(new Paragraph("\n"));
-
-        document.add(new Paragraph("Possible Causes:", headerFont));
-        document.add(new Paragraph("1. No assessments entered for this student", contentFont));
-        document.add(new Paragraph("2. Assessments not found for specified term/year", contentFont));
-        document.add(new Paragraph("3. Student has no subjects assigned", contentFont));
-        document.add(new Paragraph("4. Technical issue with report generation", contentFont));
-        document.add(new Paragraph("\n"));
-
-        document.add(new Paragraph("Recommended Actions:", headerFont));
-        document.add(new Paragraph("1. Check if assessments are entered for this student", contentFont));
-        document.add(new Paragraph("2. Verify the student has subjects assigned", contentFont));
-        document.add(new Paragraph("3. Contact system administrator if issue persists", contentFont));
 
         document.close();
 
         return outputStream.toByteArray();
     }
 
-    @GetMapping("/pdf/summary/yearly")
-    public ResponseEntity<byte[]> downloadYearlySummary(@RequestParam String academicYear)
-            throws IOException, DocumentException {
+    @GetMapping("/class")
+    public String classReport(@RequestParam Long classId,
+                              @RequestParam(defaultValue = "1") Integer term,
+                              @RequestParam(required = false) String academicYear,
+                              @RequestParam(required = false, defaultValue = "view") String action,
+                              @RequestParam(defaultValue = "0") int page,
+                              @RequestParam(defaultValue = "20") int size,
+                              @RequestParam(defaultValue = "rankInClass") String sortBy,
+                              @RequestParam(defaultValue = "asc") String sortDir,
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
 
-        // Generate summary report for the academic year
-        YearlySummaryDTO summary = reportService.getYearlySummary(academicYear);
-        byte[] pdfBytes = yearlySummaryPdfService.generateYearlySummaryPdf(summary);
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        String filename = String.format("Yearly_Summary_%s.pdf", academicYear);
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdfBytes);
+        if ("download".equals(action)) {
+            redirectAttributes.addAttribute("classId", classId);
+            redirectAttributes.addAttribute("term", term);
+            redirectAttributes.addAttribute("academicYear", effectiveAcademicYear);
+            return "redirect:/reports/pdf/class";
+        }
+
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<ReportDTO> reportPage = reportService.getPaginatedTermReportsForClassAndYear(
+                classId, term, effectiveAcademicYear, pageable);
+
+        List<ReportDTO> reports = reportPage.getContent();
+
+        model.addAttribute("reports", reports);
+        model.addAttribute("classRoom", classRoom);
+        model.addAttribute("term", term);
+        model.addAttribute("academicYear", effectiveAcademicYear);
+
+        model.addAttribute("currentPage", reportPage.getNumber());
+        model.addAttribute("totalPages", reportPage.getTotalPages());
+        model.addAttribute("totalItems", reportPage.getTotalElements());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("sortDir", sortDir);
+
+        return "class_reports_term";
+    }
+
+    @GetMapping("/class/yearly")
+    public String classYearlyReport(@RequestParam Long classId,
+                                    @RequestParam(required = false) String academicYear,
+                                    @RequestParam(required = false, defaultValue = "view") String action,
+                                    @RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "20") int size,
+                                    @RequestParam(defaultValue = "yearlyRank") String sortBy,
+                                    @RequestParam(defaultValue = "asc") String sortDir,
+                                    Model model,
+                                    RedirectAttributes redirectAttributes) {
+
+        ClassRoom classRoom = classRoomRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
+
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
+
+        if ("download".equals(action)) {
+            redirectAttributes.addAttribute("classId", classId);
+            redirectAttributes.addAttribute("academicYear", effectiveAcademicYear);
+            return "redirect:/reports/pdf/class/yearly";
+        }
+
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<YearlyReportDTO> reportPage = reportService.getPaginatedYearlyReportsForClassAndYear(
+                classId, effectiveAcademicYear, pageable);
+
+        List<YearlyReportDTO> reports = reportPage.getContent();
+
+        model.addAttribute("reports", reports);
+        model.addAttribute("classRoom", classRoom);
+        model.addAttribute("academicYear", effectiveAcademicYear);
+
+        model.addAttribute("currentPage", reportPage.getNumber());
+        model.addAttribute("totalPages", reportPage.getTotalPages());
+        model.addAttribute("totalItems", reportPage.getTotalElements());
+        model.addAttribute("pageSize", size);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("sortDir", sortDir);
+
+        return "class_reports_yearly";
+    }
+
+    @GetMapping("/student/yearly/report")
+    public String generateStudentYearlyReport(
+            @RequestParam Long studentId,
+            @RequestParam(required = false) String academicYear,
+            @RequestParam(required = false, defaultValue = "view") String action,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            if ("download".equals(action)) {
+                redirectAttributes.addAttribute("studentId", studentId);
+                redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
+                return "redirect:/reports/pdf/student/yearly";
+            }
+
+            YearlyReportDTO report = reportService.getYearlyReportForStudentAndYear(
+                    studentId, academicYear != null ? academicYear : "2025-2026");
+
+            model.addAttribute("report", report);
+            return "report_yearly";
+
+        } catch (Exception e) {
+            log.error("Error generating yearly report for student {}: {}", studentId, e.getMessage());
+            redirectAttributes.addFlashAttribute("error",
+                    "Error generating yearly report: " + e.getMessage());
+            return "redirect:/reports/select";
+        }
     }
 
     @GetMapping("/student/term/report")
@@ -649,12 +564,8 @@ public class ReportController {
             RedirectAttributes redirectAttributes) {
 
         try {
-            ReportDTO report;
-            if (academicYear != null && !academicYear.isEmpty()) {
-                report = reportService.getTermReportForStudentAndYear(studentId, term, academicYear);
-            } else {
-                report = reportService.generateReportForStudent(studentId, term);
-            }
+            ReportDTO report = reportService.getTermReportForStudentAndYear(
+                    studentId, term, academicYear != null ? academicYear : "2025-2026");
 
             model.addAttribute("report", report);
             return "report_term";
@@ -668,27 +579,6 @@ public class ReportController {
     }
 
     // ====== ADDITIONAL UTILITY ENDPOINTS ======
-
-    @GetMapping("/check/student")
-    public ResponseEntity<String> checkStudentReports(@RequestParam Long studentId) {
-        try {
-            List<Integer> terms = reportService.getAvailableTermsForStudent(studentId);
-            List<Integer> years = reportService.getAvailableAcademicYearsForStudent(studentId);
-
-            return ResponseEntity.ok(String.format(
-                    "Student %s has reports for terms: %s and academic years: %s",
-                    studentId, terms, years));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/health")
-    @ResponseBody
-    public String healthCheck() {
-        return "Report Controller is running. " +
-                "Available endpoints: /reports/select, /reports/pdf/student/term, /reports/pdf/student/yearly, etc.";
-    }
 
     @GetMapping("/student/yearly/select")
     public String selectStudentYearlyReportForm(Model model) {
@@ -704,9 +594,7 @@ public class ReportController {
             RedirectAttributes redirectAttributes) {
 
         redirectAttributes.addAttribute("classId", classId);
-        if (academicYear != null && !academicYear.isEmpty()) {
-            redirectAttributes.addAttribute("academicYear", academicYear);
-        }
+        redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
         return "redirect:/reports/student/yearly/list";
     }
 
@@ -723,7 +611,7 @@ public class ReportController {
 
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("students", students);
-        model.addAttribute("academicYear", academicYear);
+        model.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
 
         return "select_student_yearly";
     }
@@ -738,14 +626,12 @@ public class ReportController {
         ClassRoom classRoom = classRoomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
 
-        List<ReportDTO> reports;
-        if (academicYear != null && !academicYear.isEmpty()) {
-            reports = reportService.getTermReportsForClassAndYear(classId, term, academicYear);
-        } else {
-            reports = reportService.generateReportsForClass(classId, term);
-        }
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
 
-        // Calculate class statistics
+        List<ReportDTO> reports = reportService.getTermReportsForClassAndYear(
+                classId, term, effectiveAcademicYear);
+
         double classAverage = reports.stream()
                 .filter(r -> r.getTermAverage() != null)
                 .mapToDouble(ReportDTO::getTermAverage)
@@ -758,7 +644,6 @@ public class ReportController {
 
         double passRate = !reports.isEmpty() ? (passedStudents * 100.0) / reports.size() : 0.0;
 
-        // Get top 5 and bottom 5 students
         List<ReportDTO> topStudents = reports.stream()
                 .sorted((r1, r2) -> {
                     Double avg1 = r1.getTermAverage() != null ? r1.getTermAverage() : 0.0;
@@ -777,7 +662,6 @@ public class ReportController {
                 .limit(5)
                 .collect(Collectors.toList());
 
-        // Calculate subject-wise averages
         Map<String, Double> subjectAverages = new HashMap<>();
         if (!reports.isEmpty() && reports.getFirst().getSubjectReports() != null) {
             for (SubjectReport subject : reports.getFirst().getSubjectReports()) {
@@ -800,7 +684,7 @@ public class ReportController {
 
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("term", term);
-        model.addAttribute("academicYear", academicYear);
+        model.addAttribute("academicYear", effectiveAcademicYear);
         model.addAttribute("reports", reports);
         model.addAttribute("classAverage", classAverage);
         model.addAttribute("totalStudents", reports.size());
@@ -811,6 +695,30 @@ public class ReportController {
         model.addAttribute("subjectAverages", subjectAverages);
 
         return "class_performance_summary";
+    }
+
+    @GetMapping("/pdf/summary/yearly")
+    public ResponseEntity<byte[]> downloadYearlySummary(@RequestParam String academicYear)
+            throws IOException, DocumentException {
+
+        String effectiveAcademicYear = academicYear != null && !academicYear.isEmpty()
+                ? academicYear : "2025-2026";
+
+        YearlySummaryDTO summary = reportService.getYearlySummary(effectiveAcademicYear);
+        byte[] pdfBytes = yearlySummaryPdfService.generateYearlySummaryPdf(summary);
+
+        String filename = String.format("Yearly_Summary_%s.pdf", effectiveAcademicYear);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
+
+    @GetMapping("/health")
+    @ResponseBody
+    public String healthCheck() {
+        return "Report Controller is running.";
     }
 
     @GetMapping("/debug/batch")
@@ -834,11 +742,9 @@ public class ReportController {
                 studentInfo.put("name", student.getFullName());
                 studentInfo.put("rollNumber", student.getRollNumber());
 
-                // Generate report
                 ReportDTO report = reportService.getTermReportForStudentAndYear(
                         student.getId(), term, academicYear);
 
-                // Debug subject coefficients
                 List<Map<String, Object>> subjectInfo = new ArrayList<>();
                 for (SubjectReport sr : report.getSubjectReports()) {
                     Map<String, Object> subjectDetail = new HashMap<>();
@@ -867,6 +773,20 @@ public class ReportController {
             result.put("error", e.getMessage());
             result.put("stackTrace", Arrays.toString(e.getStackTrace()));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+        }
+    }
+
+    @GetMapping("/check/student")
+    public ResponseEntity<String> checkStudentReports(@RequestParam Long studentId) {
+        try {
+            List<Integer> terms = reportService.getAvailableTermsForStudent(studentId);
+            List<Integer> years = reportService.getAvailableAcademicYearsForStudent(studentId);
+
+            return ResponseEntity.ok(String.format(
+                    "Student %s has reports for terms: %s and academic years: %s",
+                    studentId, terms, years));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 }

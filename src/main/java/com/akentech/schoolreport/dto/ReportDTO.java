@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -65,13 +66,26 @@ public class ReportDTO {
      * Get academic year
      */
     public String getAcademicYear() {
-        if (academicYear != null && !academicYear.isEmpty()) {
-            return academicYear;
+        // Return academicYear if explicitly set
+        if (academicYear != null && !academicYear.trim().isEmpty()) {
+            return academicYear.trim();
         }
-        if (student != null && student.getClassRoom() != null) {
+
+        // Try to get from student's class
+        if (student != null && student.getClassRoom() != null &&
+                student.getClassRoom().getAcademicYear() != null) {
             return student.getClassRoom().getAcademicYear();
         }
-        return LocalDate.now().getYear() + "-" + (LocalDate.now().getYear() + 1);
+
+        // Try to get from student's academic year fields
+        if (student != null && student.getAcademicYearStart() != null &&
+                student.getAcademicYearEnd() != null) {
+            return student.getAcademicYearStart() + "-" + student.getAcademicYearEnd();
+        }
+
+        // Default to current academic year
+        int currentYear = Year.now().getValue();
+        return currentYear + "-" + (currentYear + 1);
     }
 
     /**

@@ -543,11 +543,20 @@ public class TermReportPdfService extends BasePdfService {
         vpSignature.setSpacingBefore(3);
         vpCell.addElement(vpSignature);
 
+        // Title
         Paragraph vpTitle = new Paragraph("VICE PRINCIPAL",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, PRIMARY_COLOR));
         vpTitle.setAlignment(Element.ALIGN_RIGHT);
         vpTitle.setSpacingBefore(3);
         vpCell.addElement(vpTitle);
+
+// Name
+        Paragraph vpName = new Paragraph("Kohsu Rodolphe Rinwi",
+                FontFactory.getFont(FontFactory.HELVETICA, 9, PRIMARY_COLOR));
+        vpName.setAlignment(Element.ALIGN_RIGHT);
+        vpName.setSpacingBefore(2);
+        vpCell.addElement(vpName);
+
 
         Paragraph stamp = new Paragraph("\nOFFICIAL STAMP",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, SECONDARY_COLOR));

@@ -413,7 +413,8 @@ public class StudentService {
     public void deleteStudent(Long id) {
         Student student = getStudentByIdOrThrow(id);
         studentRepository.delete(student);
-        log.info("Deleted student with id: {}", id);
+        log.info("✅ Successfully deleted student {} (ID: {}) along with all associated records",
+                student.getFullName(), id);
     }
 
     @Transactional(readOnly = true)

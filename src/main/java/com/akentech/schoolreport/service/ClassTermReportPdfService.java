@@ -17,19 +17,24 @@ import java.util.List;
 @Slf4j
 public class ClassTermReportPdfService extends BasePdfService {
 
+    private static final String HARDCODED_ACADEMIC_YEAR = "2025-2026";
+
     public ClassTermReportPdfService(GradeService gradeService) {
         super(gradeService);
     }
 
-    public byte[] generateClassTermReportPdf(List<ReportDTO> reports, ClassRoom classRoom, Integer term, String academicYear)
+    public byte[] generateClassTermReportPdf(List<ReportDTO> reports, ClassRoom classRoom,
+                                             Integer term, String academicYear)
             throws IOException, DocumentException {
+
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4.rotate());
         PdfWriter writer = PdfWriter.getInstance(document, outputStream);
 
         document.open();
 
-        addClassHeader(document, classRoom, term, academicYear, writer);
+        // Always use hardcoded academic year
+        addClassHeader(document, classRoom, term, HARDCODED_ACADEMIC_YEAR, writer);
         addClassSummarySection(document, reports, classRoom, term);
         addClassStudentPerformanceTable(document, reports, term);
         addClassStatisticsSection(document, reports, classRoom, term);
@@ -40,8 +45,10 @@ public class ClassTermReportPdfService extends BasePdfService {
 
     // ====== PRIVATE METHODS ======
 
-    private void addClassHeader(Document document, ClassRoom classRoom, Integer term, String academicYear, PdfWriter writer)
+    private void addClassHeader(Document document, ClassRoom classRoom, Integer term,
+                                String academicYear, PdfWriter writer)
             throws DocumentException, IOException {
+
         PdfPTable headerTable = new PdfPTable(3);
         headerTable.setWidthPercentage(100);
         headerTable.setWidths(new float[]{2, 6, 2});
@@ -51,7 +58,7 @@ public class ClassTermReportPdfService extends BasePdfService {
             PdfPCell leftImageCell = createModernImageCell(LEFT_LOGO_PATH, Element.ALIGN_LEFT, 50);
             headerTable.addCell(leftImageCell);
 
-            PdfPCell centerCell = createClassHeaderContentCell(classRoom, term, academicYear);
+            PdfPCell centerCell = createClassHeaderContentCell(classRoom, term, HARDCODED_ACADEMIC_YEAR);
             headerTable.addCell(centerCell);
 
             PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 50);
@@ -59,7 +66,7 @@ public class ClassTermReportPdfService extends BasePdfService {
 
         } catch (IOException e) {
             log.warn("Could not load logo images: {}", e.getMessage());
-            createClassFallbackHeader(document, classRoom, term, academicYear);
+            createClassFallbackHeader(document, classRoom, term, HARDCODED_ACADEMIC_YEAR);
             return;
         }
 
@@ -87,7 +94,8 @@ public class ClassTermReportPdfService extends BasePdfService {
         classInfo.setSpacingAfter(3);
         contentCell.addElement(classInfo);
 
-        Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
+        // Hardcoded academic year
+        Paragraph yearParagraph = new Paragraph("Academic Year: " + HARDCODED_ACADEMIC_YEAR,
                 FontFactory.getFont(FontFactory.HELVETICA, 10, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
         yearParagraph.setSpacingAfter(5);
@@ -102,8 +110,10 @@ public class ClassTermReportPdfService extends BasePdfService {
         return contentCell;
     }
 
-    private void createClassFallbackHeader(Document document, ClassRoom classRoom, Integer term, String academicYear)
+    private void createClassFallbackHeader(Document document, ClassRoom classRoom,
+                                           Integer term, String academicYear)
             throws DocumentException {
+
         PdfPTable headerTable = new PdfPTable(1);
         headerTable.setWidthPercentage(100);
         headerTable.setSpacingBefore(5);
@@ -126,7 +136,8 @@ public class ClassTermReportPdfService extends BasePdfService {
         classInfo.setSpacingAfter(5);
         headerCell.addElement(classInfo);
 
-        Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
+        // Hardcoded academic year
+        Paragraph yearParagraph = new Paragraph("Academic Year: " + HARDCODED_ACADEMIC_YEAR,
                 FontFactory.getFont(FontFactory.HELVETICA, 11, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
         yearParagraph.setSpacingAfter(5);
@@ -137,8 +148,10 @@ public class ClassTermReportPdfService extends BasePdfService {
         addModernSeparator(document);
     }
 
-    private void addClassSummarySection(Document document, List<ReportDTO> reports, ClassRoom classRoom, Integer term)
+    private void addClassSummarySection(Document document, List<ReportDTO> reports,
+                                        ClassRoom classRoom, Integer term)
             throws DocumentException {
+
         PdfPTable summaryTable = new PdfPTable(1);
         summaryTable.setWidthPercentage(100);
         summaryTable.setSpacingBefore(10);
@@ -171,6 +184,7 @@ public class ClassTermReportPdfService extends BasePdfService {
 
     private void addClassStudentPerformanceTable(Document document, List<ReportDTO> reports, Integer term)
             throws DocumentException {
+
         PdfPTable sectionTable = new PdfPTable(1);
         sectionTable.setWidthPercentage(100);
         sectionTable.setSpacingBefore(10);
@@ -244,8 +258,10 @@ public class ClassTermReportPdfService extends BasePdfService {
         table.addCell(cell);
     }
 
-    private void addClassStatisticsSection(Document document, List<ReportDTO> reports, ClassRoom classRoom, Integer term)
+    private void addClassStatisticsSection(Document document, List<ReportDTO> reports,
+                                           ClassRoom classRoom, Integer term)
             throws DocumentException {
+
         PdfPTable sectionTable = new PdfPTable(1);
         sectionTable.setWidthPercentage(100);
         sectionTable.setSpacingBefore(10);
@@ -285,7 +301,7 @@ public class ClassTermReportPdfService extends BasePdfService {
         addDistributionRow(distributionTable, "D Grade", dCount, reports.size(), D_GRADE_COLOR);
         addDistributionRow(distributionTable, "E Grade", eCount, reports.size(), E_GRADE_COLOR);
         addDistributionRow(distributionTable, "U Grade", uCount, reports.size(), U_GRADE_COLOR);
-        addDistributionRow(distributionTable, "F Grade", uCount, reports.size(), F_GRADE_COLOR);
+        addDistributionRow(distributionTable, "F Grade", fCount, reports.size(), F_GRADE_COLOR);
 
         titleCell.addElement(distributionTable);
         sectionTable.addCell(titleCell);

@@ -66,8 +66,8 @@
                         <p class="text-green-100 mt-2">Term <span th:text="${term}"></span> • Choose a student to generate report</p>
                     </div>
                     <div class="text-right">
-                        <div class="text-green-100 text-sm">Class Teacher</div>
-                        <div class="text-white font-semibold" th:text="${classRoom.classTeacher}"></div>
+                        <div class="text-green-100 text-sm">Academic Year</div>
+                        <div class="text-white font-semibold" th:text="${academicYear != null ? academicYear : '2025-2026'}"></div>
                     </div>
                 </div>
             </div>
@@ -107,17 +107,19 @@
                                 </div>
                             </div>
                             <div class="text-right flex flex-col space-y-2">
-                                <!-- Term Report -->
-                                <a th:href="@{/reports/student/report(classId=${classRoom.id}, term=${term}, studentId=${student.id})}"
+                                <!-- Term Report - FIXED: Added academicYear parameter -->
+                                <a th:href="@{/reports/student/report(classId=${classRoom.id}, term=${term}, studentId=${student.id}, academicYear=${student.academicYearStart + '-' + student.academicYearEnd})}"
                                    class="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-green-50 flex items-center justify-center transition-colors border border-green-200 hover:border-green-300">
                                     <i class="fas fa-eye mr-1.5"></i>View Term Report
                                 </a>
-                                <!-- PDF Download -->
-                                <a th:href="@{'/reports/pdf/student/term/class?classId=' + ${classRoom.id} + '&studentId=' + ${student.id} + '&term=' + ${term}}"
+
+                                <!-- PDF Download - FIXED: Added academicYear parameter -->
+                                <a th:href="@{'/reports/pdf/student/term/class?classId=' + ${classRoom.id} + '&studentId=' + ${student.id} + '&term=' + ${term} + '&academicYear=' + ${student.academicYearStart + '-' + student.academicYearEnd}}"
                                    class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors border border-red-200 hover:border-red-300">
                                     <i class="fas fa-file-pdf mr-1.5"></i>Download PDF
                                 </a>
-                                <!-- Yearly Report -->
+
+                                <!-- Yearly Report - Already has academic year -->
                                 <a th:href="@{'/reports/student/yearly/report?studentId=' + ${student.id} + '&academicYear=' + ${student.academicYearStart + '-' + student.academicYearEnd}}"
                                    class="text-purple-600 hover:text-purple-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-purple-50 flex items-center justify-center transition-colors border border-purple-200 hover:border-purple-300">
                                     <i class="fas fa-calendar-alt mr-1.5"></i>Yearly Report
@@ -147,7 +149,7 @@
                         </div>
                         <div class="text-sm text-gray-600">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Click on any student to view their term report
+                            Academic Year: <span th:text="${academicYear != null ? academicYear : '2025-2026'}" class="font-semibold"></span>
                         </div>
                     </div>
                 </div>
@@ -156,7 +158,8 @@
 
         <!-- Quick Actions -->
         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term}}"
+            <!-- FIXED: Added academicYear parameter to class report link -->
+            <a th:href="@{'/reports/class?classId=' + ${classRoom.id} + '&term=' + ${term} + '&academicYear=' + ${academicYear != null ? academicYear : '2025-2026'}}"
                class="bg-white p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-center group">
                 <div class="p-3 bg-blue-100 rounded-lg inline-block mb-3">
                     <i class="fas fa-users text-blue-600 text-xl"></i>
@@ -165,7 +168,8 @@
                 <p class="text-sm text-gray-600 mt-1">See all students in one view</p>
             </a>
 
-            <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id}}"
+            <!-- FIXED: Added academicYear parameter to yearly class report link -->
+            <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id} + '&academicYear=' + ${academicYear != null ? academicYear : '2025-2026'}}"
                class="bg-white p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all text-center group">
                 <div class="p-3 bg-green-100 rounded-lg inline-block mb-3">
                     <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
@@ -271,7 +275,13 @@
         }
 
         function applyYearFilter() {
-            // Already handled by change event
+            const selectedYear = yearFilter.value;
+            if (selectedYear) {
+                // Redirect with the selected academic year
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('academicYear', selectedYear);
+                window.location.href = currentUrl.toString();
+            }
         }
 
         // Add keyboard shortcuts
