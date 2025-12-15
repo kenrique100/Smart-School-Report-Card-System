@@ -543,8 +543,14 @@ public class ReportServiceImpl implements ReportService {
                     .filter(a -> a.getTerm().equals(term))
                     .collect(Collectors.toList());
 
-            SubjectReport subjectReport = reportMapper.toSubjectReport(subject, termAssessments, term, className);
-            subjectReports.add(subjectReport);
+            // Only include subject if it has at least one assessment
+            if (!termAssessments.isEmpty()) {
+                SubjectReport subjectReport = reportMapper.toSubjectReport(subject, termAssessments, term, className);
+                subjectReports.add(subjectReport);
+            } else {
+                log.debug("Skipping subject {} for student {} - no assessments for term {}",
+                        subject.getName(), student.getFullName(), term);
+            }
         }
 
         return subjectReports;
@@ -554,11 +560,16 @@ public class ReportServiceImpl implements ReportService {
                                                         Student student, Integer term) {
         Map<String, Object> statistics = new HashMap<>();
 
-        Double termAverage = gradeService.calculateWeightedTermAverage(subjectReports);
+        // Only calculate statistics for subjects with data
+        List<SubjectReport> subjectsWithData = subjectReports.stream()
+                .filter(SubjectReport::hasData)
+                .collect(Collectors.toList());
+
+        Double termAverage = gradeService.calculateWeightedTermAverage(subjectsWithData);
         String className = student.getClassRoom() != null ? student.getClassRoom().getName() : "";
-        Double passRate = gradeService.calculatePassRate(subjectReports, className);
-        Long subjectsPassed = gradeService.countPassedSubjects(subjectReports, className);
-        int totalSubjects = subjectReports.size();
+        Double passRate = gradeService.calculatePassRate(subjectsWithData, className);
+        Long subjectsPassed = gradeService.countPassedSubjects(subjectsWithData, className);
+        int totalSubjects = subjectsWithData.size();
 
         statistics.put("termAverage", termAverage);
         statistics.put("formattedAverage", termAverage != null ? String.format("%.2f/20", termAverage) : "0.00/20");
@@ -571,6 +582,7 @@ public class ReportServiceImpl implements ReportService {
 
         return statistics;
     }
+
 
     private void sortReports(List<ReportDTO> reports, Sort sort) {
         if (sort.isUnsorted()) {

@@ -14,6 +14,7 @@ import java.time.Year;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -26,12 +27,15 @@ public class ReportMapper {
                                  Integer term, Map<String, Object> statistics) {
         String className = student.getClassRoom() != null ? student.getClassRoom().getName() : "";
 
-        Double termAverage = (Double) statistics.get("termAverage");
+        // FILTER OUT subjects without any assessment data
+        List<SubjectReport> subjectsWithAssessments = subjectReports.stream()
+                .filter(this::hasAtLeastOneAssessment)
+                .collect(Collectors.toList());
 
-        // Get pass rate and subjects passed from statistics (already calculated in ReportServiceImpl)
-        Double passRate = (Double) statistics.get("passRate");
-        long subjectsPassed = ((Integer) statistics.get("subjectsPassed")).longValue();
-        Integer totalSubjects = (Integer) statistics.get("totalSubjects");
+        Double termAverage = gradeService.calculateWeightedTermAverage(subjectsWithAssessments);
+        Double passRate = gradeService.calculatePassRate(subjectsWithAssessments, className);
+        long subjectsPassed = gradeService.countPassedSubjects(subjectsWithAssessments, className);
+        int totalSubjects = subjectsWithAssessments.size();
 
         return ReportDTO.builder()
                 .id(student.getId())
@@ -47,14 +51,14 @@ public class ReportMapper {
                 .rankInClass((Integer) statistics.get("rankInClass"))
                 .totalStudentsInClass((Integer) statistics.get("totalStudentsInClass"))
                 .remarks((String) statistics.get("remarks"))
-                .subjectReports(subjectReports)
+                .subjectReports(subjectsWithAssessments) // Use filtered list
                 .academicYear(getAcademicYear(student))
                 .classTeacher(student.getClassRoom() != null ?
                         (student.getClassRoom().getClassTeacher() != null ?
                                 student.getClassRoom().getClassTeacher() : "Not Assigned") : "Not Assigned")
                 .passRate(passRate != null ? passRate : 0.0)
                 .subjectsPassed((int) subjectsPassed)
-                .totalSubjects(totalSubjects != null ? totalSubjects : 0)
+                .totalSubjects(totalSubjects)
                 .build();
     }
 
@@ -88,9 +92,16 @@ public class ReportMapper {
             // Term 3 only has exam
         }
 
-        // Calculate subject average using GradeService
-        Double subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, term);
-        String letterGrade = gradeService.calculateLetterGrade(subjectAverage, className);
+        // Only calculate average if there's at least one assessment
+        Double subjectAverage = null;
+        String letterGrade = null;
+
+        boolean hasAssessment = assessment1 != null || assessment2 != null;
+
+        if (hasAssessment) {
+            subjectAverage = gradeService.calculateSubjectAverage(assessment1, assessment2, term);
+            letterGrade = gradeService.calculateLetterGrade(subjectAverage, className);
+        }
 
         // Get coefficient with null check
         Integer coefficient = subject.getCoefficient();
@@ -99,8 +110,9 @@ public class ReportMapper {
             log.warn("Subject {} has null coefficient, defaulting to 1", subject.getName());
         }
 
-        log.debug("Subject Report - {}: A1={}, A2={}, Avg={}, Grade={}, Coeff={}",
-                subject.getName(), assessment1, assessment2, subjectAverage, letterGrade, coefficient);
+        log.debug("Subject Report - {}: A1={}, A2={}, Avg={}, Grade={}, Coeff={}, HasData={}",
+                subject.getName(), assessment1, assessment2, subjectAverage,
+                letterGrade, coefficient, hasAssessment);
 
         return SubjectReport.builder()
                 .subjectName(subject.getName())
@@ -110,7 +122,12 @@ public class ReportMapper {
                 .subjectAverage(subjectAverage)
                 .letterGrade(letterGrade)
                 .className(className)
+                .hasData(hasAssessment)  // Add this field
                 .build();
+    }
+
+    private boolean hasAtLeastOneAssessment(SubjectReport subjectReport) {
+        return subjectReport.getHasData() != null && subjectReport.getHasData();
     }
 
     private Double extractAssessmentScore(List<Assessment> assessments, AssessmentType type) {

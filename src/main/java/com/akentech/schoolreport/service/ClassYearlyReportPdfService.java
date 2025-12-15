@@ -45,17 +45,19 @@ public class ClassYearlyReportPdfService extends BasePdfService {
             throws DocumentException, IOException {
         PdfPTable headerTable = new PdfPTable(3);
         headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{2, 6, 2});
-        headerTable.setSpacingBefore(5);
+        headerTable.setWidths(new float[]{1.5f, 7, 1.5f});
+        headerTable.setSpacingBefore(2);
 
         try {
-            PdfPCell leftImageCell = createModernImageCell(LEFT_LOGO_PATH, Element.ALIGN_LEFT, 50);
+            PdfPCell leftImageCell = createModernImageCell(LEFT_LOGO_PATH, Element.ALIGN_LEFT, 40);
+            leftImageCell.setPadding(0);
             headerTable.addCell(leftImageCell);
 
             PdfPCell centerCell = createClassYearlyHeaderContentCell(classRoom, academicYear);
             headerTable.addCell(centerCell);
 
-            PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 50);
+            PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 40);
+            rightImageCell.setPadding(0);
             headerTable.addCell(rightImageCell);
 
         } catch (IOException e) {
@@ -72,26 +74,26 @@ public class ClassYearlyReportPdfService extends BasePdfService {
         PdfPCell contentCell = new PdfPCell();
         contentCell.setBorder(Rectangle.NO_BORDER);
         contentCell.setBackgroundColor(Color.WHITE);
-        contentCell.setPadding(5);
+        contentCell.setPadding(2);
         contentCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         contentCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
         Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
-                FontFactory.getFont("Helvetica-Bold", 16, PRIMARY_COLOR));
+                FontFactory.getFont("Helvetica-Bold", 12, PRIMARY_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
-        schoolName.setSpacingAfter(3);
+        schoolName.setSpacingAfter(1);
         contentCell.addElement(schoolName);
 
         Paragraph classInfo = new Paragraph("CLASS YEARLY REPORT - " + classRoom.getName(),
-                FontFactory.getFont("Helvetica-Bold", 12, SECONDARY_COLOR));
+                FontFactory.getFont("Helvetica-Bold", 10, SECONDARY_COLOR));
         classInfo.setAlignment(Element.ALIGN_CENTER);
-        classInfo.setSpacingAfter(3);
+        classInfo.setSpacingAfter(1);
         contentCell.addElement(classInfo);
 
         Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
-                FontFactory.getFont(FontFactory.HELVETICA, 10, ACCENT_COLOR));
+                FontFactory.getFont(FontFactory.HELVETICA, 8, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
-        yearParagraph.setSpacingAfter(5);
+        yearParagraph.setSpacingAfter(3);
         contentCell.addElement(yearParagraph);
 
         return contentCell;
@@ -101,30 +103,30 @@ public class ClassYearlyReportPdfService extends BasePdfService {
             throws DocumentException {
         PdfPTable headerTable = new PdfPTable(1);
         headerTable.setWidthPercentage(100);
-        headerTable.setSpacingBefore(5);
+        headerTable.setSpacingBefore(2);
 
         PdfPCell headerCell = new PdfPCell();
         headerCell.setBorder(Rectangle.NO_BORDER);
         headerCell.setBackgroundColor(Color.WHITE);
-        headerCell.setPadding(10);
+        headerCell.setPadding(3);
         headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
         Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
-                FontFactory.getFont("Helvetica-Bold", 18, PRIMARY_COLOR));
+                FontFactory.getFont("Helvetica-Bold", 12, PRIMARY_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
-        schoolName.setSpacingAfter(3);
+        schoolName.setSpacingAfter(1);
         headerCell.addElement(schoolName);
 
         Paragraph classInfo = new Paragraph("CLASS YEARLY REPORT - " + classRoom.getName(),
-                FontFactory.getFont("Helvetica-Bold", 14, SECONDARY_COLOR));
+                FontFactory.getFont("Helvetica-Bold", 10, SECONDARY_COLOR));
         classInfo.setAlignment(Element.ALIGN_CENTER);
-        classInfo.setSpacingAfter(5);
+        classInfo.setSpacingAfter(2);
         headerCell.addElement(classInfo);
 
         Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
-                FontFactory.getFont(FontFactory.HELVETICA, 11, ACCENT_COLOR));
+                FontFactory.getFont(FontFactory.HELVETICA, 8, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
-        yearParagraph.setSpacingAfter(5);
+        yearParagraph.setSpacingAfter(2);
         headerCell.addElement(yearParagraph);
 
         headerTable.addCell(headerCell);
@@ -136,9 +138,10 @@ public class ClassYearlyReportPdfService extends BasePdfService {
             throws DocumentException {
         PdfPTable summaryTable = new PdfPTable(1);
         summaryTable.setWidthPercentage(100);
-        summaryTable.setSpacingBefore(10);
+        summaryTable.setSpacingBefore(5);
 
         PdfPCell titleCell = createModernCardCell("YEARLY CLASS SUMMARY", PRIMARY_COLOR);
+        titleCell.setPadding(2);
 
         int totalStudents = reports.size();
         long passedStudents = reports.stream().filter(YearlyReportDTO::getPassed).count();
@@ -172,23 +175,24 @@ public class ClassYearlyReportPdfService extends BasePdfService {
             throws DocumentException {
         PdfPTable sectionTable = new PdfPTable(1);
         sectionTable.setWidthPercentage(100);
-        sectionTable.setSpacingBefore(10);
+        sectionTable.setSpacingBefore(5);
 
         PdfPCell titleCell = createModernCardCell("YEARLY PERFORMANCE RANKING", SECONDARY_COLOR);
+        titleCell.setPadding(2);
 
         PdfPTable performanceTable = new PdfPTable(8);
         performanceTable.setWidthPercentage(100);
-        performanceTable.setWidths(new float[]{1, 2, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f});
+        performanceTable.setWidths(new float[]{0.7f, 1.6f, 0.9f, 0.9f, 0.7f, 0.9f, 0.9f, 1.4f});
 
         String[] headers = {"Rank", "Student", "Roll No", "Yearly Avg", "Grade", "Pass Rate", "Status", "Remarks"};
         for (String header : headers) {
             PdfPCell cell = new PdfPCell(new Phrase(header,
-                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE)));
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, Color.WHITE)));
             cell.setBackgroundColor(PRIMARY_COLOR);
             cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            cell.setPadding(5);
+            cell.setPadding(2);
             cell.setBorder(Rectangle.NO_BORDER);
-            cell.setCellEvent(new RoundedBorderCellEvent(3, PRIMARY_COLOR, 0));
+            cell.setCellEvent(new RoundedBorderCellEvent(2, PRIMARY_COLOR, 0));
             performanceTable.addCell(cell);
         }
 
@@ -238,12 +242,12 @@ public class ClassYearlyReportPdfService extends BasePdfService {
 
     private void addClassYearlyCell(PdfPTable table, String text, Color bgColor, int alignment) {
         PdfPCell cell = new PdfPCell(new Phrase(text,
-                FontFactory.getFont(FontFactory.HELVETICA, 8, getContrastColor(bgColor))));
+                FontFactory.getFont(FontFactory.HELVETICA, 6, getContrastColor(bgColor))));
         cell.setBackgroundColor(bgColor);
         cell.setHorizontalAlignment(alignment);
-        cell.setPadding(4);
+        cell.setPadding(1);
         cell.setBorder(Rectangle.NO_BORDER);
-        cell.setCellEvent(new RoundedBorderCellEvent(3, bgColor, 0));
+        cell.setCellEvent(new RoundedBorderCellEvent(1, bgColor, 0));
         table.addCell(cell);
     }
 
@@ -251,9 +255,10 @@ public class ClassYearlyReportPdfService extends BasePdfService {
             throws DocumentException {
         PdfPTable sectionTable = new PdfPTable(1);
         sectionTable.setWidthPercentage(100);
-        sectionTable.setSpacingBefore(10);
+        sectionTable.setSpacingBefore(5);
 
         PdfPCell titleCell = createModernCardCell("PROMOTION STATISTICS", ACCENT_COLOR);
+        titleCell.setPadding(2);
 
         int totalStudents = reports.size();
         long promoted = reports.stream().filter(YearlyReportDTO::getPassed).count();
@@ -261,7 +266,7 @@ public class ClassYearlyReportPdfService extends BasePdfService {
         double promotionRate = totalStudents > 0 ? (promoted * 100.0) / totalStudents : 0.0;
 
         PdfPTable statsTable = new PdfPTable(4);
-        statsTable.setWidthPercentage(80);
+        statsTable.setWidthPercentage(70);
         statsTable.setHorizontalAlignment(Element.ALIGN_CENTER);
         statsTable.setWidths(new float[]{1, 1, 1, 1});
 

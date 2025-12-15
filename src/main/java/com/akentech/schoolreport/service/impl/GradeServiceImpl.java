@@ -166,6 +166,12 @@ public class GradeServiceImpl implements GradeService {
         int validSubjects = 0;
 
         for (SubjectReport subject : subjectReports) {
+            // Skip subjects without data
+            if (!subject.hasData()) {
+                log.debug("Skipping subject {} - no assessment data", subject.getSubjectName());
+                continue;
+            }
+
             Double subjectAverage = subject.getSubjectAverage();
             Integer coefficient = subject.getCoefficient();
 
@@ -199,6 +205,7 @@ public class GradeServiceImpl implements GradeService {
         return average;
     }
 
+
     @Override
     public Double calculatePassRate(List<SubjectReport> subjectReports, String className) {
         if (subjectReports == null || subjectReports.isEmpty()) {
@@ -206,7 +213,7 @@ public class GradeServiceImpl implements GradeService {
         }
 
         long totalSubjects = subjectReports.stream()
-                .filter(SubjectReport::hasData)
+                .filter(SubjectReport::hasData)  // Only count subjects with data
                 .count();
 
         if (totalSubjects == 0) {
@@ -214,6 +221,7 @@ public class GradeServiceImpl implements GradeService {
         }
 
         long passedSubjects = subjectReports.stream()
+                .filter(SubjectReport::hasData)  // Only consider subjects with data
                 .filter(s -> s.getLetterGrade() != null && isSubjectPassing(s.getLetterGrade(), className))
                 .count();
 
@@ -227,6 +235,7 @@ public class GradeServiceImpl implements GradeService {
         }
 
         return subjectReports.stream()
+                .filter(SubjectReport::hasData)  // Only consider subjects with data
                 .filter(s -> s.getLetterGrade() != null && isSubjectPassing(s.getLetterGrade(), className))
                 .count();
     }

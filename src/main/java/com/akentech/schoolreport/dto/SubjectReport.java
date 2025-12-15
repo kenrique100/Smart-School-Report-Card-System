@@ -16,7 +16,8 @@ public class SubjectReport {
     private Double assessment2;
     private Double subjectAverage;
     private String letterGrade;
-    private String className; // Add this field
+    private String className;
+    private Boolean hasData;
 
     // Fixed: Add proper getPassed() method that uses className
     public Boolean getPassed() {
@@ -69,8 +70,7 @@ public class SubjectReport {
         }
     }
 
-    // Helper method to check if subject has data
     public boolean hasData() {
-        return assessment1 != null || assessment2 != null || subjectAverage != null;
+        return hasData != null && hasData;
     }
 }

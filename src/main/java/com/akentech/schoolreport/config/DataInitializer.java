@@ -1555,6 +1555,11 @@ public class DataInitializer implements CommandLineRunner {
                             new SubjectSpec("Citizenship", 2, levelCode + "-HE-CIT", true),
                             new SubjectSpec("Management Aided in Computer", 2, levelCode + "-HE-MGT-COMP", true),
                             new SubjectSpec("Computer Science", 2, levelCode + "-HE-COMP", true),
+                            new SubjectSpec("Biology", 3, levelCode + "-HE-BIO", true),
+                            new SubjectSpec("Physic", 3, levelCode + "-HE-PHY", true),
+                            new SubjectSpec("Chemistry", 3, levelCode + "-HE-CHEM", true),
+                            new SubjectSpec("Literature In English", 3, levelCode + "-HE-LIT", true),
+                            new SubjectSpec("History", 3, levelCode + "-HE-HIST", true),
                             new SubjectSpec("ICT", 2, levelCode + "-HE-ICT", true)
                     )
             );
