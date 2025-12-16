@@ -37,6 +37,12 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
 
     List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNull(Long classRoomId, Long departmentId);
 
+    @Query("SELECT s FROM Subject s WHERE s.classRoom.id = :classroomId AND s.department.id = :departmentId AND s.specialty IS NOT NULL")
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNotNull(
+            @Param("classroomId") Long classroomId,
+            @Param("departmentId") Long departmentId
+    );
+
     @Query("SELECT s FROM Subject s WHERE " +
             "(:name IS NULL OR s.name LIKE %:name%) AND " +
             "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +

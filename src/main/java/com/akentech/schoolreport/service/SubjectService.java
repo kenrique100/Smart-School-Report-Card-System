@@ -164,8 +164,6 @@ public class SubjectService {
         try {
             // First, find the classroom by code
             ClassLevel classLevel = ClassLevel.fromString(classCode);
-
-            // Get the classroom ID from the class level
             Long classroomId = getClassroomIdByClassLevel(classLevel);
 
             if (classroomId == null) {
@@ -173,34 +171,47 @@ public class SubjectService {
                 return new ArrayList<>();
             }
 
-            // Filter based on all criteria
-            List<Subject> filteredSubjects;
+            // Check if this is Forms 3-5 Commercial
+            Optional<Department> departmentOpt = departmentRepository.findById(departmentId);
+            if (departmentOpt.isPresent()) {
+                Department department = departmentOpt.get();
 
-            if (departmentId != null && specialty != null && !specialty.trim().isEmpty()) {
-                // All three criteria specified
+                // Check for Forms 3-5 Commercial special case
+                if ((classLevel == ClassLevel.FORM_3 || classLevel == ClassLevel.FORM_4 || classLevel == ClassLevel.FORM_5)
+                        && department.getCode() == DepartmentCode.COM) {
+
+                    log.info("Forms 3-5 Commercial special handling activated");
+
+                    if (specialty != null && !specialty.trim().isEmpty()) {
+                        // Get subjects for specific specialty
+                        return subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialty(classroomId, departmentId, specialty);
+                    } else {
+                        // Get ALL subjects for Forms 3-5 Commercial (compulsory + all specialties)
+                        // This allows frontend to show specialty selection dropdown
+                        return subjectRepository.findByClassRoomIdAndDepartmentId(classroomId, departmentId);
+                    }
+                }
+            }
+
+            // Default logic for other cases
+            List<Subject> filteredSubjects;
+            if (specialty != null && !specialty.trim().isEmpty()) {
                 filteredSubjects = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialty(
                         classroomId, departmentId, specialty);
-            } else if (departmentId != null) {
-                // Classroom and department only
+            } else {
                 filteredSubjects = subjectRepository.findByClassRoomIdAndDepartmentId(
                         classroomId, departmentId);
-            } else {
-                // Classroom only
-                filteredSubjects = subjectRepository.findByClassroomIdWithDepartment(classroomId);
             }
 
             log.info("✅ Found {} subjects for class {}, department {}, specialty {}",
                     filteredSubjects.size(), classCode, departmentId, specialty);
-
             return filteredSubjects;
 
         } catch (Exception e) {
-            log.error("❌ Error getting subjects for class: {}, department: {}, specialty: {}. Error: {}",
-                    classCode, departmentId, specialty, e.getMessage());
+            log.error("❌ Error getting subjects: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
-
     @Transactional(readOnly = true)
     public Map<String, List<Subject>> getGroupedSubjectsForEnrollment(String classCode, Long departmentId, String specialty) {
         log.info("📚 Grouping subjects for enrollment - class: {}, department: {}, specialty: {}",
@@ -244,22 +255,29 @@ public class SubjectService {
             log.info("Forms 1-2: Found {} subjects for department {}", availableSubjects.size(), departmentId);
         }
         else if (isForm3to5) {
-            // Forms 3-5: Get subjects with matching specialty OR without specialty (compulsory subjects)
+            // Forms 3-5: Get ALL subjects for the classroom and department
             Long classroomId = getClassroomIdByClassLevel(classLevel);
 
-            // Get subjects with the specific specialty
-            if (specialty != null && !specialty.trim().isEmpty()) {
-                List<Subject> specialtySubs = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialty(
-                        classroomId, departmentId, specialty);
-                availableSubjects.addAll(specialtySubs);
-                log.info("Forms 3-5: Found {} subjects for specialty {}", specialtySubs.size(), specialty);
-            }
+            // Get all subjects first
+            availableSubjects = subjectRepository.findByClassRoomIdAndDepartmentId(classroomId, departmentId);
+            log.info("Forms 3-5: Found {} total subjects for department {}", availableSubjects.size(), departmentId);
 
-            // ALSO get subjects without specialty (these are the compulsory subjects)
-            List<Subject> noSpecialtySubs = subjectRepository.findByClassRoomIdAndDepartmentIdAndSpecialtyIsNull(
-                    classroomId, departmentId);
-            availableSubjects.addAll(noSpecialtySubs);
-            log.info("Forms 3-5: Found {} subjects without specialty", noSpecialtySubs.size());
+            // If specialty is selected, filter out specialty subjects that don't match
+            if (specialty != null && !specialty.trim().isEmpty()) {
+                availableSubjects = availableSubjects.stream()
+                        .filter(subject -> {
+                            if (subject.getSpecialty() == null || subject.getSpecialty().isEmpty()) {
+                                return true; // Keep compulsory subjects (no specialty)
+                            }
+                            // Keep only specialty subjects that match the selected specialty
+                            return subject.getSpecialty().equalsIgnoreCase(specialty.trim());
+                        })
+                        .collect(Collectors.toList());
+                log.info("Forms 3-5: After filtering for specialty '{}': {} subjects", specialty, availableSubjects.size());
+            } else {
+                // If no specialty selected yet, show all subjects (user will see all options)
+                log.info("Forms 3-5: No specialty selected, showing all {} subjects", availableSubjects.size());
+            }
         }
         else if (isSixthForm) {
             // Sixth Form: Get subjects with matching specialty

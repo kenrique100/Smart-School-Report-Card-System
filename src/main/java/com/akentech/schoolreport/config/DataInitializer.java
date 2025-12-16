@@ -1461,7 +1461,10 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Law and Government", 2, formCode + "-BC-LAW", true),
                         new SubjectSpec("History / Geography", 3, formCode + "-BC-HISTGEO", true),
                         new SubjectSpec("Computer Science", 3, formCode + "-BC-COMPSCI", true),
-                        new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI", true)
+                        new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI", true),
+                        new SubjectSpec("History", 3, formCode + "-BC-HIST", true),
+                        new SubjectSpec("Geography", 3, formCode + "-BC-GEO", true)
+
                 ));
             }
         }
