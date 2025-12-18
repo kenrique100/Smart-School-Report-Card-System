@@ -479,7 +479,7 @@ public class YearlyReportPdfService extends BasePdfService {
         vpTitle.setSpacingBefore(3);
         vpCell.addElement(vpTitle);
 
-        Paragraph vpName = new Paragraph("Mr Wilfred Mbah Fomugom",
+        Paragraph vpName = new Paragraph("Mr Kohsu Israel Kari",
                 FontFactory.getFont(FontFactory.HELVETICA, 9, PRIMARY_COLOR));
         vpName.setAlignment(Element.ALIGN_RIGHT);
         vpName.setSpacingBefore(2);

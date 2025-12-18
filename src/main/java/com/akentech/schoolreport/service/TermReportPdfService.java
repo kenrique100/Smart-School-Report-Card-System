@@ -103,7 +103,7 @@ public class TermReportPdfService extends BasePdfService {
         arcEffect.setSpacingAfter(2);
         contentCell.addElement(arcEffect);
 
-        Paragraph motto = new Paragraph("Excellence • In • Creativity • And • Innovation",
+        Paragraph motto = new Paragraph("Vision • For • Quality • And • Patriotic • Education",
                 FontFactory.getFont(FontFactory.HELVETICA, 7, ACCENT_COLOR));
         motto.setAlignment(Element.ALIGN_CENTER);
         motto.setSpacingAfter(2);
@@ -556,7 +556,7 @@ public class TermReportPdfService extends BasePdfService {
         vpCell.addElement(vpTitle);
 
 // Name
-        Paragraph vpName = new Paragraph("Mr Wilfred Mbah Fomugom",
+        Paragraph vpName = new Paragraph("Mr Kohsu Israel Kari",
                 FontFactory.getFont(FontFactory.HELVETICA, 8, PRIMARY_COLOR));
         vpName.setAlignment(Element.ALIGN_RIGHT);
         vpName.setSpacingBefore(1);

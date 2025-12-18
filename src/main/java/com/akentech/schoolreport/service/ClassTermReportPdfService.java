@@ -103,7 +103,7 @@ public class ClassTermReportPdfService extends BasePdfService {
         yearParagraph.setSpacingAfter(2);
         contentCell.addElement(yearParagraph);
 
-        Paragraph motto = new Paragraph("Excellence • In • Creativity • And • Innovation",
+        Paragraph motto = new Paragraph("Vision • For • Quality • And • Patriotic • Education",
                 FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(150, 150, 150)));
         motto.setAlignment(Element.ALIGN_CENTER);
         motto.setSpacingAfter(2);
