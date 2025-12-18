@@ -184,7 +184,22 @@ public class DataInitializer implements CommandLineRunner {
                             Subject.builder().name("French").coefficient(5)
                                     .department(deptMap.get(DepartmentCode.GEN))
                                     .classRoom(classRoomMap.get(ClassLevel.FORM_1))
-                                    .subjectCode("F1-GEN-FREN").description("French - Form 1").build()
+                                    .subjectCode("F1-GEN-FREN").description("French - Form 1").build(),
+
+                            Subject.builder().name("CitizenShip").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-CIT").description("Citizenship - Form 1").build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-PE").description("Physical Education - Form 1").build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_1))
+                                    .subjectCode("F1-GEN-MN").description("Manual Labour - Form 1").build()
 
                     ));
                 }
@@ -237,7 +252,22 @@ public class DataInitializer implements CommandLineRunner {
                             Subject.builder().name("Literature in English").coefficient(3)
                                     .department(deptMap.get(DepartmentCode.GEN))
                                     .classRoom(classRoomMap.get(ClassLevel.FORM_2))
-                                    .subjectCode("F2-GEN-LIT").description("Literature in English - Form 2").build()
+                                    .subjectCode("F2-GEN-LIT").description("Literature in English - Form 2").build(),
+
+                            Subject.builder().name("CitizenShip").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-CIT").description("Citizenship - Form 2").build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-PE").description("Physical Education - Form 2").build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_2))
+                                    .subjectCode("F2-GEN-MN").description("Manual Labour - Form 2").build()
 
                     ));
                 }
@@ -289,7 +319,37 @@ public class DataInitializer implements CommandLineRunner {
                             Subject.builder().name("Literature in English").coefficient(3)
                                     .department(deptMap.get(DepartmentCode.GEN))
                                     .classRoom(classRoomMap.get(ClassLevel.FORM_3))
-                                    .subjectCode("F3-GEN-LIT").description("Literature in English - Form 3").build()
+                                    .subjectCode("F3-GEN-LIT").description("Literature in English - Form 3").build(),
+
+                            Subject.builder().name("History").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-HIT").description("History - Form 3").build(),
+
+                            Subject.builder().name("Economics").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-ECONS").description("Economics - Form 3").build(),
+
+                            Subject.builder().name("Religious Studies").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-REL").description("Religious Studies - Form 3").build(),
+
+                            Subject.builder().name("CitizenShip").coefficient(2)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-CIT").description("Citizenship - Form 3").build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-PE").description("Physical Education - Form 3").build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.GEN))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_3))
+                                    .subjectCode("F3-GEN-MN").description("Manual Labour - Form 3").build()
 
                     ));
                 }
@@ -400,6 +460,30 @@ public class DataInitializer implements CommandLineRunner {
                                     .subjectCode("F4-SCI-ICT")
                                     .description("ICT -Form 4 Science (Optional")
                                     .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Food and Nutrition").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-FN")
+                                    .description("Food And Nutrition -Form 4 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-PE")
+                                    .description("Physical Education -Form 4 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-SCI-ML")
+                                    .description("Manual Labour -Form 4 Science (Optional")
+                                    .optional(true)
                                     .build()
                     ));
                 }
@@ -486,6 +570,14 @@ public class DataInitializer implements CommandLineRunner {
                                     .optional(true)
                                     .build(),
 
+                            Subject.builder().name("Food and Nutrition").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-FN")
+                                    .description("Food And Nutrition -Form 5 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
 
                             Subject.builder().name("Computer Science").coefficient(3)
                                     .department(deptMap.get(DepartmentCode.SCI))
@@ -500,6 +592,22 @@ public class DataInitializer implements CommandLineRunner {
                                     .classRoom(classRoomMap.get(ClassLevel.FORM_5))
                                     .subjectCode("F5-SCI-ICT")
                                     .description("ICT -Form 5 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-PE")
+                                    .description("Physical Education -Form 5 Science (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.SCI))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-SCI-ML")
+                                    .description("Manual Labour -Form 5 Science (Optional")
                                     .optional(true)
                                     .build()
 
@@ -575,9 +683,9 @@ public class DataInitializer implements CommandLineRunner {
 
                             Subject.builder().name("Religious Studies").coefficient(2)
                                     .department(deptMap.get(DepartmentCode.ART))
-                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
-                                    .subjectCode("F5-ART-RS")
-                                    .description("Religious Studies - Form 5 Arts")
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-RS")
+                                    .description("Religious Studies - Form 4 Arts")
                                     .optional(true)
                                     .build(),
 
@@ -594,6 +702,30 @@ public class DataInitializer implements CommandLineRunner {
                                     .classRoom(classRoomMap.get(ClassLevel.FORM_4))
                                     .subjectCode("F4-ART-BIO")
                                     .description("Biology -Form 4 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Food and Nutrition").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-FN")
+                                    .description("Food And Nutrition -Form 4 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-PE")
+                                    .description("Physical Education -Form 4 Art (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_4))
+                                    .subjectCode("F4-ART-ML")
+                                    .description("Manual Labour -Form 4 Art (Optional")
                                     .optional(true)
                                     .build()
                     ));
@@ -661,8 +793,33 @@ public class DataInitializer implements CommandLineRunner {
                                     .subjectCode("F5-ART-BIO")
                                     .description("Biology -Form 5 Arts (Optional")
                                     .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Food and Nutrition").coefficient(3)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-FN")
+                                    .description("Food And Nutrition -Form 5 Arts (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Physical Education").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-PE")
+                                    .description("Physical Education -Form 5 Art (Optional")
+                                    .optional(true)
+                                    .build(),
+
+                            Subject.builder().name("Manual Labour").coefficient(1)
+                                    .department(deptMap.get(DepartmentCode.ART))
+                                    .classRoom(classRoomMap.get(ClassLevel.FORM_5))
+                                    .subjectCode("F5-ART-ML")
+                                    .description("Manual Labour -Form 5 Art (Optional")
+                                    .optional(true)
                                     .build()
-                    ));
+
+                     ));
                 }
 
                 // ============================================================
@@ -827,6 +984,13 @@ public class DataInitializer implements CommandLineRunner {
                                 .classRoom(classRoomMap.get(level))
                                 .subjectCode(formCode + "-GEN-FN-OPT")
                                 .description("Optional Food And Nutrition - " + classRoomMap.get(level).getName())
+                                .optional(true).build(),
+
+                        Subject.builder().name("Home Economics(Optional)").coefficient(2)
+                                .department(department)
+                                .classRoom(classRoomMap.get(level))
+                                .subjectCode(formCode + "-GEN-HM-OPT")
+                                .description("Optional Home Economics - " + classRoomMap.get(level).getName())
                                 .optional(true).build()
                 ));
             }
@@ -1140,38 +1304,43 @@ public class DataInitializer implements CommandLineRunner {
         // Forms 1-2 Commercial Subjects (no specialties)
         createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_1, "F1-COM", Arrays.asList(
                 // Core / Compulsory Subjects
-                new SubjectSpec("O-Mathematics", 5, "F1-COM-MATH"),
-                new SubjectSpec("O-English Language", 5, "F1-COM-ENG"),
-                new SubjectSpec("O-French Language", 5, "F1-COM-FREN"),
-                new SubjectSpec("O-Physics", 4, "F1-COM-PHY"),
-                new SubjectSpec("O-Chemistry", 4, "F1-COM-CHEM"),
-                new SubjectSpec("O-Biology", 3, "F1-COM-BIO"),
-                new SubjectSpec("O-Geography", 3, "F1-COM-GEO"),
-                new SubjectSpec("O-History", 3, "F1-COM-HIS"),
-                new SubjectSpec("O-Citizenship Education", 2, "F1-COM-CIT"),
-                new SubjectSpec("O-Physical Education", 2, "F1-COM-PE"),
+                new SubjectSpec("Mathematics", 5, "F1-COM-MATH"),
+                new SubjectSpec("English Language", 5, "F1-COM-ENG"),
+                new SubjectSpec("French", 5, "F1-COM-FREN"),
+                new SubjectSpec("Physics", 4, "F1-COM-PHY"),
+                new SubjectSpec("Chemistry", 4, "F1-COM-CHEM"),
+                new SubjectSpec("Biology", 3, "F1-COM-BIO"),
+                new SubjectSpec("Geography", 3, "F1-COM-GEO"),
+                new SubjectSpec("History", 3, "F1-COM-HIS"),
+                new SubjectSpec("Citizenship Education", 2, "F1-COM-CIT"),
+                new SubjectSpec("Physical Education", 2, "F1-COM-PE"),
+                new SubjectSpec("Literature In English", 3, "F1-COM-LIT"),
+                new SubjectSpec("Manual Labour", 1, "F1-COM-MAN"),
+                new SubjectSpec("Marketing", 3, "F1-COM-MART"),
 
                 // Trade / Commercial Subjects
                 new SubjectSpec("Accounting", 3, "F1-COM-ACC"),
                 new SubjectSpec("Commerce", 3, "F1-COM-COM"),
                 new SubjectSpec("Office and Administrative Management", 3, "F1-COM-OAM"),
-                new SubjectSpec("Information Technology", 2, "F1-COM-IT"),
                 new SubjectSpec("Computer Science", 2, "F1-COM-COMP")
         ));
 
         createFormSubjects(subjects, department, classRoomMap, ClassLevel.FORM_2, "F2-COM", Arrays.asList(
                 // Core / Compulsory Subjects
-                new SubjectSpec("O-Mathematics", 5, "F2-COM-MATH"),
-                new SubjectSpec("O-English Language", 5, "F2-COM-ENG"),
-                new SubjectSpec("O-French Language", 5, "F2-COM-FREN"),
-                new SubjectSpec("O-Physics", 4, "F2-COM-PHY"),
-                new SubjectSpec("O-Chemistry", 4, "F2-COM-CHEM"),
-                new SubjectSpec("O-Biology", 3, "F2-COM-BIO"),
-                new SubjectSpec("O-Geography", 3, "F2-COM-GEO"),
-                new SubjectSpec("O-History", 3, "F2-COM-HIS"),
-                new SubjectSpec("O-Citizenship Education", 2, "F2-COM-CIT"),
-                new SubjectSpec("O-Physical Education", 2, "F2-COM-PE"),
-                new SubjectSpec("Computer Science", 2, "F2-COM-COMP"),
+                new SubjectSpec("Mathematics", 5, "F2-COM-MATH"),
+                new SubjectSpec("English Language", 5, "F2-COM-ENG"),
+                new SubjectSpec("French Language", 5, "F2-COM-FREN"),
+                new SubjectSpec("Physics", 4, "F2-COM-PHY"),
+                new SubjectSpec("Chemistry", 4, "F2-COM-CHEM"),
+                new SubjectSpec("Biology", 3, "F2-COM-BIO"),
+                new SubjectSpec("Geography", 3, "F2-COM-GEO"),
+                new SubjectSpec("History", 3, "F2-COM-HIS"),
+                new SubjectSpec("Marketing", 3, "F2-COM-MART"),
+                new SubjectSpec("Citizenship", 2, "F2-COM-CIT"),
+                new SubjectSpec("Physical Education", 1, "F2-COM-PE"),
+                new SubjectSpec("Computer Science", 3, "F2-COM-COMP"),
+                new SubjectSpec("Manual Labour", 1, "F2-COM-MAN"),
+                new SubjectSpec("Literature In English", 3, "F2-COM-LIT"),
 
                 // Trade / Commercial Subjects
                 new SubjectSpec("Accounting", 3, "F2-COM-ACC"),
@@ -1199,8 +1368,20 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Law and Government", 2, formCode + "-COM-LAW", true),
                         new SubjectSpec("Physical Education", 2, formCode + "-COM-PE", true),
                         new SubjectSpec("Citizenship", 2, formCode + "-COM-CIT", true),
+                        new SubjectSpec("Commence", 3, formCode + "-COM-COM", true),
+                        new SubjectSpec("Physics", 3, formCode + "-COM-PHY", true),
+                        new SubjectSpec("Chemistry", 3, formCode + "-COM-CHEM", true),
+                        new SubjectSpec("Biology", 3, formCode + "-COM-BIO", true),
+                        new SubjectSpec("Marketing", 3, formCode + "-COM-MART", true),
+                        new SubjectSpec("Food Nutrition", 3, formCode + "-COM-FN", true),
+                        new SubjectSpec("Geography", 3, formCode + "-COM-GEO", true),
+                        new SubjectSpec("Literature", 3, formCode + "-COM-LIT", true),
+                        new SubjectSpec("History", 3, formCode + "-COM-HIST", true),
+                        new SubjectSpec("Religious Studies", 3, formCode + "-COM-REL", true),
                         new SubjectSpec("Computer Science", 2, formCode + "-COM-COMP", true),
-                        new SubjectSpec("ICT", 2, formCode + "-COM-ICT", true)
+                        new SubjectSpec("ICT", 2, formCode + "-COM-ICT", true),
+                        new SubjectSpec("Manual Labour", 2, formCode + "-COM-MAN", true),
+                        new SubjectSpec("Physical Education", 2, formCode + "-COM-PHY-EDU", true)
                 ));
             }
         }
@@ -1459,7 +1640,13 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Trade and Training", 3, formCode + "-BC-TT", true),
                         new SubjectSpec("Citizenship", 2, formCode + "-BC-CIT", true),
                         new SubjectSpec("Law and Government", 2, formCode + "-BC-LAW", true),
-                        new SubjectSpec("History / Geography", 3, formCode + "-BC-HISTGEO", true),
+                        new SubjectSpec("History", 3, formCode + "-BC-HIST", true),
+                        new SubjectSpec("Geography", 3, formCode + "-BC-GEO", true),
+                        new SubjectSpec("Literature", 3, formCode + "-BC-LIT", true),
+                        new SubjectSpec("Food Nutrition", 3, formCode + "-BC-FN", true),
+                        new SubjectSpec("Home Economics", 3, formCode + "-BC-HM", true),
+                        new SubjectSpec("Economics", 3, formCode + "-BC-ECONS", true),
+                        new SubjectSpec("Biology", 3, formCode + "-BC-BIO", true),
                         new SubjectSpec("Computer Science", 3, formCode + "-BC-COMPSCI", true),
                         new SubjectSpec("Engineering Science", 3, formCode + "-BC-ENGSCI", true)
                 ));
@@ -1615,7 +1802,6 @@ public class DataInitializer implements CommandLineRunner {
     private void createEPSSubjects(List<Subject> subjects, Department department,
                                    Map<ClassLevel, ClassRoom> classRoomMap) {
 
-        // Forms 1 Building Construction Subjects
         for (ClassLevel level : Arrays.asList(ClassLevel.FORM_1, ClassLevel.FORM_2, ClassLevel.FORM_3,
                 ClassLevel.FORM_4, ClassLevel.FORM_5)) {
             if (classRoomMap.containsKey(level)) {
@@ -1633,9 +1819,9 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Electrical Technology", 2, formCode + "-EPS-ELEC-TECH"),
                         new SubjectSpec("Electrical Diagram", 2, formCode + "-EPS-ELEC-DIA"),
 
-                        // ✅ OPTIONAL SUBJECTS
+                        // ✅ OPTIONAL SUBJECTS - FIXED: Make all codes unique
                         new SubjectSpec("Citizenship", 2, formCode + "-EPS-CIT", true),
-                        new SubjectSpec("Human And Economic Geography", 2, formCode + "-EPS-GEO", true),
+                        new SubjectSpec("Human And Economic Geography", 2, formCode + "-EPS-HEGEO", true),  // Changed to HEGEO
                         new SubjectSpec("Engineering Science", 2, formCode + "-EPS-ENG-SCI", true),
                         new SubjectSpec("Computer Science", 3, formCode + "-EPS-COMP", true),
                         new SubjectSpec("Entrepreneurship", 2, formCode + "-EPS-ENT", true),
@@ -1643,7 +1829,19 @@ public class DataInitializer implements CommandLineRunner {
                         new SubjectSpec("Electrical Machine", 2, formCode + "-EPS-ELEC-MACH", true),
                         new SubjectSpec("Test and Measurement", 2, formCode + "-EPS-TEST-MEA", true),
                         new SubjectSpec("Law And Government", 2, formCode + "-EPS-LAW-GOV", true),
-                        new SubjectSpec("Industrial Computing", 3, formCode + "-EPS-INT-COMP", true)
+                        new SubjectSpec("Industrial Computing", 3, formCode + "-EPS-IND-COMP", true),  // Changed from INT-COMP to IND-COMP
+                        new SubjectSpec("Physics", 3, formCode + "-EPS-PHY", true),
+                        new SubjectSpec("Chemistry", 3, formCode + "-EPS-CHEM", true),
+                        new SubjectSpec("Biology", 3, formCode + "-EPS-BIO", true),
+                        new SubjectSpec("Geography", 3, formCode + "-EPS-GEO", true),  // Regular Geography
+                        new SubjectSpec("Religious Studies", 3, formCode + "-EPS-REL", true),  // Fixed code
+                        new SubjectSpec("History", 3, formCode + "-EPS-HIST", true),  // Fixed code
+                        new SubjectSpec("Literature", 3, formCode + "-EPS-LIT", true),
+                        new SubjectSpec("Economics", 3, formCode + "-EPS-ECONS", true),
+                        new SubjectSpec("Sports", 1, formCode + "-EPS-SPORT", true),
+                        new SubjectSpec("Food Nutrition", 3, formCode + "-EPS-FN", true),
+                        new SubjectSpec("Home Economics", 3, formCode + "-EPS-HOME-ECON", true),  // Changed from HM
+                        new SubjectSpec("Manual Labour", 3, formCode + "-EPS-MANUAL", true)  // Changed from MAN-LAB
                 ));
             }
         }
@@ -1738,11 +1936,24 @@ public class DataInitializer implements CommandLineRunner {
 
                             // ✅ OPTIONAL SUBJECTS
                             new SubjectSpec("Citizenship", 3, levelCode + "-CI-CIT", true),
+                            new SubjectSpec("Physics", 3, levelCode + "-CI-PHY", true),
+                            new SubjectSpec("Chemistry", 3, levelCode + "-CI-CHEM", true),
+                            new SubjectSpec("Biology", 3, levelCode + "-CI-BIO", true),
+                            new SubjectSpec("Geography", 3, levelCode + "-CI-GEO", true),
+                            new SubjectSpec("Religious Studies", 3, levelCode + "-CI-REL", true),
+                            new SubjectSpec("History", 3, levelCode + "-CI-HIS", true),
+                            new SubjectSpec("Literature", 3, levelCode + "-CI-LIT", true),
+                            new SubjectSpec("Engineering Science", 1, levelCode + "-CI-ENG-SCI", true),
+                            new SubjectSpec("Economics", 3, levelCode + "-CI-ECONS", true),
+                            new SubjectSpec("Sports", 1, levelCode + "-CI-SPORT", true),
+                            new SubjectSpec("Manual Labour", 3, levelCode + "-CI-MAN-LAB", true),
                             new SubjectSpec("Physical Science", 4, levelCode + "-CI-PSCI", true),
                             new SubjectSpec("Legislation", 4, levelCode + "-CI-LAW", true),
                             new SubjectSpec("Work Organization", 2, levelCode + "-CI-WORKORG", true),
                             new SubjectSpec("Fashion Drawing", 3, levelCode + "-CI-FDRAW", true),
                             new SubjectSpec("Computer Science", 4, levelCode + "-CI-CS", true),
+                            new SubjectSpec("Food Nutrition", 3, levelCode + "-CI-FN", true),
+                            new SubjectSpec("Home Economics", 3, levelCode + "-CI-HM", true),
                             new SubjectSpec("Information and Communication Technology", 4, levelCode + "-CI-ICT", true)
                     )
             );

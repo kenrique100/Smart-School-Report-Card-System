@@ -78,4 +78,10 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     // NEW: Get subjects by classroom ID with department
     @Query("SELECT s FROM Subject s LEFT JOIN FETCH s.department WHERE s.classRoom.id = :classroomId")
     List<Subject> findByClassroomIdWithDepartment(@Param("classroomId") Long classroomId);
+
+    @Query("SELECT s FROM Subject s WHERE s.classRoom.id = :classroomId AND s.department.id = :departmentId AND s.specialty IS NOT NULL")
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNotNull(
+            @Param("classroomId") Long classroomId,
+            @Param("departmentId") Long departmentId
+    );
 }

@@ -33,9 +33,10 @@ public abstract class BasePdfService {
     protected static final Color F_GRADE_COLOR = new Color(128, 0, 0);
     protected static final Color ROW_COLOR1 = new Color(255, 255, 255);
     protected static final Color ROW_COLOR2 = new Color(248, 249, 250);
+    protected static final Color HEADER_COLOR = new Color(106, 13, 173);
 
     // Image paths
-    protected static final String LEFT_LOGO_PATH = "static/images/school-logo.png";
+    protected static final String LEFT_LOGO_PATH = "static/images/cambridge-badge.png";
     protected static final String RIGHT_LOGO_PATH = "static/images/cameroon-flag.png";
 
     protected final GradeService gradeService;

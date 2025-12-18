@@ -88,8 +88,8 @@ public class TermReportPdfService extends BasePdfService {
         contentCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         contentCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-        Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School Kombe",
-                FontFactory.getFont("Helvetica-Bold", 12, PRIMARY_COLOR));
+        Paragraph schoolName = new Paragraph("Cambridge Bilingual Secondary And High School Kombe",
+                FontFactory.getFont("Helvetica-Bold", 12, HEADER_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
         schoolName.setSpacingAfter(1);
         contentCell.addElement(schoolName);
@@ -128,7 +128,7 @@ public class TermReportPdfService extends BasePdfService {
         badgeTable.addCell(badgeCell);
         contentCell.addElement(badgeTable);
 
-        Paragraph address = new Paragraph("Kotto Road Kombe | Phone: 677755377/670252217",
+        Paragraph address = new Paragraph("Kombe Quarter 7 | Phone: 653821125/650252206",
                 FontFactory.getFont(FontFactory.HELVETICA, 6, new Color(150, 150, 150)));
         address.setAlignment(Element.ALIGN_CENTER);
         address.setSpacingBefore(2);
@@ -149,8 +149,8 @@ public class TermReportPdfService extends BasePdfService {
         headerCell.setPadding(4);
         headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
-                FontFactory.getFont("Helvetica-Bold", 12, PRIMARY_COLOR));
+        Paragraph schoolName = new Paragraph("Cambridge Bilingual Secondary And High School",
+                FontFactory.getFont("Helvetica-Bold", 12, HEADER_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
         schoolName.setSpacingAfter(1);
         headerCell.addElement(schoolName);
@@ -556,7 +556,7 @@ public class TermReportPdfService extends BasePdfService {
         vpCell.addElement(vpTitle);
 
 // Name
-        Paragraph vpName = new Paragraph("Kohsu Rodolphe Rinwi",
+        Paragraph vpName = new Paragraph("Mr Wilfred Mbah Fomugom",
                 FontFactory.getFont(FontFactory.HELVETICA, 8, PRIMARY_COLOR));
         vpName.setAlignment(Element.ALIGN_RIGHT);
         vpName.setSpacingBefore(1);

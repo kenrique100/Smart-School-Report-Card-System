@@ -73,7 +73,7 @@ public class YearlySummaryPdfService extends BasePdfService {
         contentCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         contentCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-        Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
+        Paragraph schoolName = new Paragraph("Cambridge Bilingual Secondary And High School",
                 FontFactory.getFont("Helvetica-Bold", 16, PRIMARY_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
         schoolName.setSpacingAfter(3);
@@ -106,7 +106,7 @@ public class YearlySummaryPdfService extends BasePdfService {
         headerCell.setPadding(10);
         headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
+        Paragraph schoolName = new Paragraph("Cambridge Bilingual Secondary And High School",
                 FontFactory.getFont("Helvetica-Bold", 18, PRIMARY_COLOR));
         schoolName.setAlignment(Element.ALIGN_CENTER);
         schoolName.setSpacingAfter(3);
