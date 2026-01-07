@@ -17,7 +17,7 @@ import java.util.List;
 @Slf4j
 public class ClassTermReportPdfService extends BasePdfService {
 
-    private static final String HARDCODED_ACADEMIC_YEAR = "2025-2026";
+    // private static final String HARDCODED_ACADEMIC_YEAR = "2025-2026";
 
     public ClassTermReportPdfService(GradeService gradeService) {
         super(gradeService);
@@ -34,7 +34,7 @@ public class ClassTermReportPdfService extends BasePdfService {
         document.open();
 
         // Always use hardcoded academic year
-        addClassHeader(document, classRoom, term, HARDCODED_ACADEMIC_YEAR, writer);
+        addClassHeader(document, classRoom, term, academicYear, writer);
         addClassSummarySection(document, reports, classRoom, term);
         addClassStudentPerformanceTable(document, reports, term);
         addClassStatisticsSection(document, reports, classRoom, term);
@@ -59,7 +59,7 @@ public class ClassTermReportPdfService extends BasePdfService {
             leftImageCell.setPadding(0);
             headerTable.addCell(leftImageCell);
 
-            PdfPCell centerCell = createClassHeaderContentCell(classRoom, term, HARDCODED_ACADEMIC_YEAR);
+            PdfPCell centerCell = createClassHeaderContentCell(classRoom, term, academicYear);
             headerTable.addCell(centerCell);
 
             PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 40);
@@ -68,7 +68,7 @@ public class ClassTermReportPdfService extends BasePdfService {
 
         } catch (IOException e) {
             log.warn("Could not load logo images: {}", e.getMessage());
-            createClassFallbackHeader(document, classRoom, term, HARDCODED_ACADEMIC_YEAR);
+            createClassFallbackHeader(document, classRoom, term, academicYear);
             return;
         }
 
@@ -97,7 +97,7 @@ public class ClassTermReportPdfService extends BasePdfService {
         contentCell.addElement(classInfo);
 
         // Hardcoded academic year
-        Paragraph yearParagraph = new Paragraph("Academic Year: " + HARDCODED_ACADEMIC_YEAR,
+        Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
                 FontFactory.getFont(FontFactory.HELVETICA, 8, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
         yearParagraph.setSpacingAfter(2);
@@ -139,7 +139,7 @@ public class ClassTermReportPdfService extends BasePdfService {
         headerCell.addElement(classInfo);
 
         // Hardcoded academic year
-        Paragraph yearParagraph = new Paragraph("Academic Year: " + HARDCODED_ACADEMIC_YEAR,
+        Paragraph yearParagraph = new Paragraph("Academic Year: " + academicYear,
                 FontFactory.getFont(FontFactory.HELVETICA, 8, ACCENT_COLOR));
         yearParagraph.setAlignment(Element.ALIGN_CENTER);
         yearParagraph.setSpacingAfter(2);
