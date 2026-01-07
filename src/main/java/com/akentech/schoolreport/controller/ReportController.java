@@ -466,10 +466,18 @@ public class ReportController {
 
         List<ReportDTO> reports = reportPage.getContent();
 
+        // Calculate class statistics
+        double classAverage = reports.stream()
+                .filter(r -> r.getTermAverage() != null)
+                .mapToDouble(ReportDTO::getTermAverage)
+                .average()
+                .orElse(0.0);
+
         model.addAttribute("reports", reports);
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("term", term);
         model.addAttribute("academicYear", effectiveAcademicYear);
+        model.addAttribute("classAverage", classAverage); // ADD THIS LINE!
 
         model.addAttribute("currentPage", reportPage.getNumber());
         model.addAttribute("totalPages", reportPage.getTotalPages());

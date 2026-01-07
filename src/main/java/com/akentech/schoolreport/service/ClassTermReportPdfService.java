@@ -17,8 +17,6 @@ import java.util.List;
 @Slf4j
 public class ClassTermReportPdfService extends BasePdfService {
 
-    // private static final String HARDCODED_ACADEMIC_YEAR = "2025-2026";
-
     public ClassTermReportPdfService(GradeService gradeService) {
         super(gradeService);
     }

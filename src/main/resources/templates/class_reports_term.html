@@ -245,12 +245,13 @@
                                 <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
                                       th:text="${report.student.rollNumber}"></code>
                             </td>
+                            <!-- FIXED VERSION - Replace lines around 250-255 -->
                             <td class="px-6 py-4">
                                 <div class="flex items-center space-x-2">
                                     <span class="font-bold text-lg" th:text="${report.formattedAverage}"></span>
                                     <div class="w-24 h-2 bg-gray-200 rounded-full">
                                         <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                             th:style="${report.termAverage != null} ? 'width: ' + (report.termAverage * 5) + '%' : 'width: 0%'"></div>
+                                             th:style="${report.termAverage != null} ? 'width: ' + ${report.termAverage * 5} + '%;' : 'width: 0%;'"></div>
                                     </div>
                                 </div>
                             </td>
