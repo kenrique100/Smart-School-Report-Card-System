@@ -11,6 +11,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .year-picker { max-width: 300px; }
+        .loading-spinner { display: none; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -112,21 +113,39 @@
                         <p class="text-sm text-gray-600 text-center">Select a student from any class to generate term or yearly report</p>
                     </div>
 
-                    <!-- Yearly Report by Student ID -->
+                    <!-- Yearly Report by Student ID (FIXED WITH DROPDOWNS) -->
                     <div class="pt-6 border-t border-gray-200">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report by Student ID</h4>
-                        <form th:action="@{/reports/student/yearly/report}" method="get" class="space-y-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report by Student</h4>
+                        <form id="yearlyReportForm" th:action="@{/reports/student/yearly/by-class}" method="get" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-                                <input type="number" name="studentId" required
-                                       placeholder="Enter Student ID"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                                <select id="yearlyClassSelect" name="classId" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="loadStudentsForYearlyReport(this.value)">
+                                    <option value="">Choose Class</option>
+                                    <option th:each="c : ${classes}"
+                                            th:value="${c.id}"
+                                            th:text="${c.name}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
+                                <select id="yearlyStudentSelect" name="studentId" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        disabled>
+                                    <option value="">Select a class first</option>
+                                </select>
+                                <div id="studentLoading" class="loading-spinner mt-2 text-center">
+                                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                                    <span class="ml-2 text-sm text-gray-600">Loading students...</span>
+                                </div>
                             </div>
                             <!-- Year Selection -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
                                 <div class="relative">
-                                    <select name="academicYear"
+                                    <select name="academicYear" required
                                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                         <option value="" disabled selected>Select Academic Year</option>
                                         <option value="2025-2026">2025-2026</option>
@@ -147,65 +166,22 @@
                                     <i class="fas fa-file-pdf mr-2"></i>Download PDF
                                 </button>
                             </div>
-                            <div class="pt-6 border-t border-gray-200">
-                                <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report Selection</h4>
-                                <div class="text-center mb-4">
-                                    <a th:href="@{/reports/student/yearly/select}"
-                                       class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
-                                        <i class="fas fa-calendar-alt mr-2"></i>Select Student for Yearly Report
-                                    </a>
-                                </div>
-                                <p class="text-sm text-gray-600 text-center">Select a student from any class to generate yearly report</p>
-                            </div>
                         </form>
+
+                        <!-- Yearly Report Selection (Alternative) -->
+                        <div class="pt-6 border-t border-gray-200 mt-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Yearly Report Selection</h4>
+                            <div class="text-center mb-4">
+                                <a th:href="@{/reports/student/yearly/select}"
+                                   class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Select Student for Yearly Report
+                                </a>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center">Select a student from any class to generate yearly report</p>
+                        </div>
                     </div>
 
-                    <!-- Term Report by Student ID -->
-                    <div class="pt-6 border-t border-gray-200">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Term Report by Student ID</h4>
-                        <form th:action="@{/reports/student/term/report}" method="get" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-                                <input type="number" name="studentId" required
-                                       placeholder="Enter Student ID"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Term</label>
-                                    <select name="term" required
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="">Select Term</option>
-                                        <option value="1">Term 1</option>
-                                        <option value="2">Term 2</option>
-                                        <option value="3">Term 3</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-                                    <select name="academicYear"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="" disabled selected>Select Year</option>
-                                        <option value="2025-2026">2025-2026</option>
-                                        <option value="2026-2027">2026-2027</option>
-                                        <option value="2027-2028">2027-2028</option>
-                                        <option value="2028-2029">2028-2029</option>
-                                        <option value="2029-2030">2029-2030</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex space-x-3">
-                                <button type="submit" name="action" value="view"
-                                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                    <i class="fas fa-eye mr-2"></i>View Report
-                                </button>
-                                <button type="submit" name="action" value="download"
-                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
-                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    <!-- REMOVED: Term Report by Student ID Section -->
                 </div>
             </div>
 
@@ -648,6 +624,50 @@
             updateAllYearSelects(customYear);
         });
     });
+
+    // Function to load students for yearly report
+    async function loadStudentsForYearlyReport(classId) {
+        const studentSelect = document.getElementById('yearlyStudentSelect');
+        const loadingDiv = document.getElementById('studentLoading');
+
+        if (!classId) {
+            studentSelect.innerHTML = '<option value="">Select a class first</option>';
+            studentSelect.disabled = true;
+            return;
+        }
+
+        // Show loading
+        studentSelect.disabled = true;
+        loadingDiv.style.display = 'block';
+
+        try {
+            // Fetch students for the selected class
+            const response = await fetch(`/reports/api/students/by-class/${classId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch students');
+            }
+
+            const students = await response.json();
+
+            // Clear and populate student dropdown
+            studentSelect.innerHTML = '<option value="">Select Student</option>';
+
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.fullName} (${student.rollNumber})`;
+                studentSelect.appendChild(option);
+            });
+
+            studentSelect.disabled = false;
+
+        } catch (error) {
+            console.error('Error loading students:', error);
+            studentSelect.innerHTML = '<option value="">Error loading students</option>';
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    }
 
     function showCustomYearPicker() {
         document.getElementById('customYearModal').classList.remove('hidden');

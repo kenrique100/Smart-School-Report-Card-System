@@ -767,4 +767,10 @@ public class StudentService {
             throw new BusinessRuleException("Class room code is missing. Please contact administrator.");
         }
     }
+
+    @Transactional(readOnly = true)
+    public List<Student> getStudentsByClassId(Long classId) {
+        return studentRepository.findByClassRoomId(classId);
+    }
+
 }

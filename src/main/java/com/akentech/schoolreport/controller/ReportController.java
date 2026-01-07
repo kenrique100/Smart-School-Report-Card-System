@@ -1,8 +1,7 @@
 package com.akentech.schoolreport.controller;
 
 import com.akentech.schoolreport.dto.*;
-import com.akentech.schoolreport.model.ClassRoom;
-import com.akentech.schoolreport.model.Student;
+import com.akentech.schoolreport.model.*;
 import com.akentech.schoolreport.repository.AssessmentRepository;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
@@ -51,6 +50,7 @@ public class ReportController {
     private final ClassRoomRepository classRoomRepository;
     private final StudentRepository studentRepository;
     private final AssessmentRepository assessmentRepository;
+    private final StudentService studentService;
 
     @GetMapping("/select")
     public String selectView(Model model) {
@@ -147,6 +147,67 @@ public class ReportController {
             redirectAttributes.addAttribute("term", term);
             redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
             return "redirect:/reports/student/list";
+        }
+    }
+
+    // ====== YEARLY REPORT BY CLASS WITH DROPDOWNS ======
+
+    @GetMapping("/student/yearly/by-class")
+    public String generateYearlyReportByClass(
+            @RequestParam Long classId,
+            @RequestParam Long studentId,
+            @RequestParam(required = false) String academicYear,
+            @RequestParam(required = false, defaultValue = "view") String action,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            if ("download".equals(action)) {
+                redirectAttributes.addAttribute("studentId", studentId);
+                redirectAttributes.addAttribute("academicYear", academicYear != null ? academicYear : "2025-2026");
+                return "redirect:/reports/pdf/student/yearly";
+            }
+
+            YearlyReportDTO report = reportService.getYearlyReportForStudentAndYear(
+                    studentId, academicYear != null ? academicYear : "2025-2026");
+
+            model.addAttribute("report", report);
+            return "report_yearly";
+
+        } catch (Exception e) {
+            log.error("Error generating yearly reports for student {}: {}", studentId, e.getMessage());
+            redirectAttributes.addFlashAttribute("error",
+                    "Error generating yearly report: " + e.getMessage());
+            return "redirect:/reports/select";
+        }
+    }
+
+    // ====== API ENDPOINT FOR FETCHING STUDENTS ======
+
+    @GetMapping("/api/students/by-class/{classId}")
+    @ResponseBody
+    public ResponseEntity<List<StudentDTO>> getStudentsByClass(@PathVariable Long classId) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
+
+            List<Student> students = studentRepository.findByClassRoomId(classId);
+
+            List<StudentDTO> studentDTOs = students.stream()
+                    .map(student -> StudentDTO.builder()
+                            .id(student.getId())
+                            .fullName(student.getFullName())
+                            .rollNumber(student.getRollNumber())
+                            .studentId(student.getStudentId())
+                            .className(student.getClassRoom() != null ? student.getClassRoom().getName() : "")
+                            .build())
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(studentDTOs);
+
+        } catch (Exception e) {
+            log.error("Error fetching students for class {}: {}", classId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -477,7 +538,7 @@ public class ReportController {
         model.addAttribute("classRoom", classRoom);
         model.addAttribute("term", term);
         model.addAttribute("academicYear", effectiveAcademicYear);
-        model.addAttribute("classAverage", classAverage); // ADD THIS LINE!
+        model.addAttribute("classAverage", classAverage);
 
         model.addAttribute("currentPage", reportPage.getNumber());
         model.addAttribute("totalPages", reportPage.getTotalPages());

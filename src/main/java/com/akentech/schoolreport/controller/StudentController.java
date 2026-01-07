@@ -13,7 +13,7 @@ import com.akentech.schoolreport.service.*;
 import com.akentech.schoolreport.util.DepartmentUtil;
 import com.akentech.schoolreport.util.ParameterUtils;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -973,4 +973,56 @@ public class StudentController {
         List<Long> selectedSubjectIds = studentService.getSelectedSubjectIds(student.getId());
         model.addAttribute("selectedSubjectIds", selectedSubjectIds);
     }
+
+    // ====== INNER DTO CLASSES ======
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GroupedSubjectsResponse {
+        private boolean success;
+        private String message;
+        private Map<String, List<SubjectDTO>> groupedSubjects;
+        private int compulsoryCount;
+        private int departmentCount;
+        private int specialtyCount;
+        private int optionalCount;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SubjectDTO {
+        private Long id;
+        private String name;
+        private String subjectCode;
+        private Integer coefficient;
+        private Boolean optional;
+        private String specialty;
+        private String description;
+        private Long departmentId;
+        private String departmentName;
+
+        public static SubjectDTO fromEntity(Subject subject) {
+            return SubjectDTO.builder()
+                    .id(subject.getId())
+                    .name(subject.getName())
+                    .subjectCode(subject.getSubjectCode())
+                    .coefficient(subject.getCoefficient())
+                    .optional(subject.getOptional())
+                    .specialty(subject.getSpecialty())
+                    .description(subject.getDescription())
+                    .departmentId(subject.getDepartment() != null ? subject.getDepartment().getId() : null)
+                    .departmentName(subject.getDepartment() != null ? subject.getDepartment().getName() : null)
+                    .build();
+        }
+    }
+
+    // Add these import statements at the top if not already present
+    // import lombok.Data;
+    // import lombok.Builder;
+    // import lombok.NoArgsConstructor;
+    // import lombok.AllArgsConstructor;
 }

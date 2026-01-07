@@ -2,13 +2,15 @@ package com.akentech.schoolreport.dto;
 
 import com.akentech.schoolreport.model.Subject;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubjectDTO {
+class SubjectDTO {
     private Long id;
     private String name;
     private String subjectCode;
@@ -19,25 +21,17 @@ public class SubjectDTO {
     private Long departmentId;
     private String departmentName;
 
-    public static SubjectDTO fromEntity(Subject subject) {
-        if (subject == null) {
-            return null;
-        }
-
-        SubjectDTO dto = new SubjectDTO();
-        dto.setId(subject.getId());
-        dto.setName(subject.getName());
-        dto.setSubjectCode(subject.getSubjectCode());
-        dto.setCoefficient(subject.getCoefficient());
-        dto.setOptional(subject.getOptional());
-        dto.setSpecialty(subject.getSpecialty());
-        dto.setDescription(subject.getDescription());
-
-        if (subject.getDepartment() != null) {
-            dto.setDepartmentId(subject.getDepartment().getId());
-            dto.setDepartmentName(subject.getDepartment().getName());
-        }
-
-        return dto;
+    public static SubjectDTO fromEntity(com.akentech.schoolreport.model.Subject subject) {
+        return SubjectDTO.builder()
+                .id(subject.getId())
+                .name(subject.getName())
+                .subjectCode(subject.getSubjectCode())
+                .coefficient(subject.getCoefficient())
+                .optional(subject.getOptional())
+                .specialty(subject.getSpecialty())
+                .description(subject.getDescription())
+                .departmentId(subject.getDepartment() != null ? subject.getDepartment().getId() : null)
+                .departmentName(subject.getDepartment() != null ? subject.getDepartment().getName() : null)
+                .build();
     }
 }
