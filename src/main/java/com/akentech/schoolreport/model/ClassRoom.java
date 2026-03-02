@@ -27,7 +27,7 @@ public class ClassRoom {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, unique = true, length = 20)
     @JsonProperty("code")
     private ClassLevel code;
 
