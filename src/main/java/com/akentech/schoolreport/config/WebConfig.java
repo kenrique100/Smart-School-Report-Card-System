@@ -4,21 +4,13 @@ import com.akentech.schoolreport.util.ParameterUtils;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Additional MVC configuration (static resources, converters, etc.)
+ * Additional MVC configuration (converters, etc.)
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve static resources from /static (classpath)
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations("classpath:/static/");
-    }
 
     @Override
     public void addFormatters(FormatterRegistry registry) {

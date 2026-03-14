@@ -961,36 +961,6 @@ public class ReportServiceImpl implements ReportService {
         return count > 0 ? total / count : 0.0;
     }
 
-    // ========== DEPRECATED METHODS ==========
-
-    @Override
-    @Deprecated
-    public ReportDTO generateReportForStudent(Long studentId, Integer term) {
-        log.warn("DEPRECATED: Use getTermReportForStudentAndYear instead");
-        return getTermReportForStudentAndYear(studentId, term, "2025-2026");
-    }
-
-    @Override
-    @Deprecated
-    public YearlyReportDTO generateYearlyReportForStudent(Long studentId) {
-        log.warn("DEPRECATED: Use getYearlyReportForStudentAndYear instead");
-        return getYearlyReportForStudentAndYear(studentId, "2025-2026");
-    }
-
-    @Override
-    @Deprecated
-    public List<ReportDTO> generateReportsForClass(Long classId, Integer term) {
-        log.warn("DEPRECATED: Use getTermReportsForClassAndYear instead");
-        return getTermReportsForClassAndYear(classId, term, "2025-2026");
-    }
-
-    @Override
-    @Deprecated
-    public List<YearlyReportDTO> generateYearlyReportsForClass(Long classId) {
-        log.warn("DEPRECATED: Use getYearlyReportsForClassAndYear instead");
-        return getYearlyReportsForClassAndYear(classId, "2025-2026");
-    }
-
     @Override
     public List<Integer> getAvailableTermsForStudent(Long studentId) {
         return assessmentRepository.findDistinctTermByStudentId(studentId);

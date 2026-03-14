@@ -11,15 +11,13 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ReportService {
 
-    // Class reports (unchanged)
-    List<ReportDTO> generateReportsForClass(Long classId, Integer term);
+    // Class reports
     Page<ReportDTO> generatePaginatedReportsForClass(Long classId, Integer term, Pageable pageable);
     CompletableFuture<List<ReportDTO>> generateReportsForClassAsync(Long classId, Integer term);
 
-    List<YearlyReportDTO> generateYearlyReportsForClass(Long classId);
     Page<YearlyReportDTO> generatePaginatedYearlyReportsForClass(Long classId, Pageable pageable);
 
-    // NEW: Student reports by class and roll number (instead of ID)
+    // Student reports by class and roll number (instead of ID)
     ReportDTO generateReportForStudentByClassAndRollNumber(Long classId, String rollNumber, Integer term);
     YearlyReportDTO generateYearlyReportForStudentByClassAndRollNumber(Long classId, String rollNumber);
 
@@ -34,13 +32,6 @@ public interface ReportService {
     Page<YearlyReportDTO> getPaginatedYearlyReportsForClassAndYear(Long classId, String academicYear, Pageable pageable);
 
     YearlySummaryDTO getYearlySummary(String academicYear);
-
-    // Deprecated: Remove or keep for backward compatibility with warning
-    @Deprecated
-    ReportDTO generateReportForStudent(Long studentId, Integer term);
-
-    @Deprecated
-    YearlyReportDTO generateYearlyReportForStudent(Long studentId);
 
     List<Integer> getAvailableTermsForStudent(Long studentId);
     List<Integer> getAvailableAcademicYearsForStudent(Long studentId);
