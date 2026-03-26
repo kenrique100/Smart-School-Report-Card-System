@@ -263,6 +263,14 @@ public class ExcelImportService {
                     continue;
                 }
 
+                // Validate that the assessment type matches the term
+                if (!assessmentType.getTerm().equals(term)) {
+                    result.addError("Assessment type mismatch for " + studentId + " - " + subjectName + ": " +
+                            assessmentName + " belongs to Term " + assessmentType.getTerm() +
+                            " but is in Term " + term + " sheet");
+                    continue;
+                }
+
                 // Get score
                 Double score = getCellValueAsDouble(cell);
                 if (score == null) {
@@ -299,18 +307,24 @@ public class ExcelImportService {
                                  AssessmentType assessmentType, Double score,
                                  ImportResult result) {
         try {
-            // Check if assessment already exists
+            // Check if assessment already exists for this academic year
             Optional<Assessment> existingOpt = assessmentRepository
-                    .findByStudentIdAndSubjectIdAndTermAndType(
-                            student.getId(), subject.getId(), term, assessmentType);
+                    .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
+                            student.getId(), subject.getId(), term, assessmentType,
+                            student.getAcademicYearStart(), student.getAcademicYearEnd());
 
             Assessment assessment;
             if (existingOpt.isPresent()) {
                 // Update existing
                 assessment = existingOpt.get();
                 assessment.setScore(score);
-                log.debug("Updating assessment: {} {} {} - {}", student.getStudentId(),
-                        subject.getName(), term, assessmentType.getDisplayName());
+                // Ensure academic year fields are up to date
+                assessment.setAcademicYearStart(student.getAcademicYearStart());
+                assessment.setAcademicYearEnd(student.getAcademicYearEnd());
+                assessment.setAcademicYear(student.getAcademicYearStart() + "-" + student.getAcademicYearEnd());
+                log.debug("Updating assessment: {} {} {} - {} (Academic Year: {}-{})",
+                        student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
+                        student.getAcademicYearStart(), student.getAcademicYearEnd());
             } else {
                 // Create new
                 assessment = Assessment.builder()
@@ -323,8 +337,9 @@ public class ExcelImportService {
                         .academicYearEnd(student.getAcademicYearEnd())
                         .academicYear(student.getAcademicYearStart() + "-" + student.getAcademicYearEnd())
                         .build();
-                log.debug("Creating assessment: {} {} {} - {}", student.getStudentId(),
-                        subject.getName(), term, assessmentType.getDisplayName());
+                log.debug("Creating assessment: {} {} {} - {} (Academic Year: {}-{})",
+                        student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
+                        student.getAcademicYearStart(), student.getAcademicYearEnd());
             }
 
             assessmentRepository.save(assessment);

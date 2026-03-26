@@ -49,6 +49,17 @@ public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
                                                                    @Param("term") Integer term,
                                                                    @Param("type") AssessmentType type);
 
+    @Query("SELECT a FROM Assessment a WHERE a.student.id = :studentId AND a.subject.id = :subjectId " +
+            "AND a.term = :term AND a.type = :type " +
+            "AND a.academicYearStart = :academicYearStart AND a.academicYearEnd = :academicYearEnd")
+    Optional<Assessment> findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
+            @Param("studentId") Long studentId,
+            @Param("subjectId") Long subjectId,
+            @Param("term") Integer term,
+            @Param("type") AssessmentType type,
+            @Param("academicYearStart") Integer academicYearStart,
+            @Param("academicYearEnd") Integer academicYearEnd);
+
     @Query("SELECT a FROM Assessment a WHERE a.student.id = :studentId AND a.subject.id = :subjectId AND a.term = :term")
     List<Assessment> findByStudentIdAndSubjectIdAndTerm(@Param("studentId") Long studentId,
                                                         @Param("subjectId") Long subjectId,
