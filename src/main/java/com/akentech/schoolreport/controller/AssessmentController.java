@@ -8,16 +8,24 @@ import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.service.AssessmentService;
+import com.akentech.schoolreport.service.ExcelExportService;
+import com.akentech.schoolreport.service.ExcelImportService;
 import com.akentech.schoolreport.service.GradeService;
 import com.akentech.schoolreport.service.StudentEnrollmentService;
 import com.akentech.schoolreport.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +42,8 @@ public class AssessmentController {
     private final ClassRoomRepository classRoomRepository;
     private final DepartmentRepository departmentRepository;
     private final GradeService gradeService;
+    private final ExcelExportService excelExportService;
+    private final ExcelImportService excelImportService;
 
     @GetMapping("/entry")
     public String entryForm(Model model,
@@ -421,5 +431,128 @@ public class AssessmentController {
                     return true;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Download Excel template for class assessments (single term)
+     */
+    @GetMapping("/download-excel")
+    public ResponseEntity<byte[]> downloadExcel(@RequestParam Long classRoomId,
+                                                 @RequestParam Integer term) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
+
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcel(classRoomId, term);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = String.format("Assessments_%s_Term%d_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), term, timestamp);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", filename);
+
+            log.info("Downloaded Excel for class {} term {}", classRoomId, term);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+
+        } catch (Exception e) {
+            log.error("Error generating Excel file", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Download Excel template for class assessments (all terms)
+     */
+    @GetMapping("/download-excel-all-terms")
+    public ResponseEntity<byte[]> downloadExcelAllTerms(@RequestParam Long classRoomId) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
+
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcelAllTerms(classRoomId);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = String.format("Assessments_%s_AllTerms_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), timestamp);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", filename);
+
+            log.info("Downloaded Excel for class {} all terms", classRoomId);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+
+        } catch (Exception e) {
+            log.error("Error generating Excel file", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Upload and import Excel file with assessments
+     */
+    @PostMapping("/upload-excel")
+    public String uploadExcel(@RequestParam("file") MultipartFile file,
+                              @RequestParam(required = false) Long classRoomId,
+                              @RequestParam(required = false) Integer term,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            if (file.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Please select a file to upload");
+                return "redirect:/assessments/entry";
+            }
+
+            log.info("Uploading Excel file: {} (size: {} bytes)", file.getOriginalFilename(), file.getSize());
+
+            ExcelImportService.ImportResult result = excelImportService.importAssessmentsFromExcel(file, classRoomId, term);
+
+            if (result.hasErrors()) {
+                // Format error messages
+                StringBuilder errorMsg = new StringBuilder(result.getSummary());
+                if (!result.getErrors().isEmpty()) {
+                    errorMsg.append("\n\nErrors:\n");
+                    result.getErrors().stream().limit(10).forEach(err -> errorMsg.append("• ").append(err).append("\n"));
+                    if (result.getErrors().size() > 10) {
+                        errorMsg.append("... and ").append(result.getErrors().size() - 10).append(" more errors");
+                    }
+                }
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg.toString());
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage", result.getSummary());
+            }
+
+            // Add warnings if any
+            if (!result.getWarnings().isEmpty()) {
+                StringBuilder warningMsg = new StringBuilder("Warnings:\n");
+                result.getWarnings().stream().limit(5).forEach(warn -> warningMsg.append("• ").append(warn).append("\n"));
+                if (result.getWarnings().size() > 5) {
+                    warningMsg.append("... and ").append(result.getWarnings().size() - 5).append(" more warnings");
+                }
+                redirectAttributes.addFlashAttribute("warningMessage", warningMsg.toString());
+            }
+
+        } catch (Exception e) {
+            log.error("Error uploading Excel file", e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error processing file: " + e.getMessage());
+        }
+
+        // Preserve filter parameters
+        if (classRoomId != null) {
+            redirectAttributes.addAttribute("classRoomId", classRoomId);
+        }
+        if (term != null) {
+            redirectAttributes.addAttribute("term", term);
+        }
+
+        return "redirect:/assessments/entry";
     }
 }
