@@ -171,6 +171,44 @@
                     </div>
                 </div>
             </form>
+
+            <!-- Excel Import/Export Section -->
+            <div th:if="${classRoomId != null}" class="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-file-excel mr-2 text-green-600"></i>
+                            Excel Import/Export
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1">Download Excel template with current data or upload filled Excel sheet</p>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <!-- Download for Current Term -->
+                        <a th:if="${term != null}"
+                           th:href="@{/assessments/download-excel(classRoomId=${classRoomId}, term=${term})}"
+                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-md">
+                            <i class="fas fa-download"></i>
+                            <span th:text="'Download Term ' + ${term}">Download Term</span>
+                        </a>
+
+                        <!-- Download All Terms -->
+                        <a th:href="@{/assessments/download-excel-all-terms(classRoomId=${classRoomId})}"
+                           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-md">
+                            <i class="fas fa-file-download"></i>
+                            <span>Download All Terms</span>
+                        </a>
+
+                        <!-- Upload Button -->
+                        <button type="button"
+                                onclick="document.getElementById('excelUploadModal').classList.remove('hidden')"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-md">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Excel</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Assessment Form -->
@@ -825,5 +863,133 @@
         }
     });
 </script>
+
+<!-- Excel Upload Modal -->
+<div id="excelUploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+        <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-semibold text-gray-900">Upload Excel File</h3>
+            <button onclick="document.getElementById('excelUploadModal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form th:action="@{/assessments/upload-excel}" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="classRoomId" th:value="${classRoomId}">
+            <input type="hidden" name="term" th:value="${term}">
+
+            <div class="space-y-4">
+                <!-- File Upload Section -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                    <div class="mb-4">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-gray-400"></i>
+                    </div>
+                    <label for="excelFile" class="cursor-pointer">
+                        <span class="mt-2 text-base text-gray-600">
+                            Drag and drop your Excel file here, or click to browse
+                        </span>
+                        <input type="file"
+                               id="excelFile"
+                               name="file"
+                               accept=".xlsx"
+                               required
+                               class="hidden"
+                               onchange="updateFileName(this)">
+                    </label>
+                    <p id="fileName" class="mt-2 text-sm text-gray-500"></p>
+                </div>
+
+                <!-- Instructions -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Important Instructions
+                    </h4>
+                    <ul class="text-sm text-blue-800 space-y-1 ml-4">
+                        <li>• Use the downloaded Excel template from this system</li>
+                        <li>• Do NOT modify student information columns (ID, Name, etc.)</li>
+                        <li>• Only edit assessment score columns</li>
+                        <li>• Scores must be between 0 and 20</li>
+                        <li>• Leave cells empty for scores not available</li>
+                        <li>• Cells marked "N/A" indicate student is not enrolled in that subject</li>
+                    </ul>
+                </div>
+
+                <!-- Warning -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-yellow-900 mb-2 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Warning
+                    </h4>
+                    <p class="text-sm text-yellow-800">
+                        Uploading will overwrite existing assessment scores for the students in the file.
+                        Make sure you have the correct file before uploading.
+                    </p>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button"
+                            onclick="document.getElementById('excelUploadModal').classList.add('hidden')"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-upload"></i>
+                        <span>Upload & Import</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateFileName(input) {
+        const fileName = input.files[0]?.name;
+        const fileNameDisplay = document.getElementById('fileName');
+        if (fileName) {
+            fileNameDisplay.textContent = `Selected: ${fileName}`;
+            fileNameDisplay.classList.add('text-green-600', 'font-medium');
+        } else {
+            fileNameDisplay.textContent = '';
+        }
+    }
+
+    // Drag and drop functionality
+    const dropZone = document.querySelector('.border-dashed');
+    if (dropZone) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-blue-500', 'bg-blue-50');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('excelFile').files = files;
+            updateFileName(document.getElementById('excelFile'));
+        }, false);
+    }
+</script>
+
 </body>
 </html>
