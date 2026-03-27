@@ -79,6 +79,10 @@ public class ReportServiceImpl implements ReportService {
         Integer rank = calculateStudentTermRankForYear(studentId, term, academicYear, subjectReports);
         reportDTO.setRankInClass(rank != null ? rank : 1);
 
+        // Calculate department ranking
+        Integer deptRank = calculateStudentDepartmentRankForYear(studentId, term, academicYear, subjectReports);
+        reportDTO.setRankInDepartment(deptRank);
+
         int totalStudents = 0;
         if (student.getClassRoom() != null) {
             totalStudents = studentRepository.countByClassRoomIdAndAcademicYear(
@@ -196,6 +200,100 @@ public class ReportServiceImpl implements ReportService {
         }
 
         log.warn("Student {} not found in ranking list, assigning last rank", studentId);
+        return sortedEntries.size();
+    }
+
+    private Integer calculateStudentDepartmentRankForYear(Long studentId, Integer term, String academicYear,
+                                                          List<SubjectReport> studentSubjectReports) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student", studentId));
+
+        // If student has no department, return null
+        if (student.getDepartment() == null) {
+            log.debug("Student {} has no department assigned, skipping department rank", studentId);
+            return null;
+        }
+
+        if (student.getClassRoom() == null) {
+            log.warn("Student {} has no class assigned, cannot calculate department rank", studentId);
+            return null;
+        }
+
+        int[] years = parseAcademicYear(academicYear);
+        int yearStart = years[0];
+        int yearEnd = years[1];
+
+        Long classId = student.getClassRoom().getId();
+        Long deptId = student.getDepartment().getId();
+
+        // Get all students in the same class AND department
+        List<Student> classStudents = studentRepository.findByClassRoomIdAndAcademicYear(
+                classId, yearStart, yearEnd);
+
+        if (classStudents.isEmpty()) {
+            classStudents = studentRepository.findByClassRoomId(classId);
+        }
+
+        // Filter by department
+        List<Student> deptStudents = classStudents.stream()
+                .filter(s -> s.getDepartment() != null && s.getDepartment().getId().equals(deptId))
+                .toList();
+
+        if (deptStudents.size() <= 1) {
+            log.debug("Only 1 student in department, rank is 1");
+            return 1;
+        }
+
+        log.debug("Calculating department rank for student {} among {} students in department {}",
+                studentId, deptStudents.size(), student.getDepartment().getName());
+
+        Map<Long, Double> studentAverages = new HashMap<>();
+
+        Double currentStudentAverage = gradeService.calculateWeightedTermAverage(studentSubjectReports);
+        studentAverages.put(studentId, currentStudentAverage);
+
+        for (Student deptStudent : deptStudents) {
+            if (deptStudent.getId().equals(studentId)) {
+                continue;
+            }
+
+            List<Assessment> assessments = assessmentRepository.findByStudentIdAndTermAndAcademicYear(
+                    deptStudent.getId(), term, yearStart, yearEnd);
+
+            if (assessments.isEmpty()) {
+                assessments = assessmentRepository.findByStudentIdAndTerm(deptStudent.getId(), term);
+            }
+
+            List<SubjectReport> reports = calculateSubjectReports(deptStudent, assessments, term);
+            Double average = gradeService.calculateWeightedTermAverage(reports);
+            studentAverages.put(deptStudent.getId(), average);
+        }
+
+        List<Map.Entry<Long, Double>> sortedEntries = studentAverages.entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                .toList();
+
+        for (int i = 0; i < sortedEntries.size(); i++) {
+            if (sortedEntries.get(i).getKey().equals(studentId)) {
+                int rank = i + 1;
+
+                if (i > 0) {
+                    Double currentAvg = sortedEntries.get(i).getValue();
+                    Double prevAvg = sortedEntries.get(i - 1).getValue();
+                    if (currentAvg != null && prevAvg != null &&
+                            Double.compare(currentAvg, prevAvg) == 0) {
+                        rank = i;
+                    }
+                }
+
+                log.debug("Student {} department rank: {}/{} with average {}",
+                        studentId, rank, sortedEntries.size(), sortedEntries.get(i).getValue());
+                return rank;
+            }
+        }
+
+        log.warn("Student {} not found in department ranking list", studentId);
         return sortedEntries.size();
     }
 
@@ -330,6 +428,40 @@ public class ReportServiceImpl implements ReportService {
 
         log.info("Rank calculation complete. Top student: {} with rank 1 and average {}",
                 sorted.get(0).getStudentFullName(), sorted.get(0).getTermAverage());
+
+        // Calculate department rankings
+        calculateDepartmentRanks(sorted);
+    }
+
+    /**
+     * Calculate department rankings for students grouped by department.
+     */
+    private void calculateDepartmentRanks(List<ReportDTO> reports) {
+        // Group students by department
+        Map<String, List<ReportDTO>> byDepartment = new HashMap<>();
+        for (ReportDTO report : reports) {
+            String dept = report.getDepartment();
+            if (dept != null && !dept.equals("N/A")) {
+                byDepartment.computeIfAbsent(dept, k -> new ArrayList<>()).add(report);
+            }
+        }
+
+        // Calculate ranking within each department
+        for (List<ReportDTO> deptReports : byDepartment.values()) {
+            int currentRank = 0;
+            Double lastAvg = null;
+            for (int i = 0; i < deptReports.size(); i++) {
+                ReportDTO report = deptReports.get(i);
+                Double avg = report.getTermAverage();
+
+                if (lastAvg == null || Double.compare(avg, lastAvg) != 0) {
+                    currentRank = i + 1;
+                    lastAvg = avg;
+                }
+
+                report.setRankInDepartment(currentRank);
+            }
+        }
     }
 
     @Override

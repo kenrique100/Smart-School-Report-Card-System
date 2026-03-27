@@ -21,6 +21,7 @@ public class RankingService {
     /**
      * Compute ranking for students in this list for the given term.
      * Returns a list sorted by rank ascending (1 best).
+     * Also computes department ranking for students in the same department within the classroom.
      */
     public List<StudentRank> computeRanking(List<Student> students, Integer term) {
         if (students.isEmpty()) return Collections.emptyList();
@@ -61,11 +62,44 @@ public class RankingService {
             ranks.get(i).setRank(currentRank);
         }
 
+        // Compute department rankings
+        computeDepartmentRanks(ranks);
+
         log.info("Computed ranking for term {}: {} entries, top student: {} {}",
                 term,
                 ranks.size(),
                 ranks.get(0).getStudent().getFirstName(),
                 ranks.get(0).getStudent().getLastName());
         return ranks;
+    }
+
+    /**
+     * Compute department rankings for students grouped by department.
+     * Students without a department are skipped for department ranking.
+     */
+    private void computeDepartmentRanks(List<StudentRank> ranks) {
+        // Group students by department
+        Map<Long, List<StudentRank>> byDepartment = new HashMap<>();
+        for (StudentRank rank : ranks) {
+            if (rank.getStudent().getDepartment() != null) {
+                Long deptId = rank.getStudent().getDepartment().getId();
+                byDepartment.computeIfAbsent(deptId, k -> new ArrayList<>()).add(rank);
+            }
+        }
+
+        // Compute ranking within each department
+        for (List<StudentRank> deptRanks : byDepartment.values()) {
+            // Already sorted by average descending from class ranking
+            int currentRank = 0;
+            Double lastAvg = null;
+            for (int i = 0; i < deptRanks.size(); i++) {
+                Double avg = deptRanks.get(i).getAverage();
+                if (lastAvg == null || Double.compare(avg, lastAvg) != 0) {
+                    currentRank = i + 1;
+                    lastAvg = avg;
+                }
+                deptRanks.get(i).setRankInDepartment(currentRank);
+            }
+        }
     }
 }
