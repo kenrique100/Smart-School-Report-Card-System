@@ -70,4 +70,17 @@ public class YearlyReportDTO {
     public String getFormattedPassRate() {
         return passRate != null ? String.format("%.1f%%", passRate) : "0.0%";
     }
+
+    public String getStudentGender() {
+        if (student != null) {
+            try {
+                java.lang.reflect.Method getGender = student.getClass().getMethod("getGender");
+                Object gender = getGender.invoke(student);
+                return gender != null ? gender.toString() : "N/A";
+            } catch (Exception e) {
+                return "N/A";
+            }
+        }
+        return "N/A";
+    }
 }
