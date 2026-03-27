@@ -177,6 +177,11 @@
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Manage Assessments</span>
                             </a>
+                            <button onclick="confirmDelete()"
+                                    class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-center font-medium flex items-center justify-center space-x-2">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Delete Student</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -798,6 +803,23 @@
                 switchTerm(parseInt(e.key));
             }
         });
+    }
+
+    function confirmDelete() {
+        const studentName = '[[${student.firstName}]] [[${student.lastName}]]';
+        const studentId = '[[${student.id}]]';
+
+        if (confirm('Are you sure you want to delete student ' + studentName + '? This action cannot be undone and will remove all associated assessments and records.')) {
+            // Show loading state
+            const deleteBtn = event.target.closest('button');
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Deleting...</span>';
+            }
+
+            // Redirect to delete endpoint
+            window.location.href = '/students/delete/' + studentId;
+        }
     }
 </script>
 </body>
