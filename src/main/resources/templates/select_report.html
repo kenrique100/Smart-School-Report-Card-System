@@ -381,6 +381,15 @@
                                     <option value="3">Term 3 Only</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year (Optional)</label>
+                                <input type="text" id="downloadAcademicYear" name="academicYear"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                       placeholder="e.g., 2025-2026"
+                                       pattern="\d{4}-\d{4}"
+                                       title="Format: YYYY-YYYY (e.g., 2025-2026)">
+                                <p class="text-xs text-gray-500 mt-1">Leave blank to download all assessments or use format: YYYY-YYYY</p>
+                            </div>
                             <div class="flex space-x-3">
                                 <button type="button" onclick="downloadExcelTemplate()"
                                         class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center">
@@ -422,6 +431,15 @@
                                     <option value="2">Term 2</option>
                                     <option value="3">Term 3</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year (Optional)</label>
+                                <input type="text" id="uploadAcademicYear" name="academicYear"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="e.g., 2025-2026"
+                                       pattern="\d{4}-\d{4}"
+                                       title="Format: YYYY-YYYY (e.g., 2025-2026)">
+                                <p class="text-xs text-gray-500 mt-1">Leave blank to use student's current academic year or use format: YYYY-YYYY</p>
                             </div>
                             <div class="flex space-x-3">
                                 <button type="button" onclick="openUploadModal()"
@@ -690,6 +708,8 @@
                 <form id="excelUploadForm" th:action="@{/assessments/upload-excel}" method="post" enctype="multipart/form-data" class="space-y-4">
                     <input type="hidden" id="modalClassId" name="classRoomId">
                     <input type="hidden" id="modalTerm" name="term">
+                    <input type="hidden" id="modalAcademicYearStart" name="academicYearStart">
+                    <input type="hidden" id="modalAcademicYearEnd" name="academicYearEnd">
 
                     <!-- Drag and Drop Zone -->
                     <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer bg-gray-50">
@@ -986,9 +1006,16 @@
     function downloadExcelTemplate() {
         const classId = document.getElementById('excelClassSelect').value;
         const term = document.getElementById('excelTermSelect').value;
+        const academicYear = document.getElementById('downloadAcademicYear').value;
 
         if (!classId) {
             alert('Please select a class first.');
+            return;
+        }
+
+        // Validate academic year format if provided
+        if (academicYear && !/^\d{4}-\d{4}$/.test(academicYear)) {
+            alert('Invalid academic year format. Please use YYYY-YYYY (e.g., 2025-2026)');
             return;
         }
 
@@ -1007,6 +1034,12 @@
             url = `/assessments/download-excel-all-terms?classRoomId=${classId}`;
         }
 
+        // Add academic year parameters if provided
+        if (academicYear) {
+            const [yearStart, yearEnd] = academicYear.split('-');
+            url += `&academicYearStart=${yearStart}&academicYearEnd=${yearEnd}`;
+        }
+
         // Trigger download
         window.location.href = url;
 
@@ -1021,15 +1054,32 @@
     function openUploadModal() {
         const classId = document.getElementById('uploadClassSelect').value;
         const term = document.getElementById('uploadTermSelect').value;
+        const academicYear = document.getElementById('uploadAcademicYear').value;
 
         if (!classId) {
             alert('Please select a class first.');
             return;
         }
 
+        // Validate academic year format if provided
+        if (academicYear && !/^\d{4}-\d{4}$/.test(academicYear)) {
+            alert('Invalid academic year format. Please use YYYY-YYYY (e.g., 2025-2026)');
+            return;
+        }
+
         // Set hidden form values
         document.getElementById('modalClassId').value = classId;
         document.getElementById('modalTerm').value = term;
+
+        // Set academic year values if provided
+        if (academicYear) {
+            const [yearStart, yearEnd] = academicYear.split('-');
+            document.getElementById('modalAcademicYearStart').value = yearStart;
+            document.getElementById('modalAcademicYearEnd').value = yearEnd;
+        } else {
+            document.getElementById('modalAcademicYearStart').value = '';
+            document.getElementById('modalAcademicYearEnd').value = '';
+        }
 
         // Show modal
         document.getElementById('excelUploadModal').classList.remove('hidden');
