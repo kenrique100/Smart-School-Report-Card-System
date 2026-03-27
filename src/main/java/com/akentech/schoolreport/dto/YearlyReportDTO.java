@@ -24,6 +24,7 @@ public class YearlyReportDTO {
     private Double passRate;
     private String formattedPassRate;
     private Integer yearlyRank;
+    private Integer yearlyDepartmentRank;
     private Integer term1Rank;
     private Integer term2Rank;
     private Integer term3Rank;

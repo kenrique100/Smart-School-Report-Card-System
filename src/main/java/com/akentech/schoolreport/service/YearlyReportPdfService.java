@@ -207,6 +207,15 @@ public class YearlyReportPdfService extends BasePdfService {
         rankParagraph.setAlignment(Element.ALIGN_CENTER);
         summaryCell.addElement(rankParagraph);
 
+        // Add department rank if available
+        if (report.getYearlyDepartmentRank() != null && report.getDepartment() != null && !report.getDepartment().equals("N/A")) {
+            Paragraph deptRankParagraph = new Paragraph("Department Rank (" + report.getDepartment() + "): " + report.getYearlyDepartmentRank(),
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, INFO_COLOR));
+            deptRankParagraph.setAlignment(Element.ALIGN_CENTER);
+            deptRankParagraph.setSpacingAfter(3);
+            summaryCell.addElement(deptRankParagraph);
+        }
+
         Color statusColor = report.getPassed() ? SUCCESS_COLOR : DANGER_COLOR;
         Paragraph statusParagraph = new Paragraph(report.getPassed() ? "PASSED" : "FAILED",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, getContrastColor(statusColor)));

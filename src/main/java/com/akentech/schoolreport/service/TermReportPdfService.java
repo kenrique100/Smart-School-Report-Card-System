@@ -439,6 +439,13 @@ public class TermReportPdfService extends BasePdfService {
                 gradeService.calculateLetterGrade(termAverage, className));
         addModernSummaryItem(leftCell, "Class Rank:",
                 report.getRankInClass() + " / " + report.getTotalStudentsInClass());
+
+        // Add department rank if available
+        if (report.getRankInDepartment() != null && !report.getDepartment().equals("N/A")) {
+            addModernSummaryItem(leftCell, "Department Rank (" + report.getDepartment() + "):",
+                    String.valueOf(report.getRankInDepartment()));
+        }
+
         addModernSummaryItem(leftCell, "Overall Status:",
                 overallPassed ? "PASSED" : "FAILED");
 
