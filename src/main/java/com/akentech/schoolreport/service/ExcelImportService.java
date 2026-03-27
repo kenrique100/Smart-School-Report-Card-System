@@ -253,23 +253,18 @@ public class ExcelImportService {
                 String subjectName = parts[0].trim();
                 String assessmentName = parts[1].trim();
 
-                // Find subject
-                Optional<Subject> subjectOpt = subjectRepository.findByName(subjectName);
+                // Find subject from student's enrolled subjects by NAME (not ID)
+                // This matches the export logic which deduplicates by name
+                Optional<Subject> subjectOpt = enrolledSubjects.stream()
+                        .filter(s -> s.getName().equals(subjectName))
+                        .findFirst();
+
                 if (subjectOpt.isEmpty()) {
-                    result.addWarning("Subject not found: " + subjectName);
+                    result.addWarning("Student " + studentId + " is not enrolled in " + subjectName);
                     continue;
                 }
 
                 Subject subject = subjectOpt.get();
-
-                // Verify student is enrolled in this subject
-                boolean isEnrolled = enrolledSubjects.stream()
-                        .anyMatch(s -> s.getId().equals(subject.getId()));
-
-                if (!isEnrolled) {
-                    result.addWarning("Student " + studentId + " is not enrolled in " + subjectName);
-                    continue;
-                }
 
                 // Determine assessment type
                 AssessmentType assessmentType = findAssessmentType(assessmentName, assessmentTypes);
