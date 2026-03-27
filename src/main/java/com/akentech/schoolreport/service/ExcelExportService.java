@@ -55,14 +55,15 @@ public class ExcelExportService {
             }
 
             // Get all unique subjects for students in this class
-            Set<Subject> allSubjects = new LinkedHashSet<>();
+            // Use a Map to ensure uniqueness by subject ID and prevent duplicates
+            Map<Long, Subject> subjectMap = new LinkedHashMap<>();
             for (Student student : students) {
                 List<StudentSubject> enrollments = studentEnrollmentService.getStudentEnrollments(student.getId());
                 enrollments.stream()
                         .map(StudentSubject::getSubject)
-                        .forEach(allSubjects::add);
+                        .forEach(subject -> subjectMap.putIfAbsent(subject.getId(), subject));
             }
-            List<Subject> subjects = new ArrayList<>(allSubjects);
+            List<Subject> subjects = new ArrayList<>(subjectMap.values());
             subjects.sort(Comparator.comparing(Subject::getName));
 
             // Get assessment types for this term
@@ -103,7 +104,9 @@ public class ExcelExportService {
             for (Subject subject : subjects) {
                 for (AssessmentType assessmentType : assessmentTypes) {
                     Cell cell = headerRow.createCell(colNum++);
-                    cell.setCellValue(subject.getName() + " - " + assessmentType.getDisplayName());
+                    // Trim subject name and use consistent formatting to prevent duplicate columns
+                    String headerText = subject.getName().trim() + " - " + assessmentType.getDisplayName().trim();
+                    cell.setCellValue(headerText);
                     cell.setCellStyle(headerStyle);
                 }
             }
@@ -218,15 +221,15 @@ public class ExcelExportService {
                 .sorted(Comparator.comparing(Student::getRollNumber, Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
 
-        // Get subjects
-        Set<Subject> allSubjects = new LinkedHashSet<>();
+        // Get subjects - Use Map to ensure uniqueness by subject ID
+        Map<Long, Subject> subjectMap = new LinkedHashMap<>();
         for (Student student : students) {
             List<StudentSubject> enrollments = studentEnrollmentService.getStudentEnrollments(student.getId());
             enrollments.stream()
                     .map(StudentSubject::getSubject)
-                    .forEach(allSubjects::add);
+                    .forEach(subject -> subjectMap.putIfAbsent(subject.getId(), subject));
         }
-        List<Subject> subjects = new ArrayList<>(allSubjects);
+        List<Subject> subjects = new ArrayList<>(subjectMap.values());
         subjects.sort(Comparator.comparing(Subject::getName));
 
         // Get assessment types
@@ -260,7 +263,9 @@ public class ExcelExportService {
         for (Subject subject : subjects) {
             for (AssessmentType assessmentType : assessmentTypes) {
                 Cell cell = headerRow.createCell(colNum++);
-                cell.setCellValue(subject.getName() + " - " + assessmentType.getDisplayName());
+                // Trim subject name and use consistent formatting to prevent duplicate columns
+                String headerText = subject.getName().trim() + " - " + assessmentType.getDisplayName().trim();
+                cell.setCellValue(headerText);
                 cell.setCellStyle(headerStyle);
             }
         }
