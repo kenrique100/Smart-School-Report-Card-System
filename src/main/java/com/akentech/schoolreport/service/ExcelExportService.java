@@ -30,8 +30,9 @@ public class ExcelExportService {
     /**
      * Generate Excel file for a specific class with all students' assessment data
      */
-    public byte[] generateClassAssessmentExcel(Long classRoomId, Integer term) throws IOException {
-        log.info("Generating Excel for class {} term {}", classRoomId, term);
+    public byte[] generateClassAssessmentExcel(Long classRoomId, Integer term,
+                                                Integer academicYearStart, Integer academicYearEnd) throws IOException {
+        log.info("Generating Excel for class {} term {} academic year {}-{}", classRoomId, term, academicYearStart, academicYearEnd);
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Class Assessments - Term " + term);
@@ -71,7 +72,10 @@ public class ExcelExportService {
             int rowNum = 0;
             Row titleRow = sheet.createRow(rowNum++);
             Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("CLASS ASSESSMENT SHEET - TERM " + term);
+            String academicYearLabel = (academicYearStart != null && academicYearEnd != null)
+                    ? " - " + academicYearStart + "-" + academicYearEnd
+                    : "";
+            titleCell.setCellValue("CLASS ASSESSMENT SHEET - TERM " + term + academicYearLabel);
             titleCell.setCellStyle(headerStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6 + (subjects.size() * assessmentTypes.length) - 1));
 
@@ -134,10 +138,18 @@ public class ExcelExportService {
                         Cell cell = row.createCell(colNum++);
 
                         if (isEnrolled) {
-                            // Get existing assessment
-                            Optional<Assessment> assessment = assessmentRepository
-                                    .findByStudentIdAndSubjectIdAndTermAndType(
-                                            student.getId(), subject.getId(), term, assessmentType);
+                            // Get existing assessment, filtered by academic year if provided
+                            Optional<Assessment> assessment;
+                            if (academicYearStart != null && academicYearEnd != null) {
+                                assessment = assessmentRepository
+                                        .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
+                                                student.getId(), subject.getId(), term, assessmentType,
+                                                academicYearStart, academicYearEnd);
+                            } else {
+                                assessment = assessmentRepository
+                                        .findByStudentIdAndSubjectIdAndTermAndType(
+                                                student.getId(), subject.getId(), term, assessmentType);
+                            }
 
                             if (assessment.isPresent()) {
                                 cell.setCellValue(assessment.get().getScore());
@@ -158,7 +170,7 @@ public class ExcelExportService {
             }
 
             // Add instructions sheet
-            createInstructionsSheet(workbook, term);
+            createInstructionsSheet(workbook, term, academicYearStart, academicYearEnd);
 
             // Write to byte array
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -170,18 +182,19 @@ public class ExcelExportService {
     /**
      * Generate Excel template for all students in a class (all terms)
      */
-    public byte[] generateClassAssessmentExcelAllTerms(Long classRoomId) throws IOException {
-        log.info("Generating Excel for class {} - all terms", classRoomId);
+    public byte[] generateClassAssessmentExcelAllTerms(Long classRoomId,
+                                                        Integer academicYearStart, Integer academicYearEnd) throws IOException {
+        log.info("Generating Excel for class {} - all terms academic year {}-{}", classRoomId, academicYearStart, academicYearEnd);
 
         try (Workbook workbook = new XSSFWorkbook()) {
 
             // Create a sheet for each term
             for (int term = 1; term <= 3; term++) {
-                createTermSheet(workbook, classRoomId, term);
+                createTermSheet(workbook, classRoomId, term, academicYearStart, academicYearEnd);
             }
 
             // Add instructions sheet
-            createInstructionsSheet(workbook, null);
+            createInstructionsSheet(workbook, null, academicYearStart, academicYearEnd);
 
             // Write to byte array
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -190,7 +203,8 @@ public class ExcelExportService {
         }
     }
 
-    private void createTermSheet(Workbook workbook, Long classRoomId, Integer term) {
+    private void createTermSheet(Workbook workbook, Long classRoomId, Integer term,
+                                  Integer academicYearStart, Integer academicYearEnd) {
         Sheet sheet = workbook.createSheet("Term " + term);
 
         // Create styles
@@ -222,7 +236,10 @@ public class ExcelExportService {
         int rowNum = 0;
         Row titleRow = sheet.createRow(rowNum++);
         Cell titleCell = titleRow.createCell(0);
-        titleCell.setCellValue("TERM " + term + " ASSESSMENTS");
+        String academicYearLabel = (academicYearStart != null && academicYearEnd != null)
+                ? " - " + academicYearStart + "-" + academicYearEnd
+                : "";
+        titleCell.setCellValue("TERM " + term + " ASSESSMENTS" + academicYearLabel);
         titleCell.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6 + (subjects.size() * assessmentTypes.length) - 1));
 
@@ -274,9 +291,18 @@ public class ExcelExportService {
                     Cell cell = row.createCell(colNum++);
 
                     if (isEnrolled) {
-                        Optional<Assessment> assessment = assessmentRepository
-                                .findByStudentIdAndSubjectIdAndTermAndType(
-                                        student.getId(), subject.getId(), term, assessmentType);
+                        // Get existing assessment, filtered by academic year if provided
+                        Optional<Assessment> assessment;
+                        if (academicYearStart != null && academicYearEnd != null) {
+                            assessment = assessmentRepository
+                                    .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
+                                            student.getId(), subject.getId(), term, assessmentType,
+                                            academicYearStart, academicYearEnd);
+                        } else {
+                            assessment = assessmentRepository
+                                    .findByStudentIdAndSubjectIdAndTermAndType(
+                                            student.getId(), subject.getId(), term, assessmentType);
+                        }
 
                         if (assessment.isPresent()) {
                             cell.setCellValue(assessment.get().getScore());
@@ -296,7 +322,8 @@ public class ExcelExportService {
         }
     }
 
-    private void createInstructionsSheet(Workbook workbook, Integer term) {
+    private void createInstructionsSheet(Workbook workbook, Integer term,
+                                          Integer academicYearStart, Integer academicYearEnd) {
         Sheet sheet = workbook.createSheet("Instructions");
         CellStyle titleStyle = createHeaderStyle(workbook);
         CellStyle textStyle = createDataStyle(workbook);
@@ -309,6 +336,10 @@ public class ExcelExportService {
 
         rowNum++;
 
+        String academicYearInfo = (academicYearStart != null && academicYearEnd != null)
+                ? "ACADEMIC YEAR: " + academicYearStart + "-" + academicYearEnd
+                : "ACADEMIC YEAR: Using student's current academic year";
+
         String[] instructions = {
                 "1. DO NOT modify Student ID, Roll Number, Name, Gender, Department, or Specialty columns",
                 "2. Only edit the assessment score columns (those with subject names)",
@@ -317,6 +348,8 @@ public class ExcelExportService {
                 "5. Cells marked 'N/A' indicate the student is not enrolled in that subject",
                 "6. Save the file and upload it back to the system",
                 "7. The system will validate all entries before importing",
+                "",
+                academicYearInfo,
                 "",
                 "TERM INFORMATION:",
                 term != null ? "  - This sheet is for Term " + term + " only" : "  - This workbook contains sheets for all 3 terms",

@@ -87,7 +87,8 @@ public class ExcelImportService {
     }
 
     @Transactional
-    public ImportResult importAssessmentsFromExcel(MultipartFile file, Long classRoomId, Integer term) throws IOException {
+    public ImportResult importAssessmentsFromExcel(MultipartFile file, Long classRoomId, Integer term,
+                                                    Integer academicYearStart, Integer academicYearEnd) throws IOException {
         ImportResult result = new ImportResult();
 
         if (file.isEmpty()) {
@@ -108,13 +109,13 @@ public class ExcelImportService {
             if (term != null) {
                 // Single term import
                 sheet = workbook.getSheetAt(0);
-                result = processSheet(sheet, term, result);
+                result = processSheet(sheet, term, academicYearStart, academicYearEnd, result);
             } else {
                 // Multi-term import
                 for (int t = 1; t <= 3; t++) {
                     sheet = workbook.getSheet("Term " + t);
                     if (sheet != null) {
-                        result = processSheet(sheet, t, result);
+                        result = processSheet(sheet, t, academicYearStart, academicYearEnd, result);
                     } else {
                         result.addWarning("Sheet 'Term " + t + "' not found, skipping");
                     }
@@ -129,8 +130,10 @@ public class ExcelImportService {
         return result;
     }
 
-    private ImportResult processSheet(Sheet sheet, Integer term, ImportResult result) {
-        log.info("Processing sheet: {} for term {}", sheet.getSheetName(), term);
+    private ImportResult processSheet(Sheet sheet, Integer term,
+                                       Integer academicYearStart, Integer academicYearEnd,
+                                       ImportResult result) {
+        log.info("Processing sheet: {} for term {} academic year {}-{}", sheet.getSheetName(), term, academicYearStart, academicYearEnd);
 
         // Find header row (should be row 2, index 2)
         Row headerRow = sheet.getRow(2);
@@ -152,7 +155,7 @@ public class ExcelImportService {
             if (row == null) continue;
 
             try {
-                processDataRow(row, subjectAssessmentMap, term, assessmentTypes, result);
+                processDataRow(row, subjectAssessmentMap, term, assessmentTypes, academicYearStart, academicYearEnd, result);
             } catch (Exception e) {
                 result.addError("Row " + (rowIndex + 1) + ": " + e.getMessage());
             }
@@ -179,6 +182,7 @@ public class ExcelImportService {
 
     private void processDataRow(Row row, Map<Integer, String> subjectAssessmentMap,
                                  Integer term, AssessmentType[] assessmentTypes,
+                                 Integer academicYearStart, Integer academicYearEnd,
                                  ImportResult result) {
         // Get student ID from column 0
         Cell studentIdCell = row.getCell(0);
@@ -200,10 +204,21 @@ public class ExcelImportService {
 
         Student student = studentOpt.get();
 
-        // Validate academic year
-        if (student.getAcademicYearStart() == null || student.getAcademicYearEnd() == null) {
-            result.addError("Student " + studentId + " has no academic year set");
-            return;
+        // Use provided academic year if available, otherwise use student's academic year
+        Integer effectiveAcademicYearStart;
+        Integer effectiveAcademicYearEnd;
+
+        if (academicYearStart != null && academicYearEnd != null) {
+            effectiveAcademicYearStart = academicYearStart;
+            effectiveAcademicYearEnd = academicYearEnd;
+        } else {
+            // Validate academic year from student
+            if (student.getAcademicYearStart() == null || student.getAcademicYearEnd() == null) {
+                result.addError("Student " + studentId + " has no academic year set and no academic year provided");
+                return;
+            }
+            effectiveAcademicYearStart = student.getAcademicYearStart();
+            effectiveAcademicYearEnd = student.getAcademicYearEnd();
         }
 
         // Get student's enrolled subjects
@@ -285,8 +300,9 @@ public class ExcelImportService {
                     continue;
                 }
 
-                // Save or update assessment
-                saveAssessment(student, subject, term, assessmentType, score, result);
+                // Save or update assessment with the effective academic year
+                saveAssessment(student, subject, term, assessmentType, score,
+                              effectiveAcademicYearStart, effectiveAcademicYearEnd, result);
 
             } catch (Exception e) {
                 result.addError("Error processing " + studentId + " - " + header + ": " + e.getMessage());
@@ -305,13 +321,14 @@ public class ExcelImportService {
 
     private void saveAssessment(Student student, Subject subject, Integer term,
                                  AssessmentType assessmentType, Double score,
+                                 Integer academicYearStart, Integer academicYearEnd,
                                  ImportResult result) {
         try {
             // Check if assessment already exists for this academic year
             Optional<Assessment> existingOpt = assessmentRepository
                     .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
                             student.getId(), subject.getId(), term, assessmentType,
-                            student.getAcademicYearStart(), student.getAcademicYearEnd());
+                            academicYearStart, academicYearEnd);
 
             Assessment assessment;
             if (existingOpt.isPresent()) {
@@ -319,12 +336,12 @@ public class ExcelImportService {
                 assessment = existingOpt.get();
                 assessment.setScore(score);
                 // Ensure academic year fields are up to date
-                assessment.setAcademicYearStart(student.getAcademicYearStart());
-                assessment.setAcademicYearEnd(student.getAcademicYearEnd());
-                assessment.setAcademicYear(student.getAcademicYearStart() + "-" + student.getAcademicYearEnd());
+                assessment.setAcademicYearStart(academicYearStart);
+                assessment.setAcademicYearEnd(academicYearEnd);
+                assessment.setAcademicYear(academicYearStart + "-" + academicYearEnd);
                 log.debug("Updating assessment: {} {} {} - {} (Academic Year: {}-{})",
                         student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
-                        student.getAcademicYearStart(), student.getAcademicYearEnd());
+                        academicYearStart, academicYearEnd);
             } else {
                 // Create new
                 assessment = Assessment.builder()
@@ -333,13 +350,13 @@ public class ExcelImportService {
                         .term(term)
                         .type(assessmentType)
                         .score(score)
-                        .academicYearStart(student.getAcademicYearStart())
-                        .academicYearEnd(student.getAcademicYearEnd())
-                        .academicYear(student.getAcademicYearStart() + "-" + student.getAcademicYearEnd())
+                        .academicYearStart(academicYearStart)
+                        .academicYearEnd(academicYearEnd)
+                        .academicYear(academicYearStart + "-" + academicYearEnd)
                         .build();
-                log.debug("Creating assessment: {} {} {} - {} (Academic Year: {}-{})",
+                log.debug("Creating new assessment: {} {} {} - {} (Academic Year: {}-{})",
                         student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
-                        student.getAcademicYearStart(), student.getAcademicYearEnd());
+                        academicYearStart, academicYearEnd);
             }
 
             assessmentRepository.save(assessment);

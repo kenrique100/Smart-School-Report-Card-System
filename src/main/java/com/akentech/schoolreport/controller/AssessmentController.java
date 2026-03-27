@@ -438,22 +438,28 @@ public class AssessmentController {
      */
     @GetMapping("/download-excel")
     public ResponseEntity<byte[]> downloadExcel(@RequestParam Long classRoomId,
-                                                 @RequestParam Integer term) {
+                                                 @RequestParam Integer term,
+                                                 @RequestParam(required = false) Integer academicYearStart,
+                                                 @RequestParam(required = false) Integer academicYearEnd) {
         try {
             ClassRoom classRoom = classRoomRepository.findById(classRoomId)
                     .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
 
-            byte[] excelBytes = excelExportService.generateClassAssessmentExcel(classRoomId, term);
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcel(classRoomId, term, academicYearStart, academicYearEnd);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = String.format("Assessments_%s_Term%d_%s.xlsx",
-                    classRoom.getName().replace(" ", "_"), term, timestamp);
+            String academicYearSuffix = (academicYearStart != null && academicYearEnd != null)
+                    ? "_" + academicYearStart + "-" + academicYearEnd
+                    : "";
+            String filename = String.format("Assessments_%s_Term%d%s_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), term, academicYearSuffix, timestamp);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", filename);
 
-            log.info("Downloaded Excel for class {} term {}", classRoomId, term);
+            log.info("Downloaded Excel for class {} term {} academic year {}-{}",
+                    classRoomId, term, academicYearStart, academicYearEnd);
 
             return ResponseEntity.ok()
                     .headers(headers)
@@ -469,22 +475,28 @@ public class AssessmentController {
      * Download Excel template for class assessments (all terms)
      */
     @GetMapping("/download-excel-all-terms")
-    public ResponseEntity<byte[]> downloadExcelAllTerms(@RequestParam Long classRoomId) {
+    public ResponseEntity<byte[]> downloadExcelAllTerms(@RequestParam Long classRoomId,
+                                                         @RequestParam(required = false) Integer academicYearStart,
+                                                         @RequestParam(required = false) Integer academicYearEnd) {
         try {
             ClassRoom classRoom = classRoomRepository.findById(classRoomId)
                     .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
 
-            byte[] excelBytes = excelExportService.generateClassAssessmentExcelAllTerms(classRoomId);
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcelAllTerms(classRoomId, academicYearStart, academicYearEnd);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = String.format("Assessments_%s_AllTerms_%s.xlsx",
-                    classRoom.getName().replace(" ", "_"), timestamp);
+            String academicYearSuffix = (academicYearStart != null && academicYearEnd != null)
+                    ? "_" + academicYearStart + "-" + academicYearEnd
+                    : "";
+            String filename = String.format("Assessments_%s_AllTerms%s_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), academicYearSuffix, timestamp);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", filename);
 
-            log.info("Downloaded Excel for class {} all terms", classRoomId);
+            log.info("Downloaded Excel for class {} all terms academic year {}-{}",
+                    classRoomId, academicYearStart, academicYearEnd);
 
             return ResponseEntity.ok()
                     .headers(headers)
@@ -503,6 +515,8 @@ public class AssessmentController {
     public String uploadExcel(@RequestParam("file") MultipartFile file,
                               @RequestParam(required = false) Long classRoomId,
                               @RequestParam(required = false) Integer term,
+                              @RequestParam(required = false) Integer academicYearStart,
+                              @RequestParam(required = false) Integer academicYearEnd,
                               RedirectAttributes redirectAttributes) {
         try {
             if (file.isEmpty()) {
@@ -510,9 +524,11 @@ public class AssessmentController {
                 return "redirect:/assessments/entry";
             }
 
-            log.info("Uploading Excel file: {} (size: {} bytes)", file.getOriginalFilename(), file.getSize());
+            log.info("Uploading Excel file: {} (size: {} bytes) for academic year {}-{}",
+                    file.getOriginalFilename(), file.getSize(), academicYearStart, academicYearEnd);
 
-            ExcelImportService.ImportResult result = excelImportService.importAssessmentsFromExcel(file, classRoomId, term);
+            ExcelImportService.ImportResult result = excelImportService.importAssessmentsFromExcel(
+                    file, classRoomId, term, academicYearStart, academicYearEnd);
 
             if (result.hasErrors()) {
                 // Format error messages
