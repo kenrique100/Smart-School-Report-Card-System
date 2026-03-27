@@ -55,13 +55,14 @@ public class ExcelExportService {
             }
 
             // Get all unique subjects for students in this class
-            // Use a Map to ensure uniqueness by subject ID and prevent duplicates
-            Map<Long, Subject> subjectMap = new LinkedHashMap<>();
+            // Use a Map to ensure uniqueness by subject NAME (not ID) to prevent duplicate columns
+            // This handles cases where the same subject (e.g., "Mathematics") exists across multiple class levels
+            Map<String, Subject> subjectMap = new LinkedHashMap<>();
             for (Student student : students) {
                 List<StudentSubject> enrollments = studentEnrollmentService.getStudentEnrollments(student.getId());
                 enrollments.stream()
                         .map(StudentSubject::getSubject)
-                        .forEach(subject -> subjectMap.putIfAbsent(subject.getId(), subject));
+                        .forEach(subject -> subjectMap.putIfAbsent(subject.getName(), subject));
             }
             List<Subject> subjects = new ArrayList<>(subjectMap.values());
             subjects.sort(Comparator.comparing(Subject::getName));
@@ -125,7 +126,7 @@ public class ExcelExportService {
                 createLockedCell(row, colNum++, student.getDepartment() != null ? student.getDepartment().getName() : "", lockedStyle);
                 createLockedCell(row, colNum++, student.getSpecialty() != null ? student.getSpecialty() : "", lockedStyle);
 
-                // Get student's enrolled subjects
+                // Get student's enrolled subjects (names, not IDs, to match our deduplication strategy)
                 List<Subject> studentSubjects = studentEnrollmentService.getStudentEnrollments(student.getId())
                         .stream()
                         .map(StudentSubject::getSubject)
@@ -133,25 +134,32 @@ public class ExcelExportService {
 
                 // Assessment scores (editable cells)
                 for (Subject subject : subjects) {
-                    // Check if student is enrolled in this subject
+                    // Check if student is enrolled in this subject by NAME (not ID)
+                    // This allows matching across different class levels (e.g., F1-MATH, F2-MATH)
                     boolean isEnrolled = studentSubjects.stream()
-                            .anyMatch(s -> s.getId().equals(subject.getId()));
+                            .anyMatch(s -> s.getName().equals(subject.getName()));
 
                     for (AssessmentType assessmentType : assessmentTypes) {
                         Cell cell = row.createCell(colNum++);
 
                         if (isEnrolled) {
-                            // Get existing assessment, filtered by academic year if provided
+                            // Find the actual subject ID for this student (may differ from the reference subject)
+                            Subject actualSubject = studentSubjects.stream()
+                                    .filter(s -> s.getName().equals(subject.getName()))
+                                    .findFirst()
+                                    .orElse(subject);
+
+                            // Get existing assessment using the actual subject ID
                             Optional<Assessment> assessment;
                             if (academicYearStart != null && academicYearEnd != null) {
                                 assessment = assessmentRepository
                                         .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
-                                                student.getId(), subject.getId(), term, assessmentType,
+                                                student.getId(), actualSubject.getId(), term, assessmentType,
                                                 academicYearStart, academicYearEnd);
                             } else {
                                 assessment = assessmentRepository
                                         .findByStudentIdAndSubjectIdAndTermAndType(
-                                                student.getId(), subject.getId(), term, assessmentType);
+                                                student.getId(), actualSubject.getId(), term, assessmentType);
                             }
 
                             if (assessment.isPresent()) {
@@ -221,13 +229,14 @@ public class ExcelExportService {
                 .sorted(Comparator.comparing(Student::getRollNumber, Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
 
-        // Get subjects - Use Map to ensure uniqueness by subject ID
-        Map<Long, Subject> subjectMap = new LinkedHashMap<>();
+        // Get subjects - Use Map to ensure uniqueness by subject NAME (not ID)
+        // This handles cases where the same subject exists across multiple class levels
+        Map<String, Subject> subjectMap = new LinkedHashMap<>();
         for (Student student : students) {
             List<StudentSubject> enrollments = studentEnrollmentService.getStudentEnrollments(student.getId());
             enrollments.stream()
                     .map(StudentSubject::getSubject)
-                    .forEach(subject -> subjectMap.putIfAbsent(subject.getId(), subject));
+                    .forEach(subject -> subjectMap.putIfAbsent(subject.getName(), subject));
         }
         List<Subject> subjects = new ArrayList<>(subjectMap.values());
         subjects.sort(Comparator.comparing(Subject::getName));
@@ -289,24 +298,31 @@ public class ExcelExportService {
                     .collect(Collectors.toList());
 
             for (Subject subject : subjects) {
+                // Check if student is enrolled in this subject by NAME (not ID)
                 boolean isEnrolled = studentSubjects.stream()
-                        .anyMatch(s -> s.getId().equals(subject.getId()));
+                        .anyMatch(s -> s.getName().equals(subject.getName()));
 
                 for (AssessmentType assessmentType : assessmentTypes) {
                     Cell cell = row.createCell(colNum++);
 
                     if (isEnrolled) {
-                        // Get existing assessment, filtered by academic year if provided
+                        // Find the actual subject ID for this student (may differ from the reference subject)
+                        Subject actualSubject = studentSubjects.stream()
+                                .filter(s -> s.getName().equals(subject.getName()))
+                                .findFirst()
+                                .orElse(subject);
+
+                        // Get existing assessment using the actual subject ID
                         Optional<Assessment> assessment;
                         if (academicYearStart != null && academicYearEnd != null) {
                             assessment = assessmentRepository
                                     .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
-                                            student.getId(), subject.getId(), term, assessmentType,
+                                            student.getId(), actualSubject.getId(), term, assessmentType,
                                             academicYearStart, academicYearEnd);
                         } else {
                             assessment = assessmentRepository
                                     .findByStudentIdAndSubjectIdAndTermAndType(
-                                            student.getId(), subject.getId(), term, assessmentType);
+                                            student.getId(), actualSubject.getId(), term, assessmentType);
                         }
 
                         if (assessment.isPresent()) {
