@@ -1,6 +1,5 @@
 package com.akentech.schoolreport.repository;
 
-import com.akentech.schoolreport.model.Department;
 import com.akentech.schoolreport.model.Subject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,23 +9,23 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
+
+    // Core methods used by services
     List<Subject> findByDepartmentId(Long departmentId);
-    Page<Subject> findByDepartmentId(Long departmentId, Pageable pageable);
+    List<Subject> findByDepartmentIdAndSpecialty(Long departmentId, String specialty);
 
-    @Query("SELECT s FROM Subject s WHERE s.department.id = :departmentId AND s.specialty = :specialty")
-    List<Subject> findByDepartmentIdAndSpecialty(@Param("departmentId") Long departmentId,
-                                                 @Param("specialty") String specialty);
+    // NEW: Find by classroom
+    List<Subject> findByClassRoomId(Long classroomId);
 
-    @Query("SELECT s FROM Subject s WHERE s.department.id = :departmentId AND s.specialty = :specialty")
-    Page<Subject> findByDepartmentIdAndSpecialty(@Param("departmentId") Long departmentId,
-                                                 @Param("specialty") String specialty,
-                                                 Pageable pageable);
+    // NEW: Find by classroom and department
+    List<Subject> findByClassRoomIdAndDepartmentId(Long classroomId, Long departmentId);
 
-    List<Subject> findBySpecialty(String specialty);
-    Page<Subject> findBySpecialty(String specialty, Pageable pageable);
+    // NEW: Find by classroom, department, and specialty
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialty(Long classroomId, Long departmentId, String specialty);
 
     @Query("SELECT DISTINCT s.specialty FROM Subject s WHERE s.specialty IS NOT NULL")
     List<String> findDistinctSpecialties();
@@ -34,21 +33,16 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     @Query("SELECT DISTINCT s.specialty FROM Subject s WHERE s.department.id = :departmentId AND s.specialty IS NOT NULL")
     List<String> findDistinctSpecialtiesByDepartment(@Param("departmentId") Long departmentId);
 
-    @Query("SELECT s FROM Subject s WHERE s.name IN :names AND s.department.code = :departmentCode")
-    List<Subject> findByNameInAndDepartmentCode(@Param("names") List<String> names,
-                                                @Param("departmentCode") String departmentCode);
-
-    List<Subject> findByName(String name);
-    Page<Subject> findByNameContaining(String name, Pageable pageable);
-
-    @Query("SELECT s FROM Subject s WHERE s.department = :department AND s.specialty = :specialty")
-    List<Subject> findByDepartmentAndSpecialty(@Param("department") Department department,
-                                               @Param("specialty") String specialty);
-
-    @Query("SELECT s FROM Subject s WHERE s.name IN :names")
     List<Subject> findByNameIn(@Param("names") List<String> names);
 
-    // New methods for filtering and pagination
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNull(Long classRoomId, Long departmentId);
+
+    @Query("SELECT s FROM Subject s WHERE s.classRoom.id = :classroomId AND s.department.id = :departmentId AND s.specialty IS NOT NULL")
+    List<Subject> findByClassRoomIdAndDepartmentIdAndSpecialtyIsNotNull(
+            @Param("classroomId") Long classroomId,
+            @Param("departmentId") Long departmentId
+    );
+
     @Query("SELECT s FROM Subject s WHERE " +
             "(:name IS NULL OR s.name LIKE %:name%) AND " +
             "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +
@@ -57,4 +51,38 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
                                 @Param("departmentId") Long departmentId,
                                 @Param("specialty") String specialty,
                                 Pageable pageable);
+
+    @Query("SELECT s FROM Subject s WHERE " +
+            "(:classCode IS NULL OR s.subjectCode LIKE CONCAT(:classCode, '%')) AND " +
+            "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +
+            "(:specialty IS NULL OR s.specialty = :specialty)")
+    List<Subject> findFilteredSubjects(@Param("classCode") String classCode,
+                                       @Param("departmentId") Long departmentId,
+                                       @Param("specialty") String specialty);
+
+    @Query("SELECT s FROM Subject s WHERE " +
+            "s.classRoom.id = :classroomId AND " +
+            "(:departmentId IS NULL OR s.department.id = :departmentId) AND " +
+            "(:specialty IS NULL OR s.specialty = :specialty)")
+    List<Subject> findByClassroomAndDepartmentAndSpecialty(@Param("classroomId") Long classroomId,
+                                                           @Param("departmentId") Long departmentId,
+                                                           @Param("specialty") String specialty);
+
+    @Query("SELECT COUNT(s) FROM Subject s WHERE s.department.id = :departmentId")
+    long countByDepartmentId(@Param("departmentId") Long departmentId);
+
+    @Query("SELECT COUNT(s) FROM Subject s WHERE s.classRoom.id = :classroomId")
+    long countByClassroomId(@Param("classroomId") Long classroomId);
+
+    boolean existsBySubjectCode(String subjectCode);
+    Optional<Subject> findBySubjectCode(String subjectCode);
+    Optional<Subject> findByName(String name);
+
+    // NEW: Method for ordering
+    @Query("SELECT s FROM Subject s LEFT JOIN FETCH s.department ORDER BY s.name ASC")
+    List<Subject> findAllByOrderByNameAsc();
+
+    // NEW: Get subjects by classroom ID with department
+    @Query("SELECT s FROM Subject s LEFT JOIN FETCH s.department WHERE s.classRoom.id = :classroomId")
+    List<Subject> findByClassroomIdWithDepartment(@Param("classroomId") Long classroomId);
 }

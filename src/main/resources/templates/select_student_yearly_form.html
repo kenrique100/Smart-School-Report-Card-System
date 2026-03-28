@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Yearly Report - School Report System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- Navigation -->
+        <div class="mb-6 flex items-center space-x-4">
+            <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <i class="fas fa-home mr-2"></i>Dashboard
+            </a>
+            <div class="h-4 w-px bg-gray-300"></div>
+            <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+            </a>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white shadow-2xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white flex items-center">
+                            <i class="fas fa-calendar-alt mr-3"></i>
+                            Generate Yearly Reports
+                        </h1>
+                        <p class="text-purple-100 mt-2">Select class and academic year to generate yearly reports</p>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-lg">
+                        <i class="fas fa-file-alt text-white text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <form th:action="@{/reports/student/yearly/select}" method="post" class="space-y-6">
+                    <!-- Class Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-school mr-2 text-blue-600"></i>
+                            Select Class
+                        </label>
+                        <select name="classId" required
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all appearance-none">
+                            <option value="">Choose a Class</option>
+                            <option th:each="c : ${classes}"
+                                    th:value="${c.id}"
+                                    th:text="${c.name}">
+                            </option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-2">Select the class for which you want to generate yearly reports</p>
+                    </div>
+
+                    <!-- Academic Year Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-calendar-check mr-2 text-green-600"></i>
+                            Select Academic Year
+                        </label>
+                        <select name="academicYear"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
+                            <option value="">Current Academic Year</option>
+                            <option value="2025-2026">2025-2026</option>
+                            <option value="2026-2027">2026-2027</option>
+                            <option value="2027-2028">2027-2028</option>
+                            <option value="2028-2029">2028-2029</option>
+                            <option value="2029-2030">2029-2030</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-2">Leave empty for current academic year</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <div class="flex space-x-4">
+                            <button type="submit"
+                                    class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center">
+                                <i class="fas fa-arrow-right mr-2"></i>
+                                Continue to Student Selection
+                            </button>
+                            <a th:href="@{/reports/select}"
+                               class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold flex items-center justify-center">
+                                <i class="fas fa-times mr-2"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Information Section -->
+                <div class="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        About Yearly Reports
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-blue-700 mb-2">What's Included</h4>
+                            <ul class="space-y-2 text-blue-600 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                                    <span>Term-by-term performance comparison</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                                    <span>Yearly averages and grades</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                                    <span>Promotion status and recommendations</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                                    <span>Subject performance across all terms</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-blue-700 mb-2">Usage Notes</h4>
+                            <ul class="space-y-2 text-blue-600 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle mt-1 mr-2 text-yellow-500"></i>
+                                    <span>Ensure all term assessments are entered</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle mt-1 mr-2 text-yellow-500"></i>
+                                    <span>Yearly reports require data from all three terms</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-clock mt-1 mr-2 text-purple-500"></i>
+                                    <span>Reports are generated in PDF format</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-download mt-1 mr-2 text-green-500"></i>
+                                    <span>Individual or batch downloads available</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a th:href="@{/reports/student/select}"
+               class="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-center group">
+                <div class="p-3 bg-blue-100 rounded-lg inline-block mb-3">
+                    <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800 group-hover:text-blue-700">Term Reports</h4>
+                <p class="text-sm text-gray-600 mt-1">Generate individual term reports</p>
+            </a>
+
+            <a th:href="@{'/reports/class/yearly?classId=1'}"
+               class="bg-white p-6 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all text-center group">
+                <div class="p-3 bg-green-100 rounded-lg inline-block mb-3">
+                    <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800 group-hover:text-green-700">Class Yearly Report</h4>
+                <p class="text-sm text-gray-600 mt-1">View class-wide yearly performance</p>
+            </a>
+
+            <a th:href="@{'/reports/batch/pdf?classId=1&reportType=yearly&academicYear=2025-2026'}"
+               class="bg-white p-6 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all text-center group">
+                <div class="p-3 bg-orange-100 rounded-lg inline-block mb-3">
+                    <i class="fas fa-download text-orange-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800 group-hover:text-orange-700">Batch Download</h4>
+                <p class="text-sm text-gray-600 mt-1">Download all yearly reports as ZIP</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animation to cards
+        const cards = document.querySelectorAll('.fade-in');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Form submission handling
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                submitBtn.disabled = true;
+
+                // Reset button after 5 seconds in case of error
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter to submit form
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                form.submit();
+            }
+            // Escape to go back
+            if (e.key === 'Escape') {
+                window.history.back();
+            }
+        });
+    });
+</script>
+</body>
+</html>

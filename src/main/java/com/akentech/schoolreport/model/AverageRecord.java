@@ -22,6 +22,8 @@ public class AverageRecord {
 
     private Integer rankInClass;
 
+    private Integer rankInDepartment;
+
     private String remarks;
 
     @ManyToOne

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${classRoom.name + ' - Term ' + term + ' Averages'}">Class Term Averages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-card { transition: all 0.3s ease; }
+        .stats-card:hover { transform: scale(1.02); }
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/assessments/entry}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Assessments</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" th:text="${classRoom.name + ' - Term ' + term + ' Averages'}"></h1>
+                        <p class="text-gray-600 text-sm mt-1" th:text="${classRoom.academicYear}"></p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="stats-card bg-blue-50 p-6 rounded-xl border border-blue-200">
+                <div class="flex items-center">
+                    <div class="mr-4 p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-users text-blue-600 text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-blue-600" th:text="${termAverages.size()}">0</div>
+                        <div class="text-sm font-semibold text-blue-800">Total Students</div>
+                        <div class="text-xs text-blue-600">In Class</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-card bg-green-50 p-6 rounded-xl border border-green-200">
+                <div class="flex items-center">
+                    <div class="mr-4 p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-green-600"
+                             th:text="${#numbers.formatDecimal(termAverages.?[average != null].![average].?[average], 1, 2)}">0.00</div>
+                        <div class="text-sm font-semibold text-green-800">Class Average</div>
+                        <div class="text-xs text-green-600">Term <span th:text="${term}"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-card bg-purple-50 p-6 rounded-xl border border-purple-200">
+                <div class="flex items-center">
+                    <div class="mr-4 p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-trophy text-purple-600 text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-purple-600"
+                             th:text="${#lists.size(termAverages.?[average != null and average >= 15])}">0</div>
+                        <div class="text-sm font-semibold text-purple-800">Above 15/20</div>
+                        <div class="text-xs text-purple-600">Excellent Performance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Term Averages Table -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-list-ol mr-2"></i>Term <span th:text="${term}"></span> Averages
+                </h2>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Rank</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Student</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Roll No</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Term Average</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Status</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:each="dto, stat : ${termAverages}"
+                            class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-4 py-3">
+                                <div th:if="${dto.rank <= 3}"
+                                     th:class="${'rank-' + dto.rank} + ' w-8 h-8 rounded-full flex items-center justify-center text-white font-bold'">
+                                    <span th:text="${dto.rank}"></span>
+                                </div>
+                                <div th:unless="${dto.rank <= 3}"
+                                     class="w-8 h-8 rounded-full flex items-center justify-center font-bold bg-gray-100 text-gray-800">
+                                    <span th:text="${dto.rank}"></span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900"
+                                     th:text="${dto.student.firstName + ' ' + dto.student.lastName}"></div>
+                                <div class="text-xs text-gray-500" th:text="${dto.student.studentId}"></div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
+                                      th:text="${dto.student.rollNumber}"></code>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-bold text-lg" th:text="${#numbers.formatDecimal(dto.average, 1, 2)}"></span>
+                                    <div class="w-24 h-2 bg-gray-200 rounded-full">
+                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                             th:style="'width: ' + ${(dto.average != null ? dto.average : 0) * 5} + '%;'"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span th:if="${gradeService.isPassing(dto.average)}"
+                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Pass
+                                </span>
+                                <span th:unless="${gradeService.isPassing(dto.average)}"
+                                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>Fail
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <a th:href="@{'/assessments/entry?studentId=' + ${dto.student.id} + '&term=' + ${term}}"
+                                   class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-3">Performance Summary</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Passing Students:</span>
+                                    <span class="font-semibold"
+                                          th:text="${#lists.size(termAverages.?[gradeService.isPassing(average)])}">0</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Failing Students:</span>
+                                    <span class="font-semibold"
+                                          th:text="${#lists.size(termAverages.?[not gradeService.isPassing(average)])}">0</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Pass Rate:</span>
+                                    <span class="font-semibold text-green-600"
+                                          th:text="${termAverages.size() > 0 ? #numbers.formatDecimal((#lists.size(termAverages.?[gradeService.isPassing(average)]) * 100.0 / termAverages.size()), 1, 2) : 0}">0</span>%
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-800 mb-3">Term Information</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Term:</span>
+                                    <span class="font-semibold" th:text="${term}"></span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Assessments:</span>
+                                    <span class="font-semibold">
+                                        <span th:if="${term == 1}">Assessment 1 & 2</span>
+                                        <span th:if="${term == 2}">Assessment 3 & 4</span>
+                                        <span th:if="${term == 3}">Assessment 5</span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Grading Scale:</span>
+                                    <span class="font-semibold">0-20</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-8 flex justify-between items-center">
+            <div class="text-sm text-gray-500">
+                Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+            </div>
+            <div class="flex space-x-3">
+                <a th:href="@{'/assessments/yearly-ranking/' + ${classRoom.id}}"
+                   class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>View Yearly Ranking</span>
+                </a>
+                <button onclick="window.print()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-print"></i>
+                    <span>Print Report</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+    });
+</script>
+</body>
+</html>

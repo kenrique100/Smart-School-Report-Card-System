@@ -1,47 +1,67 @@
 package com.akentech.schoolreport.service;
 
+import com.akentech.schoolreport.dto.StudentAssessmentSummaryDTO;
+import com.akentech.schoolreport.dto.StudentTermAverageDTO;
+import com.akentech.schoolreport.dto.StudentYearlyAverageDTO;
+import com.akentech.schoolreport.dto.TermAssessmentDTO;
 import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.Subject;
-import com.akentech.schoolreport.repository.AssessmentRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import com.akentech.schoolreport.model.enums.AssessmentType;
 
-import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class AssessmentService {
+public interface AssessmentService {
+    // Existing methods...
+    Optional<Assessment> findByStudentSubjectTermType(Student student, Subject subject, Integer term, String type);
+    Optional<Assessment> getAssessmentByStudentSubjectAndTermAndType(Long studentId, Long subjectId, Integer term, AssessmentType type);
+    List<Assessment> getAssessmentsByStudentAndTerm(Long studentId, Integer term);
+    List<Assessment> getAssessmentsByStudentSubjectAndTerm(Long studentId, Long subjectId, Integer term);
+    Assessment save(Assessment assessment);
+    List<Assessment> saveAll(List<Assessment> assessments);
+    void delete(Long id);
+    Assessment getAssessmentById(Long id);
+    List<Assessment> getAssessmentsByStudent(Long studentId);
+    List<Assessment> getAssessmentsBySubjectAndTerm(Long subjectId, Integer term);
+    Double calculateTermAverage(Long studentId, Integer term);
+    Double calculateYearlyAverage(Long studentId);
+    List<StudentTermAverageDTO> getTermAveragesForClass(Long classId, Integer term);
+    List<StudentYearlyAverageDTO> getYearlyAveragesForClass(Long classId);
+    Map<Long, List<Double>> getStudentSubjectScoresByTerm(Long studentId, Integer term);
 
-    private final AssessmentRepository assessmentRepository;
+    // New methods for student assessment summary
+    StudentAssessmentSummaryDTO getAssessmentSummary(Long studentId);
+    List<TermAssessmentDTO> getTermAssessments(Long studentId, Integer term);
 
-    public List<Assessment> findByStudentAndTerm(Student student, Integer term) {
-        return assessmentRepository.findByStudentAndTerm(student, term);
-    }
+    // New methods with academic year support
+    Double calculateTermAverageWithAcademicYear(Long studentId, Integer term,
+                                                Integer academicYearStart, Integer academicYearEnd);
+    Double calculateYearlyAverageWithAcademicYear(Long studentId, Integer academicYearStart,
+                                                  Integer academicYearEnd);
+    List<StudentTermAverageDTO> getTermAveragesForClassWithAcademicYear(Long classId, Integer term,
+                                                                        Integer academicYearStart,
+                                                                        Integer academicYearEnd);
+    List<StudentYearlyAverageDTO> getYearlyAveragesForClassWithAcademicYear(Long classId,
+                                                                            Integer academicYearStart,
+                                                                            Integer academicYearEnd);
+    Map<Long, List<Double>> getStudentSubjectScoresByTermAndAcademicYear(Long studentId, Integer term,
+                                                                         Integer academicYearStart,
+                                                                         Integer academicYearEnd);
+    StudentAssessmentSummaryDTO getAssessmentSummaryWithAcademicYear(Long studentId,
+                                                                     Integer academicYearStart,
+                                                                     Integer academicYearEnd);
+    List<TermAssessmentDTO> getTermAssessmentsWithAcademicYear(Long studentId, Integer term,
+                                                               Integer academicYearStart,
+                                                               Integer academicYearEnd);
 
-    public Optional<Assessment> findByStudentSubjectTermType(Student student, Subject subject, Integer term, String type) {
-        return assessmentRepository.findByStudentAndSubjectAndTermAndType(student, subject, term, type);
-    }
+    // Batch academic year fixing
+    void fixAcademicYearsForStudent(Long studentId, Integer academicYearStart, Integer academicYearEnd);
+    void fixAllAcademicYears(Integer academicYearStart, Integer academicYearEnd);
 
-    @Transactional
-    public Assessment save(Assessment assessment) {
-        Assessment a = assessmentRepository.save(assessment);
-        log.info("Saved assessment: student={} {} subject={} term={} type={} score={}",
-                a.getStudent().getFirstName(),
-                a.getStudent().getLastName(),
-                a.getSubject().getName(),
-                a.getTerm(),
-                a.getType(),
-                a.getScore());
-        return a;
-    }
+    // Grouping methods
+    Map<Integer, List<Assessment>> getAssessmentsByStudentGroupedByTerm(Long studentId);
+    Map<Integer, Map<Long, List<Assessment>>> getAssessmentsByStudentGroupedByTermAndSubject(Long studentId);
 
-    public void delete(Long id) {
-        assessmentRepository.deleteById(id);
-        log.info("Deleted assessment id={}", id);
-    }
 }

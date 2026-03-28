@@ -6,83 +6,109 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
 public class SpecialtyService {
 
+    private final Map<String, List<String>> departmentSpecialties = createDepartmentSpecialties();
+
     public SpecialtyService() {
     }
 
-    public List<String> getCommercialSpecialties() {
-        return List.of("Accountancy", "Marketing", "SAC(Secretarial Administration and Communication)");
+    private Map<String, List<String>> createDepartmentSpecialties() {
+        Map<String, List<String>> specialties = new HashMap<>();
+        specialties.put("COM", Arrays.asList("Accounting", "Administration & Communication Techniques", "Marketing"));
+        specialties.put("EPS", new ArrayList<>()); // No specialties
+        specialties.put("SCI", Arrays.asList("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"));
+        specialties.put("ART", Arrays.asList("A1", "A2", "A3", "A4", "A5"));
+        specialties.put("HE", new ArrayList<>()); // No specialty
+        specialties.put("GEN", new ArrayList<>()); // No specialty
+        specialties.put("CI", new ArrayList<>()); // No specialty
+        specialties.put("BC", new ArrayList<>()); // No specialty
+        return specialties;
     }
 
-    public List<String> getTechnicalSpecialties() {
-        return List.of("EPS(Electrical Power System)", "BC(Building and Construction)", "CI(Clothing Industry)");
+    // Check if department has specialties
+    public boolean hasSpecialties(String departmentCode) {
+        if (departmentCode == null) return false;
+
+        List<String> specialties = getSpecialtiesByDepartment(departmentCode);
+        return specialties != null && !specialties.isEmpty();
+    }
+
+    public List<String> getCommercialSpecialties() {
+        return List.of("Accounting", "Administration & Communication Techniques", "Marketing");
     }
 
     public List<String> getScienceSpecialties() {
-        return List.of("S1", "S2", "S3", "S4", "S5", "S6");
+        return List.of("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8");
     }
 
     public List<String> getArtsSpecialties() {
         return List.of("A1", "A2", "A3", "A4", "A5");
     }
 
-    public List<String> getHomeEconomicsSpecialties() {
-        return List.of("Home Economics", "Food and Nutrition", "Textiles");
-    }
-
-    public List<String> getGeneralSpecialties() {
-        return List.of();
-    }
-
     public List<String> getAllSpecialties() {
         List<String> all = new ArrayList<>();
         all.addAll(getCommercialSpecialties());
-        all.addAll(getTechnicalSpecialties());
         all.addAll(getScienceSpecialties());
         all.addAll(getArtsSpecialties());
-        all.addAll(getHomeEconomicsSpecialties());
         return all;
     }
 
     public List<String> getSpecialtiesByDepartment(String departmentCode) {
         if (departmentCode == null) return new ArrayList<>();
 
-        return switch (departmentCode) {
-            case "COM" -> getCommercialSpecialties();
-            case "TEC" -> getTechnicalSpecialties();
-            case "SCI" -> getScienceSpecialties();
-            case "ART" -> getArtsSpecialties();
-            case "HE" -> getHomeEconomicsSpecialties();
-            case "GEN" -> getGeneralSpecialties();
-            default -> new ArrayList<>();
-        };
+        log.info("Getting specialties for department: {}", departmentCode);
+        List<String> specialties = departmentSpecialties.getOrDefault(departmentCode, new ArrayList<>());
+        log.info("Found {} specialties for department {}", specialties.size(), departmentCode);
+        return specialties;
     }
 
-    // KEEP: This method works with string codes for AJAX compatibility
     public SpecialtyRequirement checkSpecialtyRequirement(String classCode, String departmentCode) {
-        boolean required = isSpecialtyRequired(classCode, departmentCode);
-        boolean allowed = isSpecialtyAllowed(classCode, departmentCode);
+        log.info("Checking specialty requirement for class: {}, department: {}", classCode, departmentCode);
+
+        boolean hasSpecialties = hasSpecialties(departmentCode);
         List<String> specialties = getSpecialtiesByDepartment(departmentCode);
 
-        return new SpecialtyRequirement(required, allowed, specialties);
+        // Check if sixth form
+        boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+
+        // Determine requirements
+        boolean required = isSixthForm && (departmentCode.equals("SCI") || departmentCode.equals("ART"));
+        boolean allowed = hasSpecialties && !classCode.equals("FORM_1") && !classCode.equals("FORM_2") && !classCode.equals("FORM_3");
+
+        log.info("Specialty requirement - required: {}, allowed: {}, hasSpecialties: {}, specialties: {}",
+                required, allowed, hasSpecialties, specialties.size());
+
+        return new SpecialtyRequirement(required, allowed, hasSpecialties, specialties);
     }
 
     public boolean isSpecialtyRequired(String classCode, String departmentCode) {
         if (classCode == null || departmentCode == null) return false;
-        return (classCode.equals("LSX") || classCode.equals("USX")) &&
-                (departmentCode.equals("SCI") || departmentCode.equals("ART"));
+
+        // Specialty is required for Sixth Form Science and Arts students
+        boolean isSixthForm = classCode.equals("LOWER_SIXTH") || classCode.equals("UPPER_SIXTH");
+        boolean requiresSpecialty = departmentCode.equals("SCI") || departmentCode.equals("ART");
+
+        boolean result = isSixthForm && requiresSpecialty;
+        log.debug("Specialty required for class {} department {}: {}", classCode, departmentCode, result);
+
+        return result;
     }
 
     public boolean isSpecialtyAllowed(String classCode, String departmentCode) {
         if (classCode == null || departmentCode == null) return false;
-        return (!classCode.equals("F1") && !classCode.equals("F2") && !classCode.equals("F3")) ||
-                !departmentCode.equals("GEN");
+
+        // Specialty not allowed for Forms 1-3
+        if (classCode.equals("FORM_1") || classCode.equals("FORM_2") || classCode.equals("FORM_3")) {
+            return false;
+        }
+
+        // Specialty allowed for Forms 4-5 and Sixth Form in departments with specialties
+        return hasSpecialties(departmentCode);
     }
 
     @Getter
@@ -91,6 +117,19 @@ public class SpecialtyService {
     public static class SpecialtyRequirement {
         private boolean required;
         private boolean allowed;
+        private boolean hasSpecialties;
         private List<String> specialties;
+
+        public String getMessage() {
+            if (!hasSpecialties) {
+                return "This department does not have specialties";
+            } else if (required) {
+                return "Specialty is required for this class and department combination";
+            } else if (allowed) {
+                return "Specialty is optional for this class and department combination";
+            } else {
+                return "Specialty is not allowed for this class and department combination";
+            }
+        }
     }
 }

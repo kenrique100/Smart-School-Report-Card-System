@@ -7,8 +7,10 @@ public enum DepartmentCode {
     SCI("SCI", "Science"),
     ART("ART", "Arts"),
     COM("COM", "Commercial"),
-    TEC("TEC", "Technical"),
-    HE("HE", "Home Economics");
+    BC("BC", "Building and Construction"),
+    HE("HE", "Home Economics"),
+    CI("CI", "Clothing Industry"),
+    EPS("EPS", "Electrical Power Systems");
 
     @Getter
     private final String code;
@@ -22,7 +24,7 @@ public enum DepartmentCode {
 
     public static DepartmentCode fromCode(String code) {
         for (DepartmentCode dept : values()) {
-            if (dept.code.equals(code)) {
+            if (dept.getCode().equals(code)) { // Fixed: use getter method
                 return dept;
             }
         }

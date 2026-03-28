@@ -1,140 +1,644 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${classRoom.name} + ' - Term ' + ${term} + ' Reports'">Class Reports</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${classRoom.name + ' - Term ' + term + ' Reports'}">Class Term Reports</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .grade-a { background-color: #10B981; color: white; }
+        .grade-b { background-color: #3B82F6; color: white; }
+        .grade-c { background-color: #F59E0B; color: white; }
+        .grade-d { background-color: #EF4444; color: white; }
+        .grade-f { background-color: #6B7280; color: white; }
+        .grade-o { background-color: #8B5CF6; color: white; }
+        .grade-u { background-color: #374151; color: white; }
+        .grade-e { background-color: #059669; color: white; }
+
+        .subject-card { transition: all 0.3s ease; }
+        .subject-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stats-card { transition: all 0.3s ease; }
+        .stats-card:hover { transform: scale(1.02); }
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #E5E7EB;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease-in-out;
+        }
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); }
+        .rank-top10 { background-color: #10B981; }
+        .rank-top50 { background-color: #3B82F6; }
+        .rank-bottom50 { background-color: #EF4444; }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapse-content.expanded {
+            max-height: 500px;
+        }
+
+        .term-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .term-1 { background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; }
+        .term-2 { background: linear-gradient(135deg, #10B981, #047857); color: white; }
+        .term-3 { background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-<div class="flex">
-    <!-- Sidebar -->
-    <div class="w-64 bg-blue-800 text-white min-h-screen">
-        <div class="p-4">
-            <h1 class="text-xl font-bold">School Management</h1>
-            <p class="text-blue-200 text-sm mt-1">Comprehensive System</p>
+<body class="bg-gray-50">
+<div class="min-h-screen">
+    <!-- Header with Navigation -->
+    <div class="bg-white shadow-lg border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors mr-4">
+                        <i class="fas fa-home"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <a th:href="@{/reports/select}" class="text-blue-600 hover:text-blue-800 flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="font-medium">Back to Reports</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <span th:text="${classRoom.name}"></span> - Term <span th:text="${term}"></span> Reports
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-500">Total Students: <span class="font-semibold" th:text="${totalItems}"></span></span>
+                    <button onclick="window.print()" class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-print mr-1"></i>Print
+                    </button>
+                    <button onclick="downloadClassTermPdf()"
+                            class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50">
+                        <i class="fas fa-file-pdf mr-1"></i>PDF
+                    </button>
+                </div>
+            </div>
         </div>
-        <nav class="mt-6">
-            <a th:href="@{/dashboard}" class="block py-2 px-4 bg-blue-700">
-                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-            </a>
-            <a th:href="@{/students}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-users mr-2"></i>Students
-            </a>
-            <a th:href="@{/teachers}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chalkboard-teacher mr-2"></i>Teachers
-            </a>
-            <a th:href="@{/subjects}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-book mr-2"></i>Subjects
-            </a>
-            <a th:href="@{/classroom}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-school mr-2"></i>Classrooms
-            </a>
-            <a th:href="@{/exams}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-file-alt mr-2"></i>Exams
-            </a>
-            <a th:href="@{/exams/results}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-bar mr-2"></i>Exam Results
-            </a>
-            <a th:href="@{/notices}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-bullhorn mr-2"></i>Notices
-            </a>
-            <a th:href="@{/assessments/entry}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-edit mr-2"></i>Enter Assessments
-            </a>
-            <a th:href="@{/reports/select}" class="block py-2 px-4 hover:bg-blue-700">
-                <i class="fas fa-chart-pie mr-2"></i>Reports
-            </a>
-        </nav>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1">
-        <!-- Header -->
-        <div class="bg-white shadow">
-            <div class="px-6 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-800" th:text="${classRoom.name} + ' - Term ' + ${term} + ' Reports'">Class Reports</h1>
-                <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
-                    <i class="fas fa-print mr-2"></i>Print Reports
-                </button>
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        <!-- Class Summary Statistics -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div th:classappend="${'bg-gradient-to-r px-6 py-4 ' +
+        (term == 1 ? 'from-blue-600 to-cyan-600' :
+        (term == 2 ? 'from-green-600 to-emerald-600' :
+                     'from-purple-600 to-indigo-600'))}">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-pie mr-2"></i>Term <span th:text="${term}"></span> Performance Summary
+                </h2>
             </div>
-        </div>
 
-        <main class="p-6">
-            <div class="max-w-6xl mx-auto">
-                <div th:each="report : ${reports}" class="bg-white shadow rounded-2xl p-6 mb-6">
-                    <h2 class="text-lg font-semibold text-blue-600 mb-3" th:text="${report.student.firstName + ' ' + report.student.lastName}">Student Name</h2>
-                    <table class="w-full text-sm border-collapse">
-                        <thead class="bg-blue-100 text-blue-700">
-                        <tr>
-                            <th class="py-2 px-3 text-left">Subject</th>
-                            <th class="py-2 px-3">Coeff</th>
-                            <th class="py-2 px-3">A1</th>
-                            <th class="py-2 px-3">A2</th>
-                            <th class="py-2 px-3">Exam</th>
-                            <th class="py-2 px-3">Average</th>
-                            <th class="py-2 px-3">Grade</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="sub : ${report.subjectReports}" class="border-t">
-                            <td class="py-2 px-3" th:text="${sub.subjectName}">Mathematics</td>
-                            <td class="py-2 px-3 text-center" th:text="${sub.coefficient}">4</td>
-                            <td class="py-2 px-3 text-center" th:text="${sub.assessment1 != null ? sub.assessment1 : '-'}">15.5</td>
-                            <td class="py-2 px-3 text-center" th:text="${sub.assessment2 != null ? sub.assessment2 : '-'}">16.0</td>
-                            <td class="py-2 px-3 text-center" th:text="${sub.exam != null ? sub.exam : '-'}">17.5</td>
-                            <td class="py-2 px-3 text-center font-semibold" th:text="${sub.subjectAverage}">16.3</td>
-                            <td class="py-2 px-3 text-center" th:text="${sub.letterGrade}">B</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <div class="mt-4 text-right text-gray-700">
-                        <span class="font-medium">Term Average:</span>
-                        <span th:text="${report.termAverage}" class="font-semibold text-blue-600 ml-1"></span> |
-                        <span class="font-medium ml-4">Position:</span>
-                        <span th:text="${report.rankInClass}" class="font-semibold text-blue-600 ml-1"></span> |
-                        <span class="font-medium ml-4">Remarks:</span>
-                        <span th:text="${report.remarks}" class="ml-1"></span>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="stats-card bg-blue-50 p-5 rounded-xl text-center border border-blue-200">
+                        <div id="totalStudents" class="text-3xl font-bold text-blue-600" th:text="${reports != null ? reports.size() : 0}">0</div>
+                        <div class="text-sm font-semibold text-blue-800 mt-1">Total Students</div>
+                        <div class="text-xs text-blue-600 mt-1">In Class</div>
+                    </div>
+                    <div class="stats-card bg-green-50 p-5 rounded-xl text-center border border-green-200">
+                        <div id="classAverage" class="text-3xl font-bold text-green-600"
+                             th:text="${classAverage != null ? #numbers.formatDecimal(classAverage, 1, 2) : '0.0'}">0.0</div>
+                        <div class="text-sm font-semibold text-green-800 mt-1">Class Average</div>
+                        <div class="text-xs text-green-600 mt-1">Term Performance</div>
+                    </div>
+                    <div class="stats-card bg-purple-50 p-5 rounded-xl text-center border border-purple-200">
+                        <div id="top3Count" class="text-3xl font-bold text-purple-600">0</div>
+                        <div class="text-sm font-semibold text-purple-800 mt-1">Top 3 Students</div>
+                        <div class="text-xs text-purple-600 mt-1">Excellent Performance</div>
+                    </div>
+                    <div class="stats-card bg-orange-50 p-5 rounded-xl text-center border border-orange-200">
+                        <div id="positiveRemarksCount" class="text-3xl font-bold text-orange-600">0</div>
+                        <div class="text-sm font-semibold text-orange-800 mt-1">Positive Remarks</div>
+                        <div class="text-xs text-orange-600 mt-1">Excellent/Very Good</div>
                     </div>
                 </div>
 
-                <div class="text-center mt-6">
-                    <a th:href="@{/reports/select}" class="text-blue-600 hover:underline">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Report Selection
-                    </a>
+                <!-- Performance Distribution -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"
+                           th:classappend="${term == 1 ? ' text-blue-600' :
+                   (term == 2 ? ' text-green-600' : ' text-purple-600')}">
+                        </i>
+                        Performance Distribution
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Excellent (≥18)</span>
+                                <span id="excellentCount" class="text-lg font-bold text-green-600">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="excellentBar" class="progress-fill bg-green-500" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Very Good (15-17.9)</span>
+                                <span id="veryGoodCount" class="text-lg font-bold text-blue-600">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="veryGoodBar" class="progress-fill bg-blue-500" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Good (10-14.9)</span>
+                                <span id="goodCount" class="text-lg font-bold text-yellow-600">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="goodBar" class="progress-fill bg-yellow-500" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-700">Needs Improvement (&lt;10)</span>
+                                <span id="needsImprovementCount" class="text-lg font-bold text-red-600">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="needsImprovementBar" class="progress-fill bg-red-500" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </main>
+        </div>
 
-        <!-- Footer -->
-        <footer class="bg-white border-t mt-8">
-            <div class="px-6 py-4 text-center text-gray-600">
-                <p>Copyright © 2024. All rights reserved.</p>
+        <!-- Students Ranking Table -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-trophy mr-2"></i>Student Ranking & Performance
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="searchInput" placeholder="Search students..."
+                               class="px-3 py-1 rounded-lg border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <button onclick="filterTable()" class="text-white hover:text-green-200">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </footer>
+
+            <div class="p-6">
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                    <table class="w-full text-sm" id="rankingTable">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Rank</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Student</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Roll No</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Term Average</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Remarks</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Subjects</th>
+                            <th class="px-6 py-4 text-left font-semibold text-gray-700 border-b">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:each="report, stat : ${reports}"
+                            th:id="${'student-' + report.student.id}"
+                            th:attr="data-rank=${report.rankInClass},data-term-average=${report.termAverage},data-remarks=${report.remarks},data-subjects-count=${report.subjectReports != null ? report.subjectReports.size() : 0}"
+                            class="hover:bg-gray-50 transition-colors duration-150 student-row">
+                            <td class="px-6 py-4">
+                                <div th:if="${report.rankInClass <= 3}"
+                                     th:classappend="${'rank-' + report.rankInClass + ' w-8 h-8 rounded-full flex items-center justify-center text-white font-bold'}">
+                                    <span th:text="${report.rankInClass}"></span>
+                                </div>
+                                <div th:unless="${report.rankInClass <= 3}"
+                                     th:classappend="${(report.rankInClass <= 10)
+                        ? 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-green-100 text-green-800'
+                        : ((reports != null && reports.size() > 0 &&
+                            report.rankInClass <= reports.size() / 2)
+                                ? 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-blue-100 text-blue-800'
+                                : 'w-8 h-8 rounded-full flex items-center justify-center font-bold bg-red-100 text-red-800')}">
+
+                                    <span th:text="${report.rankInClass}"></span>
+                                </div>
+
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
+                                <div class="text-xs text-gray-500" th:text="${report.student.studentId}"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <code class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700"
+                                      th:text="${report.student.rollNumber}"></code>
+                            </td>
+                            <!-- FIXED VERSION - Replace lines around 250-255 -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-lg" th:text="${report.formattedAverage}"></span>
+                                    <div class="w-24 h-2 bg-gray-200 rounded-full">
+                                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                             th:style="${report.termAverage != null} ? 'width: ' + ${report.termAverage * 5} + '%;' : 'width: 0%;'"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+    <span th:classappend="${'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' +
+               ((report.remarks != null && report.remarks.contains('Excellent')) ? 'bg-green-100 text-green-800' :
+               ((report.remarks != null && report.remarks.contains('Very Good')) ? 'bg-blue-100 text-blue-800' :
+               ((report.remarks != null && report.remarks.contains('Good')) ? 'bg-yellow-100 text-yellow-800'
+                                                                            : 'bg-red-100 text-red-800')))}">
+
+        <i th:classappend="${'mr-1 ' +
+                   ((report.remarks != null && report.remarks.contains('Excellent')) ? 'fas fa-star' :
+                   ((report.remarks != null && report.remarks.contains('Very Good')) ? 'fas fa-thumbs-up' :
+                   ((report.remarks != null && report.remarks.contains('Good')) ? 'fas fa-check'
+                                                                                  : 'fas fa-exclamation-triangle')))}">
+        </i>
+
+        <span th:text="${report.remarks}"></span>
+    </span>
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <div class="text-xs text-gray-600">
+                                    <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> subjects
+                                    <div class="mt-1 flex space-x-1">
+                                        <!-- Simplified: show total subjects. If you need passed-count, compute in backend and add as field -->
+                                        <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                                            <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> shown
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <a th:href="@{'/reports/student/' + ${report.student.id} + '?term=' + ${term}}"
+                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 flex items-center">
+                                        <i class="fas fa-eye mr-1"></i>View
+                                    </a>
+                                    <a th:href="@{'/reports/student/yearly/' + ${report.student.id}}"
+                                       class="text-green-600 hover:text-green-800 text-sm font-medium px-2 py-1 rounded hover:bg-green-50 flex items-center">
+                                        <i class="fas fa-calendar-alt mr-1"></i>Yearly
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Legend -->
+                <div class="mt-6 flex flex-wrap gap-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rank-1 rounded mr-2"></div>
+                        <span class="text-gray-600">1st Position</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rank-2 rounded mr-2"></div>
+                        <span class="text-gray-600">2nd Position</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rank-3 rounded mr-2"></div>
+                        <span class="text-gray-600">3rd Position</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-100 rounded mr-2"></div>
+                        <span class="text-gray-600">Top 10</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-100 rounded mr-2"></div>
+                        <span class="text-gray-600">Top 50%</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-100 rounded mr-2"></div>
+                        <span class="text-gray-600">Bottom 50%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Teacher's Analysis -->
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chalkboard-teacher mr-2"></i>Class Teacher's Analysis
+                </h2>
+            </div>
+
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Top Performers -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-crown mr-2 text-yellow-600"></i>Top Performers (Term <span th:text="${term}"></span>)
+                        </h3>
+                        <div class="space-y-3">
+                            <div th:each="report, stat : ${reports}" th:if="${stat.index < 5}">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                                    <div class="flex items-center space-x-3">
+                                        <div th:classappend="${'w-8 h-8 rounded-full flex items-center justify-center font-bold ' +
+                        (report.rankInClass <= 3
+                           ? 'rank-' + report.rankInClass
+                           : (report.rankInClass <= 10
+                                 ? 'bg-green-100 text-green-800'
+                                 : 'bg-blue-100 text-blue-800'))}"
+                                             th:text="${report.rankInClass}">
+                                        </div>
+
+                                        <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
+                                            <div class="text-xs text-gray-500" th:text="${report.student.rollNumber}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-bold text-lg" th:text="${report.formattedAverage}"></div>
+                                        <div class="text-xs" th:classappend="${report.remarks != null and (report.remarks.contains('Excellent') or report.remarks.contains('Very Good')) ? 'text-green-600' : 'text-yellow-600'}"
+                                             th:text="${report.remarks}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Need Improvement -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2 text-red-600"></i>Need Improvement
+                        </h3>
+                        <div class="space-y-3">
+                            <div th:each="report : ${reports}" th:if="${report.termAverage != null and report.termAverage < 10}">
+                                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg hover:bg-red-100">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-red-100 text-red-800 font-bold">
+                                            <span th:text="${report.rankInClass}"></span>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-gray-900" th:text="${report.studentFullName}"></div>
+                                            <div class="text-xs text-gray-500" th:text="${report.remarks}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-bold text-lg text-red-600" th:text="${report.formattedAverage}"></div>
+                                        <div class="text-xs text-red-600">
+                                            <span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span>/<span th:text="${report.subjectReports != null ? report.subjectReports.size() : 0}"></span> subjects shown
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div th:if="${reports == null or reports?.?[termAverage ne null and termAverage lt 10].size() == 0}"
+                                 class="text-center py-4 text-gray-500">
+                                <i class="fas fa-check-circle text-2xl text-green-500 mb-2"></i>
+                                <p>All students are performing well! No one scored below 10.</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-200">
+                    <h4 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-lightbulb mr-2"></i>Recommendations for Term <span th:text="${term + 1}"></span>
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 class="font-semibold text-gray-700 mb-2">For Top Performers</h5>
+                            <ul class="text-gray-600 space-y-1">
+                                <li>• Challenge with advanced material</li>
+                                <li>• Leadership opportunities</li>
+                                <li>• Peer tutoring roles</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 class="font-semibold text-gray-700 mb-2">For Average Performers</h5>
+                            <ul class="text-gray-600 space-y-1">
+                                <li>• Focus on weak subjects</li>
+                                <li>• Regular practice sessions</li>
+                                <li>• Study group formation</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 class="font-semibold text-gray-700 mb-2">For Below Average</h5>
+                            <ul class="text-gray-600 space-y-1">
+                                <li>• Remedial classes</li>
+                                <li>• Individual attention</li>
+                                <li>• Parent-teacher meetings</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export and Actions -->
+        <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+            <div class="text-sm text-gray-500">
+                Report Generated: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span> |
+                Class: <span th:text="${classRoom.name}"></span> |
+                Term: <span th:text="${term}"></span> |
+                Students: <span th:text="${reports != null ? reports.size() : 0}"></span>
+            </div>
+            <div class="flex space-x-3">
+                <a th:href="@{/reports/select}"
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Reports</span>
+                </a>
+                <button onclick="window.print()"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-print"></i>
+                    <span>Print Reports</span>
+                </button>
+                <a th:href="@{'/reports/class/yearly?classId=' + ${classRoom.id}}"
+                   class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>View Yearly Reports</span>
+                </a>
+                <a th:href="@{'/reports/class/performance-summary?classId=' + ${classRoom.id} + '&term=' + ${term} + '&academicYear=' + ${academicYear}}"
+                   class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 flex items-center justify-center transition-colors border border-blue-200 hover:border-blue-300">
+                    <i class="fas fa-chart-bar mr-1.5"></i>Performance Summary
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
-<script>
-    // Highlight failing grades
-    document.addEventListener("DOMContentLoaded", function () {
-        const gradeCells = document.querySelectorAll("td");
-        gradeCells.forEach(cell => {
-            const text = cell.textContent.trim();
-            // Check for failing grades (F) or low scores
-            if (text === 'F' || text === 'FAIL') {
-                cell.style.color = "red";
-                cell.style.fontWeight = "bold";
-            }
+<!-- Print Styles -->
+<style>
+    @media print {
+        body { background: white !important; }
+        .bg-gray-50 { background: white !important; }
+        .shadow-lg, .shadow-xl, .shadow-sm { box-shadow: none !important; }
+        .border, .border-b, .border-t { border: 1px solid #ddd !important; }
+        button, .flex.justify-between.items-center.pt-6 { display: none !important; }
+        .bg-gradient-to-r { background: #333 !important; color: white !important; }
+        .grade-a, .grade-b, .grade-c, .grade-d, .grade-f, .grade-o, .grade-e, .grade-u {
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+        }
+        .rank-1, .rank-2, .rank-3 { -webkit-print-color-adjust: exact; }
+        .term-badge { background: #333 !important; color: white !important; -webkit-print-color-adjust: exact; }
+        .collapse-content { max-height: none !important; }
+    }
+</style>
 
-            // Check for numeric scores below 10
-            const value = parseFloat(text);
-            if (!isNaN(value) && value < 10) {
-                cell.style.color = "red";
-                cell.style.fontWeight = "bold";
+<script>
+    // Search functionality
+    function filterTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('.student-row');
+
+        rows.forEach(row => {
+            const studentNameEl = row.querySelector('.font-medium');
+            const rollNoEl = row.querySelector('code');
+            const studentName = studentNameEl ? studentNameEl.textContent.toLowerCase() : '';
+            const rollNo = rollNoEl ? rollNoEl.textContent.toLowerCase() : '';
+            const studentId = row.id.replace('student-', '');
+
+            if (studentName.includes(searchTerm) || rollNo.includes(searchTerm) || studentId.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
         });
+    }
+
+    // Compute summary counts and progress bars from data- attributes
+    function computeSummary() {
+        const rows = Array.from(document.querySelectorAll('.student-row'));
+        const total = rows.length;
+        document.getElementById('totalStudents').textContent = total;
+
+        let top3 = 0;
+        let positiveRemarks = 0;
+        let counts = { excellent: 0, veryGood: 0, good: 0, needsImprovement: 0 };
+        let sumAverages = 0;
+        let averagesCount = 0;
+
+        rows.forEach(r => {
+            const rank = parseInt(r.getAttribute('data-rank')) || 0;
+            const termAvgRaw = r.getAttribute('data-term-average');
+            const termAvg = termAvgRaw !== 'null' && termAvgRaw !== null && termAvgRaw !== '' ? Number(termAvgRaw) : null;
+            const remarks = (r.getAttribute('data-remarks') || '').toLowerCase();
+
+            if (!isNaN(rank) && rank > 0 && rank <= 3) top3++;
+
+            if (remarks.includes('excellent') || remarks.includes('very good')) positiveRemarks++;
+
+            if (termAvg !== null) {
+                sumAverages += termAvg;
+                averagesCount++;
+                if (termAvg >= 18) counts.excellent++;
+                else if (termAvg >= 15) counts.veryGood++;
+                else if (termAvg >= 10) counts.good++;
+                else counts.needsImprovement++;
+            }
+        });
+
+        // Class average
+        const classAvgElem = document.getElementById('classAverage');
+        if (averagesCount > 0) {
+            const avg = (sumAverages / averagesCount);
+            classAvgElem.textContent = avg.toFixed(1);
+        }
+
+        document.getElementById('top3Count').textContent = top3;
+        document.getElementById('positiveRemarksCount').textContent = positiveRemarks;
+
+        // Distribution counts and bars
+        const setCountAndBar = (countId, barId, value) => {
+            const el = document.getElementById(countId);
+            const bar = document.getElementById(barId);
+            el.textContent = value;
+            if (total > 0) {
+                bar.style.width = Math.round((value / total) * 100) + '%';
+            } else {
+                bar.style.width = '0%';
+            }
+        };
+
+        setCountAndBar('excellentCount', 'excellentBar', counts.excellent);
+        setCountAndBar('veryGoodCount', 'veryGoodBar', counts.veryGood);
+        setCountAndBar('goodCount', 'goodBar', counts.good);
+        setCountAndBar('needsImprovementCount', 'needsImprovementBar', counts.needsImprovement);
+    }
+
+    // Initialize search input and compute summary on DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', filterTable);
+        }
+
+        // Add animation to stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in');
+        });
+
+        computeSummary();
     });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + P for print
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            window.print();
+        }
+        // Ctrl + F for search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const si = document.getElementById('searchInput');
+            if (si) si.focus();
+        }
+        // Escape key to go back
+        if (e.key === 'Escape') {
+            window.history.back();
+        }
+    });
+
+    function downloadClassTermPdf() {
+        const classId = [[${classRoom.id}]];
+        const term = [[${term}]];
+        const academicYear = [[${academicYear}]] || '2025-2026'; // Default to 2025-2026
+
+        const url = `/reports/pdf/class?classId=${classId}&term=${term}&academicYear=${encodeURIComponent(academicYear)}`;
+
+        // Show loading
+        const button = event.target;
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Generating...';
+        button.disabled = true;
+
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Class_Term_${term}_Report_${classId}_${academicYear}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reset button
+        setTimeout(() => {
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        }, 2000);
+    }
 </script>
 </body>
 </html>

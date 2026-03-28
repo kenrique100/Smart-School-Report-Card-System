@@ -5,7 +5,6 @@ import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.ClassRoom;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
-import com.akentech.schoolreport.repository.SubjectRepository;
 import com.akentech.schoolreport.service.AssessmentService;
 import com.akentech.schoolreport.service.ExcelExportService;
 import com.akentech.schoolreport.service.ExcelImportService;
@@ -42,10 +41,425 @@ public class AssessmentController {
         return "assessments";
     }
 
-    @PostMapping("/save")
-    public String save(@ModelAttribute Assessment assessment) {
-        assessmentService.save(assessment);
-        return "redirect:/assessments/entry?success";
+    @PostMapping("/save-batch")
+    public String saveBatch(@RequestParam Long studentId,
+                            @RequestParam Integer term,
+                            @RequestParam Integer assessmentNumber,
+                            @RequestParam(value = "classRoomId", required = false) Long classRoomId,
+                            @RequestParam(value = "departmentId", required = false) Long departmentId,
+                            @RequestParam(value = "specialty", required = false) String specialty,
+                            @RequestParam(value = "subjectIds", required = false) List<Long> subjectIds,
+                            @RequestParam(value = "scores", required = false) List<Double> scores,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            Student student = studentService.getStudentByIdOrThrow(studentId);
+
+            // Get student's academic year
+            Integer academicYearStart = student.getAcademicYearStart();
+            Integer academicYearEnd = student.getAcademicYearEnd();
+
+            if (academicYearStart == null || academicYearEnd == null) {
+                throw new IllegalArgumentException("Student's academic year is not set. Student: " + studentId);
+            }
+
+            List<Assessment> assessments = new ArrayList<>();
+
+            // Validate assessment type before proceeding
+            AssessmentType assessmentType;
+            try {
+                assessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid assessment combination: term={}, assessment={}", term, assessmentNumber);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Invalid assessment combination. Term " + term + " only accepts: " +
+                                getValidAssessmentsForTerm(term));
+
+                // Preserve filter parameters
+                redirectAttributes.addAttribute("classRoomId", classRoomId);
+                redirectAttributes.addAttribute("studentId", studentId);
+                redirectAttributes.addAttribute("term", term);
+                redirectAttributes.addAttribute("departmentId", departmentId);
+                redirectAttributes.addAttribute("specialty", specialty);
+
+                return "redirect:/assessments/entry";
+            }
+
+            if (subjectIds != null && scores != null && subjectIds.size() == scores.size()) {
+                for (int i = 0; i < subjectIds.size(); i++) {
+                    Long subjectId = subjectIds.get(i);
+                    Double score = scores.get(i);
+
+                    if (score != null) {
+                        if (score >= 0 && score <= 20) {
+                            Subject subject = new Subject();
+                            subject.setId(subjectId);
+
+                            // Check if assessment already exists
+                            Optional<Assessment> existingAssessment =
+                                    assessmentService.getAssessmentByStudentSubjectAndTermAndType(
+                                            studentId, subjectId, term, assessmentType);
+
+                            Assessment assessment;
+                            if (existingAssessment.isPresent()) {
+                                // Update existing assessment
+                                assessment = existingAssessment.get();
+                                assessment.setScore(score);
+                            } else {
+                                // Create new assessment WITH ACADEMIC YEAR
+                                assessment = Assessment.builder()
+                                        .student(student)
+                                        .subject(subject)
+                                        .term(term)
+                                        .type(assessmentType)
+                                        .score(score)
+                                        .academicYearStart(academicYearStart)
+                                        .academicYearEnd(academicYearEnd)
+                                        .academicYear(academicYearStart + "-" + academicYearEnd)
+                                        .build();
+                            }
+                            assessments.add(assessment);
+                        } else {
+                            log.warn("Invalid score {} for subject {}", score, subjectId);
+                        }
+                    }
+                }
+            }
+
+            if (!assessments.isEmpty()) {
+                assessmentService.saveAll(assessments);
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Saved " + assessments.size() + " assessments successfully for " +
+                                assessmentType.getDisplayName() + "!");
+            } else {
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "No assessments to save. Please enter valid scores (0-20).");
+            }
+
+        } catch (Exception e) {
+            log.error("Error saving batch assessments", e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error saving assessments: " + e.getMessage());
+        }
+
+        // Preserve filter parameters
+        redirectAttributes.addAttribute("classRoomId", classRoomId);
+        redirectAttributes.addAttribute("studentId", studentId);
+        redirectAttributes.addAttribute("term", term);
+        redirectAttributes.addAttribute("departmentId", departmentId);
+        redirectAttributes.addAttribute("specialty", specialty);
+
+        return "redirect:/assessments/entry";
+    }
+
+    private String getValidAssessmentsForTerm(Integer term) {
+        return switch (term) {
+            case 1 -> "Assessments 1-2";
+            case 2 -> "Assessments 3-4";
+            case 3 -> "Assessment 5";
+            default -> "No valid assessments";
+        };
+    }
+
+    @GetMapping("/term-averages/{classId}")
+    public String getTermAverages(@PathVariable Long classId,
+                                  @RequestParam(defaultValue = "1") Integer term,
+                                  Model model) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
+
+            List<StudentTermAverageDTO> termAverages = assessmentService.getTermAveragesForClass(classId, term);
+
+            model.addAttribute("classRoom", classRoom);
+            model.addAttribute("term", term);
+            model.addAttribute("termAverages", termAverages);
+            model.addAttribute("gradeService", gradeService);
+
+            return "term-averages";
+        } catch (Exception e) {
+            log.error("Error getting term averages for class {} term {}", classId, term, e);
+            model.addAttribute("error", "Unable to load term averages");
+            return "term-averages";
+        }
+    }
+
+    @GetMapping("/yearly-ranking/{classId}")
+    public String getYearlyRanking(@PathVariable Long classId, Model model) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classId));
+
+            List<StudentYearlyAverageDTO> yearlyAverages = assessmentService.getYearlyAveragesForClass(classId);
+
+            model.addAttribute("classRoom", classRoom);
+            model.addAttribute("yearlyAverages", yearlyAverages);
+            model.addAttribute("gradeService", gradeService);
+
+            return "yearly-ranking";
+        } catch (Exception e) {
+            log.error("Error getting yearly ranking for class {}", classId, e);
+            model.addAttribute("error", "Unable to load yearly ranking");
+            return "yearly-ranking";
+        }
+    }
+
+    @GetMapping("/student-performance/{studentId}")
+    public String getStudentPerformance(@PathVariable Long studentId,
+                                        @RequestParam(required = false) Integer term,
+                                        Model model) {
+        try {
+            Student student = studentService.getStudentByIdOrThrow(studentId);
+
+            // Get all terms data
+            Map<Integer, Map<String, Object>> termData = new HashMap<>();
+
+            for (int t = 1; t <= 3; t++) {
+                Map<String, Object> data = new HashMap<>();
+
+                // Calculate term average
+                Double termAverage = assessmentService.calculateTermAverage(studentId, t);
+                data.put("average", termAverage);
+                data.put("formattedAverage", String.format("%.2f", termAverage));
+                data.put("status", gradeService.getPerformanceStatus(termAverage));
+                data.put("passed", gradeService.isPassing(termAverage));
+                data.put("remarks", gradeService.generateRemarks(termAverage));
+
+                // Get subject scores for this term
+                Map<Long, List<Double>> subjectScores = assessmentService.getStudentSubjectScoresByTerm(studentId, t);
+                data.put("subjectScores", subjectScores);
+
+                termData.put(t, data);
+            }
+
+            // Calculate yearly average
+            Double yearlyAverage = assessmentService.calculateYearlyAverage(studentId);
+
+            model.addAttribute("student", student);
+            model.addAttribute("termData", termData);
+            model.addAttribute("yearlyAverage", yearlyAverage);
+            model.addAttribute("formattedYearlyAverage", String.format("%.2f", yearlyAverage));
+            model.addAttribute("yearlyStatus", gradeService.getPerformanceStatus(yearlyAverage));
+            model.addAttribute("yearlyPassed", gradeService.isPassing(yearlyAverage));
+
+            return "student-performance";
+        } catch (Exception e) {
+            log.error("Error getting student performance for student {}", studentId, e);
+            model.addAttribute("error", "Unable to load student performance");
+            return "student-performance";
+        }
+    }
+
+    @GetMapping("/edit/{id}")
+    public String editAssessment(@PathVariable Long id,
+                                 @RequestParam(required = false) Long classRoomId,
+                                 @RequestParam(required = false) Long studentId,
+                                 @RequestParam(required = false) Integer term,
+                                 @RequestParam(required = false) Integer assessmentNumber,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            Assessment assessment = assessmentService.getAssessmentById(id);
+
+            redirectAttributes.addAttribute("classRoomId", classRoomId);
+            redirectAttributes.addAttribute("studentId", assessment.getStudent().getId());
+            redirectAttributes.addAttribute("term", assessment.getTerm());
+            redirectAttributes.addAttribute("assessmentNumber", assessment.getType().getAssessmentNumber());
+
+            return "redirect:/assessments/entry";
+        } catch (Exception e) {
+            log.error("Error editing assessment {}", id, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Error editing assessment");
+            return "redirect:/assessments/entry";
+        }
+    }
+
+    @PostMapping("/delete/{id}")
+    public String deleteAssessment(@PathVariable Long id,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            assessmentService.delete(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Assessment deleted successfully");
+        } catch (Exception e) {
+            log.error("Error deleting assessment {}", id, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting assessment");
+        }
+
+        return "redirect:/assessments/entry";
+    }
+
+    @GetMapping("/subjects/{studentId}")
+    @ResponseBody
+    public List<Subject> getSubjectsForStudent(@PathVariable Long studentId) {
+        try {
+            return studentEnrollmentService.getStudentEnrollments(studentId).stream()
+                    .map(StudentSubject::getSubject)
+                    .distinct()
+                    .sorted((s1, s2) -> s1.getName().compareToIgnoreCase(s2.getName()))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching subjects for student {}", studentId, e);
+            return List.of();
+        }
+    }
+
+    private List<Student> getFilteredStudents(Long classRoomId, Long departmentId, String specialty) {
+        List<Student> allStudents = studentRepository.findAll();
+
+        return allStudents.stream()
+                .filter(student -> {
+                    if (classRoomId != null &&
+                            (student.getClassRoom() == null || !student.getClassRoom().getId().equals(classRoomId))) {
+                        return false;
+                    }
+                    if (departmentId != null &&
+                            (student.getDepartment() == null || !student.getDepartment().getId().equals(departmentId))) {
+                        return false;
+                    }
+                    if (specialty != null && !specialty.isEmpty()) {
+                        if (student.getSpecialty() == null) return false;
+                        return student.getSpecialty().equals(specialty);
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Download Excel template for class assessments (single term)
+     */
+    @GetMapping("/download-excel")
+    public ResponseEntity<byte[]> downloadExcel(@RequestParam Long classRoomId,
+                                                 @RequestParam Integer term,
+                                                 @RequestParam(required = false) Integer academicYearStart,
+                                                 @RequestParam(required = false) Integer academicYearEnd) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
+
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcel(classRoomId, term, academicYearStart, academicYearEnd);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String academicYearSuffix = (academicYearStart != null && academicYearEnd != null)
+                    ? "_" + academicYearStart + "-" + academicYearEnd
+                    : "";
+            String filename = String.format("Assessments_%s_Term%d%s_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), term, academicYearSuffix, timestamp);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", filename);
+
+            log.info("Downloaded Excel for class {} term {} academic year {}-{}",
+                    classRoomId, term, academicYearStart, academicYearEnd);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+
+        } catch (Exception e) {
+            log.error("Error generating Excel file", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Download Excel template for class assessments (all terms)
+     */
+    @GetMapping("/download-excel-all-terms")
+    public ResponseEntity<byte[]> downloadExcelAllTerms(@RequestParam Long classRoomId,
+                                                         @RequestParam(required = false) Integer academicYearStart,
+                                                         @RequestParam(required = false) Integer academicYearEnd) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid class ID: " + classRoomId));
+
+            byte[] excelBytes = excelExportService.generateClassAssessmentExcelAllTerms(classRoomId, academicYearStart, academicYearEnd);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String academicYearSuffix = (academicYearStart != null && academicYearEnd != null)
+                    ? "_" + academicYearStart + "-" + academicYearEnd
+                    : "";
+            String filename = String.format("Assessments_%s_AllTerms%s_%s.xlsx",
+                    classRoom.getName().replace(" ", "_"), academicYearSuffix, timestamp);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", filename);
+
+            log.info("Downloaded Excel for class {} all terms academic year {}-{}",
+                    classRoomId, academicYearStart, academicYearEnd);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+
+        } catch (Exception e) {
+            log.error("Error generating Excel file", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Upload and import Excel file with assessments
+     */
+    @PostMapping("/upload-excel")
+    public String uploadExcel(@RequestParam("file") MultipartFile file,
+                              @RequestParam(required = false) Long classRoomId,
+                              @RequestParam(required = false) Integer term,
+                              @RequestParam(required = false) Integer academicYearStart,
+                              @RequestParam(required = false) Integer academicYearEnd,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            if (file.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Please select a file to upload");
+                return "redirect:/assessments/entry";
+            }
+
+            log.info("Uploading Excel file: {} (size: {} bytes) for academic year {}-{}",
+                    file.getOriginalFilename(), file.getSize(), academicYearStart, academicYearEnd);
+
+            ExcelImportService.ImportResult result = excelImportService.importAssessmentsFromExcel(
+                    file, classRoomId, term, academicYearStart, academicYearEnd);
+
+            if (result.hasErrors()) {
+                // Format error messages
+                StringBuilder errorMsg = new StringBuilder(result.getSummary());
+                if (!result.getErrors().isEmpty()) {
+                    errorMsg.append("\n\nErrors:\n");
+                    result.getErrors().stream().limit(10).forEach(err -> errorMsg.append("• ").append(err).append("\n"));
+                    if (result.getErrors().size() > 10) {
+                        errorMsg.append("... and ").append(result.getErrors().size() - 10).append(" more errors");
+                    }
+                }
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg.toString());
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage", result.getSummary());
+            }
+
+            // Add warnings if any
+            if (!result.getWarnings().isEmpty()) {
+                StringBuilder warningMsg = new StringBuilder("Warnings:\n");
+                result.getWarnings().stream().limit(5).forEach(warn -> warningMsg.append("• ").append(warn).append("\n"));
+                if (result.getWarnings().size() > 5) {
+                    warningMsg.append("... and ").append(result.getWarnings().size() - 5).append(" more warnings");
+                }
+                redirectAttributes.addFlashAttribute("warningMessage", warningMsg.toString());
+            }
+
+        } catch (Exception e) {
+            log.error("Error uploading Excel file", e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error processing file: " + e.getMessage());
+        }
+
+        // Preserve filter parameters
+        if (classRoomId != null) {
+            redirectAttributes.addAttribute("classRoomId", classRoomId);
+        }
+        if (term != null) {
+            redirectAttributes.addAttribute("term", term);
+        }
+
+        return "redirect:/assessments/entry";
     }
 
     /**

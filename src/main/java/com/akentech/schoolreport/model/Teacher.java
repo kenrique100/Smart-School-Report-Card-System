@@ -29,9 +29,8 @@ public class Teacher {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    // UPDATED: Use enum instead of String
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender")
+    @Column(name = "gender", nullable = false)
     private Gender gender;
 
     private String contact;
@@ -57,5 +56,5 @@ public class Teacher {
     )
     @Builder.Default
     @ToString.Exclude
-    private List<ClassRoom> classrooms = new ArrayList<>();
+    private List<ClassRoom> classRooms = new ArrayList<>();
 }
