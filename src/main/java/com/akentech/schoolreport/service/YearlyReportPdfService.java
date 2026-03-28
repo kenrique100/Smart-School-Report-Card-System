@@ -50,13 +50,13 @@ public class YearlyReportPdfService extends BasePdfService {
         headerTable.setSpacingBefore(5);
 
         try {
-            PdfPCell leftImageCell = createModernImageCell(LEFT_LOGO_PATH, Element.ALIGN_LEFT, 50);
+            PdfPCell leftImageCell = createModernImageCell(SCHOOL_LOGO_PATH, Element.ALIGN_LEFT, 50);
             headerTable.addCell(leftImageCell);
 
             PdfPCell centerCell = createModernHeaderContentCell(report);
             headerTable.addCell(centerCell);
 
-            PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 50);
+            PdfPCell rightImageCell = createModernImageCell(CAMEROON_FLAG_PATH, Element.ALIGN_RIGHT, 50);
             headerTable.addCell(rightImageCell);
 
         } catch (IOException e) {
