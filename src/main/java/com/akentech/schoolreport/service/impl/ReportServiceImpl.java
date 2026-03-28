@@ -448,6 +448,7 @@ public class ReportServiceImpl implements ReportService {
 
         // Calculate ranking within each department
         for (List<ReportDTO> deptReports : byDepartment.values()) {
+            int totalInDepartment = deptReports.size();
             int currentRank = 0;
             Double lastAvg = null;
             for (int i = 0; i < deptReports.size(); i++) {
@@ -460,6 +461,40 @@ public class ReportServiceImpl implements ReportService {
                 }
 
                 report.setRankInDepartment(currentRank);
+                report.setTotalStudentsInDepartment(totalInDepartment);
+            }
+        }
+    }
+
+    /**
+     * Calculate yearly department rankings for students grouped by department.
+     */
+    private void calculateYearlyDepartmentRanks(List<YearlyReportDTO> reports) {
+        // Group students by department
+        Map<String, List<YearlyReportDTO>> byDepartment = new HashMap<>();
+        for (YearlyReportDTO report : reports) {
+            String dept = report.getDepartment();
+            if (dept != null && !dept.isEmpty() && !dept.equals("N/A")) {
+                byDepartment.computeIfAbsent(dept, k -> new ArrayList<>()).add(report);
+            }
+        }
+
+        // Calculate ranking within each department
+        for (List<YearlyReportDTO> deptReports : byDepartment.values()) {
+            int totalInDepartment = deptReports.size();
+            int currentRank = 0;
+            Double lastAvg = null;
+            for (int i = 0; i < deptReports.size(); i++) {
+                YearlyReportDTO report = deptReports.get(i);
+                Double avg = report.getYearlyAverage();
+
+                if (lastAvg == null || Double.compare(avg, lastAvg) != 0) {
+                    currentRank = i + 1;
+                    lastAvg = avg;
+                }
+
+                report.setYearlyDepartmentRank(currentRank);
+                report.setTotalStudentsInDepartment(totalInDepartment);
             }
         }
     }
@@ -614,6 +649,9 @@ public class ReportServiceImpl implements ReportService {
         }
 
         yearlyReports.sort(Comparator.comparing(YearlyReportDTO::getYearlyRank));
+
+        // Calculate yearly department rankings
+        calculateYearlyDepartmentRanks(yearlyReports);
 
         return yearlyReports;
     }

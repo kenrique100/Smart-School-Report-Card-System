@@ -295,7 +295,7 @@ public class YearlyReportPdfService extends BasePdfService {
 
         // Add department rank if available
         if (report.getYearlyDepartmentRank() != null && report.getDepartment() != null && !report.getDepartment().equals("N/A")) {
-            Paragraph deptRankParagraph = new Paragraph("Department Rank (" + report.getDepartment() + "): " + report.getYearlyDepartmentRank(),
+            Paragraph deptRankParagraph = new Paragraph("Department Rank (" + report.getDepartment() + "): " + report.getYearlyDepartmentRank() + " / " + report.getTotalStudentsInDepartment(),
                     FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, INFO_COLOR));
             deptRankParagraph.setAlignment(Element.ALIGN_CENTER);
             deptRankParagraph.setSpacingAfter(3);

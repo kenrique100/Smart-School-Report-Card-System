@@ -553,7 +553,7 @@ public class TermReportPdfService extends BasePdfService {
         left.addElement(pb);
         left.addElement(thinRule());
 
-        sumLine(left, "Term Average:", report.getFormattedAverage() + "/20",
+        sumLine(left, "Term Average:", report.getFormattedAverage(),
                 avg != null && avg >= 10);
         sumNeutral(left, "Overall Grade:",
                 gradeService.calculateLetterGrade(avg, cn));
@@ -564,7 +564,7 @@ public class TermReportPdfService extends BasePdfService {
                 && !"N/A".equalsIgnoreCase(report.getDepartment())) {
             sumNeutral(left,
                     "Department Rank (" + report.getDepartment() + "):",
-                    String.valueOf(report.getRankInDepartment()));
+                    report.getRankInDepartment() + " / " + report.getTotalStudentsInDepartment());
         }
 
         Paragraph stLine = new Paragraph();
