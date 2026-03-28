@@ -1,18 +1,13 @@
 package com.akentech.schoolreport.controller;
 
-import com.akentech.schoolreport.dto.StudentTermAverageDTO;
-import com.akentech.schoolreport.dto.StudentYearlyAverageDTO;
-import com.akentech.schoolreport.model.*;
-import com.akentech.schoolreport.model.enums.AssessmentType;
+import com.akentech.schoolreport.dto.ImportResult;
+import com.akentech.schoolreport.model.Assessment;
+import com.akentech.schoolreport.model.ClassRoom;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
-import com.akentech.schoolreport.repository.DepartmentRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.service.AssessmentService;
 import com.akentech.schoolreport.service.ExcelExportService;
 import com.akentech.schoolreport.service.ExcelImportService;
-import com.akentech.schoolreport.service.GradeService;
-import com.akentech.schoolreport.service.StudentEnrollmentService;
-import com.akentech.schoolreport.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -24,11 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Controller
 @RequestMapping("/assessments")
 @RequiredArgsConstructor
@@ -37,117 +27,17 @@ public class AssessmentController {
 
     private final AssessmentService assessmentService;
     private final StudentRepository studentRepository;
-    private final StudentEnrollmentService studentEnrollmentService;
-    private final StudentService studentService;
+    private final SubjectRepository subjectRepository;
     private final ClassRoomRepository classRoomRepository;
-    private final DepartmentRepository departmentRepository;
-    private final GradeService gradeService;
     private final ExcelExportService excelExportService;
     private final ExcelImportService excelImportService;
 
     @GetMapping("/entry")
-    public String entryForm(Model model,
-                            @RequestParam(value = "classRoomId", required = false) Long classRoomId,
-                            @RequestParam(value = "studentId", required = false) Long studentId,
-                            @RequestParam(value = "term", required = false, defaultValue = "1") Integer term,
-                            @RequestParam(value = "assessmentNumber", required = false) Integer assessmentNumber,
-                            @RequestParam(value = "departmentId", required = false) Long departmentId,
-                            @RequestParam(value = "specialty", required = false) String specialty) {
-
-        // Add all classes and departments for filtering
-        model.addAttribute("classes", classRoomRepository.findAll());
-        model.addAttribute("departments", departmentRepository.findAll());
-        model.addAttribute("specialties", studentService.getAllSpecialties());
-
-        // Add filter values to model
-        model.addAttribute("classRoomId", classRoomId);
-        model.addAttribute("departmentId", departmentId);
-        model.addAttribute("specialty", specialty);
-        model.addAttribute("term", term);
-        model.addAttribute("terms", List.of(1, 2, 3));
-
-        // Get available assessments for the selected term
-        AssessmentType[] availableAssessments = AssessmentType.getAssessmentsForTerm(term);
-        List<Integer> availableAssessmentNumbers = Arrays.stream(availableAssessments)
-                .map(AssessmentType::getAssessmentNumber)
-                .collect(Collectors.toList());
-
-        model.addAttribute("assessmentNumbers", availableAssessmentNumbers);
-
-        // Set default assessment number if not provided or invalid
-        if (assessmentNumber == null || !availableAssessmentNumbers.contains(assessmentNumber)) {
-            assessmentNumber = availableAssessmentNumbers.get(0);
-        }
-        model.addAttribute("assessmentNumber", assessmentNumber);
-
-        // Get current assessment type
-        AssessmentType currentAssessmentType = null;
-        try {
-            currentAssessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
-        } catch (Exception e) {
-            log.warn("Invalid assessment type for term {}, number {}", term, assessmentNumber);
-            // Default to first available assessment for the term
-            currentAssessmentType = availableAssessments[0];
-            model.addAttribute("assessmentNumber", currentAssessmentType.getAssessmentNumber());
-        }
-        model.addAttribute("currentAssessmentType", currentAssessmentType);
-        model.addAttribute("assessmentName", currentAssessmentType != null ?
-                currentAssessmentType.getDisplayName() : "Assessment");
-
-        // Get filtered students based on class, department, specialty
-        List<Student> filteredStudents;
-        if (classRoomId != null || departmentId != null || (specialty != null && !specialty.isEmpty())) {
-            filteredStudents = getFilteredStudents(classRoomId, departmentId, specialty);
-        } else {
-            filteredStudents = studentRepository.findAll();
-        }
-
-        model.addAttribute("students", filteredStudents);
-
-        // Load subjects and existing marks if studentId is provided
-        if (studentId != null) {
-            try {
-                Student student = studentService.getStudentByIdOrThrow(studentId);
-
-                // Add student details to model
-                model.addAttribute("selectedStudent", student);
-                model.addAttribute("selectedStudentId", studentId);
-
-                // Get subjects for the student (enrolled subjects)
-                List<Subject> studentSubjects = getSubjectsForStudent(studentId);
-
-                if (studentSubjects.isEmpty()) {
-                    model.addAttribute("warningMessage", "This student is not enrolled in any subjects.");
-                }
-
-                model.addAttribute("subjects", studentSubjects);
-
-                // Get existing assessment for each subject in the selected term and assessment number
-                Map<Long, Assessment> existingAssessments = new HashMap<>();
-                if (currentAssessmentType != null) {
-                    for (Subject subject : studentSubjects) {
-                        Optional<Assessment> existingAssessment = assessmentService.getAssessmentByStudentSubjectAndTermAndType(
-                                studentId, subject.getId(), term, currentAssessmentType);
-                        existingAssessment.ifPresent(assessment -> existingAssessments.put(subject.getId(), assessment));
-                    }
-                }
-
-                model.addAttribute("existingAssessments", existingAssessments);
-
-                log.info("Loaded {} subjects and {} existing assessments for student {} in term {}, assessment {}",
-                        studentSubjects.size(), existingAssessments.size(), studentId, term, assessmentNumber);
-
-            } catch (Exception e) {
-                log.error("Error loading subjects for student {}", studentId, e);
-                model.addAttribute("subjects", List.of());
-                model.addAttribute("errorMessage", "Error loading student subjects: " + e.getMessage());
-            }
-        } else {
-            model.addAttribute("subjects", List.of());
-            model.addAttribute("selectedStudentId", null);
-            model.addAttribute("existingAssessments", new HashMap<>());
-        }
-
+    public String entryForm(Model model) {
+        model.addAttribute("students", studentRepository.findAll());
+        model.addAttribute("subjects", subjectRepository.findAll());
+        model.addAttribute("classrooms", classRoomRepository.findAll());
+        model.addAttribute("assessment", new Assessment());
         return "assessments";
     }
 
@@ -567,6 +457,90 @@ public class AssessmentController {
         }
         if (term != null) {
             redirectAttributes.addAttribute("term", term);
+        }
+
+        return "redirect:/assessments/entry";
+    }
+
+    /**
+     * Download Excel template for a single term
+     */
+    @GetMapping("/download-excel")
+    public ResponseEntity<byte[]> downloadExcelTemplate(
+            @RequestParam Long classRoomId,
+            @RequestParam Integer term) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found"));
+
+            byte[] excelData = excelExportService.exportAssessmentTemplate(classRoomId, term);
+            String fileName = excelExportService.generateFileName(classRoom, term);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", fileName);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+        } catch (Exception e) {
+            log.error("Error generating Excel template", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Download Excel template for all terms
+     */
+    @GetMapping("/download-excel-all-terms")
+    public ResponseEntity<byte[]> downloadExcelTemplateAllTerms(@RequestParam Long classRoomId) {
+        try {
+            ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found"));
+
+            byte[] excelData = excelExportService.exportAssessmentTemplateAllTerms(classRoomId);
+            String fileName = excelExportService.generateFileName(classRoom, null);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", fileName);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+        } catch (Exception e) {
+            log.error("Error generating Excel template for all terms", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Upload and import Excel file with assessments
+     */
+    @PostMapping("/upload-excel")
+    public String uploadExcel(@RequestParam("file") MultipartFile file,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            ImportResult result = excelImportService.importAssessments(file);
+
+            if (result.hasErrors()) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Import completed with errors. Success: " + result.getSuccessCount() +
+                        ", Errors: " + result.getErrorCount());
+                redirectAttributes.addFlashAttribute("importErrors", result.getErrors());
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Import successful! " + result.getSuccessCount() + " assessments imported.");
+            }
+
+            if (result.hasWarnings()) {
+                redirectAttributes.addFlashAttribute("importWarnings", result.getWarnings());
+            }
+
+        } catch (Exception e) {
+            log.error("Error uploading Excel file", e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Error uploading file: " + e.getMessage());
         }
 
         return "redirect:/assessments/entry";

@@ -63,9 +63,87 @@
                 <i class="fas fa-filter mr-2 text-blue-600"></i>Filter Options
             </h2>
 
-            <form th:action="@{/assessments/entry}" method="get" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <!-- Class Selection -->
+        <main class="p-6">
+            <!-- Success/Error Messages -->
+            <div th:if="${successMessage}" class="max-w-2xl mx-auto mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                <p th:text="${successMessage}"></p>
+            </div>
+            <div th:if="${errorMessage}" class="max-w-2xl mx-auto mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <p th:text="${errorMessage}"></p>
+            </div>
+
+            <!-- Import Errors -->
+            <div th:if="${importErrors}" class="max-w-2xl mx-auto mb-4 bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded">
+                <h3 class="font-semibold mb-2">Import Errors:</h3>
+                <ul class="list-disc list-inside text-sm max-h-60 overflow-y-auto">
+                    <li th:each="error : ${importErrors}" th:text="${error}"></li>
+                </ul>
+            </div>
+
+            <!-- Import Warnings -->
+            <div th:if="${importWarnings}" class="max-w-2xl mx-auto mb-4 bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded">
+                <h3 class="font-semibold mb-2">Import Warnings:</h3>
+                <ul class="list-disc list-inside text-sm max-h-40 overflow-y-auto">
+                    <li th:each="warning : ${importWarnings}" th:text="${warning}"></li>
+                </ul>
+            </div>
+
+            <!-- Excel Bulk Operations -->
+            <div class="max-w-2xl mx-auto mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                <h2 class="text-xl font-semibold text-blue-800 mb-4">
+                    <i class="fas fa-file-excel mr-2"></i>Bulk Assessment Entry via Excel
+                </h2>
+                <p class="text-gray-700 mb-4 text-sm">Download an Excel template with your class roster, fill in assessment scores offline, and upload it back for bulk entry.</p>
+
+                <!-- Download Section -->
+                <div class="mb-4">
+                    <h3 class="font-medium text-gray-800 mb-2">1. Download Template</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <div class="flex-1 min-w-[200px]">
+                            <label class="block text-sm text-gray-600 mb-1">Select Class</label>
+                            <select id="classRoomSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select a class...</option>
+                                <option th:each="classroom : ${classrooms}" th:value="${classroom.id}" th:text="${classroom.name}"></option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-sm text-gray-600 mb-1">Select Term</label>
+                            <select id="termSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select term...</option>
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                                <option value="3">Term 3</option>
+                                <option value="all">All Terms</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="downloadExcelTemplate()" class="mt-3 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-download mr-2"></i>Download Excel Template
+                    </button>
+                </div>
+
+                <!-- Upload Section -->
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-2">2. Upload Completed Template</h3>
+                    <form th:action="@{/assessments/upload-excel}" method="post" enctype="multipart/form-data" id="uploadForm" class="flex flex-col gap-3">
+                        <div>
+                            <label for="fileInput" class="block text-sm text-gray-600 mb-1">Choose Excel File (.xlsx)</label>
+                            <input type="file" id="fileInput" name="file" accept=".xlsx" required
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition self-start">
+                            <i class="fas fa-upload mr-2"></i>Upload & Import Assessments
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Manual Entry Form -->
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
+                <h1 class="text-3xl font-semibold text-center text-blue-600 mb-8">Manual Assessment Entry</h1>
+
+                <form th:action="@{/assessments/save}" th:object="${assessment}" method="post" class="space-y-5">
+                    <!-- Student -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
                         <select name="classRoomId"
@@ -989,6 +1067,55 @@
             updateFileName(document.getElementById('excelFile'));
         }, false);
     }
+
+    // Download Excel template
+    function downloadExcelTemplate() {
+        const classRoomId = document.getElementById('classRoomSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        if (!classRoomId) {
+            alert('Please select a class');
+            return;
+        }
+
+        if (!term) {
+            alert('Please select a term');
+            return;
+        }
+
+        let downloadUrl;
+        if (term === 'all') {
+            downloadUrl = `/assessments/download-excel-all-terms?classRoomId=${classRoomId}`;
+        } else {
+            downloadUrl = `/assessments/download-excel?classRoomId=${classRoomId}&term=${term}`;
+        }
+
+        // Trigger download
+        window.location.href = downloadUrl;
+    }
+
+    // Validate file before upload
+    document.getElementById('uploadForm')?.addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            e.preventDefault();
+            alert('Please select a file to upload');
+            return;
+        }
+
+        if (!file.name.endsWith('.xlsx')) {
+            e.preventDefault();
+            alert('Please select a valid Excel file (.xlsx)');
+            return;
+        }
+
+        // Show loading indicator
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+    });
 </script>
 
 </body>

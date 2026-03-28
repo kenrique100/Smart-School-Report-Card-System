@@ -1,7 +1,9 @@
 package com.akentech.schoolreport.service;
 
-import com.akentech.schoolreport.model.*;
-import com.akentech.schoolreport.model.enums.AssessmentType;
+import com.akentech.schoolreport.dto.ImportResult;
+import com.akentech.schoolreport.model.Assessment;
+import com.akentech.schoolreport.model.Student;
+import com.akentech.schoolreport.model.Subject;
 import com.akentech.schoolreport.repository.AssessmentRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.repository.SubjectRepository;
@@ -14,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,379 +26,296 @@ public class ExcelImportService {
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
     private final AssessmentRepository assessmentRepository;
-    private final StudentEnrollmentService studentEnrollmentService;
-
-    public static class ImportResult {
-        private int successCount;
-        private int errorCount;
-        private List<String> errors;
-        private List<String> warnings;
-
-        public ImportResult() {
-            this.errors = new ArrayList<>();
-            this.warnings = new ArrayList<>();
-        }
-
-        public void addSuccess() {
-            successCount++;
-        }
-
-        public void addError(String error) {
-            errorCount++;
-            errors.add(error);
-        }
-
-        public void addWarning(String warning) {
-            warnings.add(warning);
-        }
-
-        public int getSuccessCount() {
-            return successCount;
-        }
-
-        public int getErrorCount() {
-            return errorCount;
-        }
-
-        public List<String> getErrors() {
-            return errors;
-        }
-
-        public List<String> getWarnings() {
-            return warnings;
-        }
-
-        public boolean hasErrors() {
-            return errorCount > 0;
-        }
-
-        public String getSummary() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Import completed: ")
-                    .append(successCount).append(" assessments saved");
-            if (errorCount > 0) {
-                sb.append(", ").append(errorCount).append(" errors");
-            }
-            if (!warnings.isEmpty()) {
-                sb.append(", ").append(warnings.size()).append(" warnings");
-            }
-            return sb.toString();
-        }
-    }
 
     @Transactional
-    public ImportResult importAssessmentsFromExcel(MultipartFile file, Long classRoomId, Integer term,
-                                                    Integer academicYearStart, Integer academicYearEnd) throws IOException {
-        ImportResult result = new ImportResult();
+    public ImportResult importAssessments(MultipartFile file) {
+        ImportResult result = ImportResult.builder().build();
 
-        if (file.isEmpty()) {
-            result.addError("File is empty");
-            return result;
-        }
-
-        if (!isValidExcelFile(file)) {
-            result.addError("Invalid file format. Please upload an Excel file (.xlsx)");
-            return result;
-        }
-
-        try (InputStream inputStream = file.getInputStream();
-             Workbook workbook = new XSSFWorkbook(inputStream)) {
-
-            // Determine which sheet to read
-            Sheet sheet;
-            if (term != null) {
-                // Single term import
-                sheet = workbook.getSheetAt(0);
-                result = processSheet(sheet, term, academicYearStart, academicYearEnd, result);
-            } else {
-                // Multi-term import
-                for (int t = 1; t <= 3; t++) {
-                    sheet = workbook.getSheet("Term " + t);
-                    if (sheet != null) {
-                        result = processSheet(sheet, t, academicYearStart, academicYearEnd, result);
-                    } else {
-                        result.addWarning("Sheet 'Term " + t + "' not found, skipping");
-                    }
-                }
+        try {
+            // Validate file
+            if (file.isEmpty()) {
+                result.addError("File is empty");
+                return result;
             }
 
+            if (!file.getOriginalFilename().endsWith(".xlsx")) {
+                result.addError("Invalid file format. Only .xlsx files are supported");
+                return result;
+            }
+
+            Workbook workbook = new XSSFWorkbook(file.getInputStream());
+
+            // Process each sheet (each sheet represents a term)
+            for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
+                Sheet sheet = workbook.getSheetAt(sheetIndex);
+                String sheetName = sheet.getSheetName();
+
+                // Skip instructions sheet
+                if (sheetName.equalsIgnoreCase("Instructions")) {
+                    continue;
+                }
+
+                // Extract term number from sheet name (e.g., "Term 1" -> 1)
+                Integer term = extractTermFromSheetName(sheetName);
+                if (term == null) {
+                    result.addWarning("Skipping sheet '" + sheetName + "': Unable to determine term number");
+                    continue;
+                }
+
+                // Process the sheet
+                processSheet(sheet, term, result);
+            }
+
+            workbook.close();
+
+        } catch (IOException e) {
+            log.error("Error reading Excel file", e);
+            result.addError("Error reading Excel file: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Error importing Excel file", e);
-            result.addError("Error processing file: " + e.getMessage());
+            log.error("Unexpected error during import", e);
+            result.addError("Unexpected error: " + e.getMessage());
         }
 
         return result;
     }
 
-    private ImportResult processSheet(Sheet sheet, Integer term,
-                                       Integer academicYearStart, Integer academicYearEnd,
-                                       ImportResult result) {
-        log.info("Processing sheet: {} for term {} academic year {}-{}", sheet.getSheetName(), term, academicYearStart, academicYearEnd);
-
-        // Find header row (should be row 2, index 2)
-        Row headerRow = sheet.getRow(2);
+    private void processSheet(Sheet sheet, Integer term, ImportResult result) {
+        // Read header row to get subject-assessment mapping
+        Row headerRow = sheet.getRow(0);
         if (headerRow == null) {
-            result.addError("Header row not found in sheet " + sheet.getSheetName());
-            return result;
+            result.addError("Sheet '" + sheet.getSheetName() + "': Header row is missing");
+            return;
         }
 
-        // Parse headers to determine column structure
-        Map<Integer, String> subjectAssessmentMap = parseHeaders(headerRow);
+        List<SubjectAssessmentHeader> headers = parseHeaders(headerRow);
 
-        // Get assessment types for this term
-        AssessmentType[] assessmentTypes = AssessmentType.getAssessmentsForTerm(term);
-
-        // Process each data row (starting from row 3, index 3)
-        int lastRowNum = sheet.getLastRowNum();
-        for (int rowIndex = 3; rowIndex <= lastRowNum; rowIndex++) {
+        // Process each data row
+        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             Row row = sheet.getRow(rowIndex);
-            if (row == null) continue;
+            if (row == null) {
+                continue;
+            }
 
             try {
-                processDataRow(row, subjectAssessmentMap, term, assessmentTypes, academicYearStart, academicYearEnd, result);
+                processRow(row, rowIndex, headers, term, result);
             } catch (Exception e) {
                 result.addError("Row " + (rowIndex + 1) + ": " + e.getMessage());
             }
         }
-
-        return result;
     }
 
-    private Map<Integer, String> parseHeaders(Row headerRow) {
-        Map<Integer, String> subjectAssessmentMap = new HashMap<>();
+    private void processRow(Row row, int rowIndex, List<SubjectAssessmentHeader> headers,
+                           Integer term, ImportResult result) {
+        // Read student info from first 3 columns
+        String studentId = getCellValueAsString(row.getCell(0));
+        String firstName = getCellValueAsString(row.getCell(1));
+        String lastName = getCellValueAsString(row.getCell(2));
 
-        for (int colIndex = 7; colIndex < headerRow.getLastCellNum(); colIndex++) {
-            Cell cell = headerRow.getCell(colIndex);
-            if (cell != null && cell.getCellType() == CellType.STRING) {
-                String header = cell.getStringCellValue().trim();
-                if (!header.isEmpty() && !header.equals("N/A")) {
-                    subjectAssessmentMap.put(colIndex, header);
-                }
-            }
-        }
-
-        return subjectAssessmentMap;
-    }
-
-    private void processDataRow(Row row, Map<Integer, String> subjectAssessmentMap,
-                                 Integer term, AssessmentType[] assessmentTypes,
-                                 Integer academicYearStart, Integer academicYearEnd,
-                                 ImportResult result) {
-        // Get student ID from column 0
-        Cell studentIdCell = row.getCell(0);
-        if (studentIdCell == null) {
-            return; // Skip empty rows
-        }
-
-        String studentId = getCellValueAsString(studentIdCell);
         if (studentId == null || studentId.trim().isEmpty()) {
+            result.addWarning("Row " + (rowIndex + 1) + ": Skipping row with empty Student ID");
             return;
         }
 
-        // Find student
+        // Find or validate student
         Optional<Student> studentOpt = studentRepository.findByStudentId(studentId);
         if (studentOpt.isEmpty()) {
-            result.addError("Student not found: " + studentId);
+            result.addError("Row " + (rowIndex + 1) + ": Student with ID '" + studentId + "' not found in system");
             return;
         }
 
         Student student = studentOpt.get();
 
-        // Use provided academic year if available, otherwise use student's academic year
-        Integer effectiveAcademicYearStart;
-        Integer effectiveAcademicYearEnd;
-
-        if (academicYearStart != null && academicYearEnd != null) {
-            effectiveAcademicYearStart = academicYearStart;
-            effectiveAcademicYearEnd = academicYearEnd;
-        } else {
-            // Validate academic year from student
-            if (student.getAcademicYearStart() == null || student.getAcademicYearEnd() == null) {
-                result.addError("Student " + studentId + " has no academic year set and no academic year provided");
-                return;
-            }
-            effectiveAcademicYearStart = student.getAcademicYearStart();
-            effectiveAcademicYearEnd = student.getAcademicYearEnd();
+        // Validate student name matches
+        if (!student.getFirstName().equalsIgnoreCase(firstName) ||
+            !student.getLastName().equalsIgnoreCase(lastName)) {
+            result.addWarning("Row " + (rowIndex + 1) + ": Student name mismatch. " +
+                            "Expected: " + student.getFullName() + ", Found: " + firstName + " " + lastName);
         }
 
         // Get student's enrolled subjects
-        List<Subject> enrolledSubjects = studentEnrollmentService.getStudentEnrollments(student.getId())
-                .stream()
-                .map(StudentSubject::getSubject)
-                .collect(Collectors.toList());
+        List<Long> enrolledSubjectIds = student.getSelectedSubjectIds();
 
         // Process each assessment column
-        for (Map.Entry<Integer, String> entry : subjectAssessmentMap.entrySet()) {
-            int colIndex = entry.getKey();
-            String header = entry.getValue();
-
+        for (int colIndex = 3; colIndex < headers.size() + 3; colIndex++) {
+            SubjectAssessmentHeader header = headers.get(colIndex - 3);
             Cell cell = row.getCell(colIndex);
-            if (cell == null || cell.getCellType() == CellType.BLANK) {
-                continue; // Skip empty cells
-            }
+            String cellValue = getCellValueAsString(cell);
 
-            // Check if cell contains "N/A"
-            if (cell.getCellType() == CellType.STRING && "N/A".equals(cell.getStringCellValue())) {
+            // Skip empty or N/A cells
+            if (cellValue == null || cellValue.trim().isEmpty() || cellValue.equalsIgnoreCase("N/A")) {
                 continue;
             }
 
+            // Find subject by name
+            List<Subject> subjects = subjectRepository.findByName(header.subjectName);
+            if (subjects.isEmpty()) {
+                result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                              ": Subject '" + header.subjectName + "' not found in system");
+                continue;
+            }
+
+            Subject subject = subjects.get(0);
+
+            // Check if student is enrolled in the subject
+            if (!enrolledSubjectIds.contains(subject.getId())) {
+                result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                              ": Student '" + studentId + "' is not enrolled in subject '" + header.subjectName + "'");
+                continue;
+            }
+
+            // Parse and validate score
+            Double score;
             try {
-                // Parse header: "SubjectName - Assessment X"
-                String[] parts = header.split(" - ");
-                if (parts.length != 2) {
-                    result.addWarning("Invalid header format: " + header);
-                    continue;
-                }
+                score = Double.parseDouble(cellValue);
+            } catch (NumberFormatException e) {
+                result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                              ": Invalid score '" + cellValue + "'. Must be a number");
+                continue;
+            }
 
-                String subjectName = parts[0].trim();
-                String assessmentName = parts[1].trim();
+            if (score < 0 || score > 20) {
+                result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                              ": Score " + score + " is out of valid range (0-20)");
+                continue;
+            }
 
-                // Find subject from student's enrolled subjects by NAME (not ID)
-                // This matches the export logic which deduplicates by name
-                Optional<Subject> subjectOpt = enrolledSubjects.stream()
-                        .filter(s -> s.getName().equals(subjectName))
-                        .findFirst();
-
-                if (subjectOpt.isEmpty()) {
-                    result.addWarning("Student " + studentId + " is not enrolled in " + subjectName);
-                    continue;
-                }
-
-                Subject subject = subjectOpt.get();
-
-                // Determine assessment type
-                AssessmentType assessmentType = findAssessmentType(assessmentName, assessmentTypes);
-                if (assessmentType == null) {
-                    result.addWarning("Invalid assessment type: " + assessmentName);
-                    continue;
-                }
-
-                // Validate that the assessment type matches the term
-                if (!assessmentType.getTerm().equals(term)) {
-                    result.addError("Assessment type mismatch for " + studentId + " - " + subjectName + ": " +
-                            assessmentName + " belongs to Term " + assessmentType.getTerm() +
-                            " but is in Term " + term + " sheet");
-                    continue;
-                }
-
-                // Get score
-                Double score = getCellValueAsDouble(cell);
-                if (score == null) {
-                    result.addWarning("Invalid score format for " + studentId + " - " + subjectName);
-                    continue;
-                }
-
-                // Validate score range
-                if (score < 0 || score > 20) {
-                    result.addError("Invalid score " + score + " for " + studentId + " - " + subjectName +
-                                    " (must be between 0 and 20)");
-                    continue;
-                }
-
-                // Save or update assessment with the effective academic year
-                saveAssessment(student, subject, term, assessmentType, score,
-                              effectiveAcademicYearStart, effectiveAcademicYearEnd, result);
-
+            // Save or update assessment
+            try {
+                saveOrUpdateAssessment(student, subject, term, header.assessmentType, score, result);
             } catch (Exception e) {
-                result.addError("Error processing " + studentId + " - " + header + ": " + e.getMessage());
+                result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                              ": Failed to save assessment - " + e.getMessage());
             }
         }
     }
 
-    private AssessmentType findAssessmentType(String assessmentName, AssessmentType[] validTypes) {
-        for (AssessmentType type : validTypes) {
-            if (type.getDisplayName().equals(assessmentName)) {
-                return type;
+    private void saveOrUpdateAssessment(Student student, Subject subject, Integer term,
+                                       String assessmentType, Double score, ImportResult result) {
+        // Check if assessment already exists
+        Optional<Assessment> existingAssessment = assessmentRepository
+                .findByStudentAndSubjectAndTermAndType(student, subject, term, assessmentType);
+
+        if (existingAssessment.isPresent()) {
+            // Update existing assessment
+            Assessment assessment = existingAssessment.get();
+            Double oldScore = assessment.getScore();
+            assessment.setScore(score);
+            assessmentRepository.save(assessment);
+
+            result.addSuccess("Updated: " + student.getStudentId() + " - " + subject.getName() +
+                            " - " + assessmentType + " (Term " + term + "): " + oldScore + " → " + score);
+        } else {
+            // Create new assessment
+            Assessment assessment = Assessment.builder()
+                    .student(student)
+                    .subject(subject)
+                    .term(term)
+                    .type(assessmentType)
+                    .score(score)
+                    .build();
+            assessmentRepository.save(assessment);
+
+            result.addSuccess("Created: " + student.getStudentId() + " - " + subject.getName() +
+                            " - " + assessmentType + " (Term " + term + "): " + score);
+        }
+    }
+
+    private List<SubjectAssessmentHeader> parseHeaders(Row headerRow) {
+        List<SubjectAssessmentHeader> headers = new ArrayList<>();
+
+        // Skip first 3 columns (Student ID, First Name, Last Name)
+        for (int colIndex = 3; colIndex <= headerRow.getLastCellNum(); colIndex++) {
+            Cell cell = headerRow.getCell(colIndex);
+            if (cell == null) {
+                break;
+            }
+
+            String headerText = getCellValueAsString(cell);
+            if (headerText == null || headerText.trim().isEmpty()) {
+                break;
+            }
+
+            // Parse header format: "SubjectName-A1", "SubjectName-A2", "SubjectName-Exam"
+            String[] parts = headerText.split("-");
+            if (parts.length == 2) {
+                String subjectName = parts[0].trim();
+                String assessmentCode = parts[1].trim();
+
+                String assessmentType = switch (assessmentCode) {
+                    case "A1" -> "Assessment1";
+                    case "A2" -> "Assessment2";
+                    case "Exam" -> "Exam";
+                    default -> null;
+                };
+
+                if (assessmentType != null) {
+                    headers.add(new SubjectAssessmentHeader(subjectName, assessmentType));
+                }
+            }
+        }
+
+        return headers;
+    }
+
+    private Integer extractTermFromSheetName(String sheetName) {
+        // Extract term number from sheet name like "Term 1", "Term 2", "Term 3"
+        String[] parts = sheetName.split("\\s+");
+        for (String part : parts) {
+            try {
+                int term = Integer.parseInt(part);
+                if (term >= 1 && term <= 3) {
+                    return term;
+                }
+            } catch (NumberFormatException e) {
+                // Continue searching
             }
         }
         return null;
     }
 
-    private void saveAssessment(Student student, Subject subject, Integer term,
-                                 AssessmentType assessmentType, Double score,
-                                 Integer academicYearStart, Integer academicYearEnd,
-                                 ImportResult result) {
-        try {
-            // Check if assessment already exists for this academic year
-            Optional<Assessment> existingOpt = assessmentRepository
-                    .findByStudentIdAndSubjectIdAndTermAndTypeAndAcademicYear(
-                            student.getId(), subject.getId(), term, assessmentType,
-                            academicYearStart, academicYearEnd);
-
-            Assessment assessment;
-            if (existingOpt.isPresent()) {
-                // Update existing
-                assessment = existingOpt.get();
-                assessment.setScore(score);
-                // Ensure academic year fields are up to date
-                assessment.setAcademicYearStart(academicYearStart);
-                assessment.setAcademicYearEnd(academicYearEnd);
-                assessment.setAcademicYear(academicYearStart + "-" + academicYearEnd);
-                log.debug("Updating assessment: {} {} {} - {} (Academic Year: {}-{})",
-                        student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
-                        academicYearStart, academicYearEnd);
-            } else {
-                // Create new
-                assessment = Assessment.builder()
-                        .student(student)
-                        .subject(subject)
-                        .term(term)
-                        .type(assessmentType)
-                        .score(score)
-                        .academicYearStart(academicYearStart)
-                        .academicYearEnd(academicYearEnd)
-                        .academicYear(academicYearStart + "-" + academicYearEnd)
-                        .build();
-                log.debug("Creating new assessment: {} {} {} - {} (Academic Year: {}-{})",
-                        student.getStudentId(), subject.getName(), term, assessmentType.getDisplayName(),
-                        academicYearStart, academicYearEnd);
-            }
-
-            assessmentRepository.save(assessment);
-            result.addSuccess();
-
-        } catch (Exception e) {
-            log.error("Error saving assessment", e);
-            result.addError("Failed to save assessment for " + student.getStudentId() +
-                    " - " + subject.getName() + ": " + e.getMessage());
-        }
-    }
-
     private String getCellValueAsString(Cell cell) {
-        if (cell == null) return null;
+        if (cell == null) {
+            return null;
+        }
 
         return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue().trim();
-            case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
+            case STRING -> cell.getStringCellValue();
+            case NUMERIC -> {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    yield cell.getDateCellValue().toString();
+                } else {
+                    double numericValue = cell.getNumericCellValue();
+                    // Check if it's a whole number
+                    if (numericValue == (long) numericValue) {
+                        yield String.valueOf((long) numericValue);
+                    } else {
+                        yield String.valueOf(numericValue);
+                    }
+                }
+            }
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             case FORMULA -> cell.getCellFormula();
+            case BLANK -> null;
             default -> null;
         };
     }
 
-    private Double getCellValueAsDouble(Cell cell) {
-        if (cell == null) return null;
-
-        try {
-            return switch (cell.getCellType()) {
-                case NUMERIC -> cell.getNumericCellValue();
-                case STRING -> {
-                    String value = cell.getStringCellValue().trim();
-                    yield value.isEmpty() ? null : Double.parseDouble(value);
-                }
-                case FORMULA -> cell.getNumericCellValue();
-                default -> null;
-            };
-        } catch (NumberFormatException e) {
-            return null;
+    private String getColumnLetter(int columnIndex) {
+        StringBuilder columnLetter = new StringBuilder();
+        while (columnIndex >= 0) {
+            columnLetter.insert(0, (char) ('A' + (columnIndex % 26)));
+            columnIndex = (columnIndex / 26) - 1;
         }
+        return columnLetter.toString();
     }
 
-    private boolean isValidExcelFile(MultipartFile file) {
-        String contentType = file.getContentType();
-        String filename = file.getOriginalFilename();
+    private static class SubjectAssessmentHeader {
+        String subjectName;
+        String assessmentType;
 
-        return (contentType != null && contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                || (filename != null && filename.endsWith(".xlsx"));
+        SubjectAssessmentHeader(String subjectName, String assessmentType) {
+            this.subjectName = subjectName;
+            this.assessmentType = assessmentType;
+        }
     }
 }
