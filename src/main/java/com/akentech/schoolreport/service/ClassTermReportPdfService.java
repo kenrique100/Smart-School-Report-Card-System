@@ -53,14 +53,14 @@ public class ClassTermReportPdfService extends BasePdfService {
         headerTable.setSpacingBefore(2);
 
         try {
-            PdfPCell leftImageCell = createModernImageCell(LEFT_LOGO_PATH, Element.ALIGN_LEFT, 40);
+            PdfPCell leftImageCell = createModernImageCell(SCHOOL_LOGO_PATH, Element.ALIGN_LEFT, 40);
             leftImageCell.setPadding(0);
             headerTable.addCell(leftImageCell);
 
             PdfPCell centerCell = createClassHeaderContentCell(classRoom, term, academicYear);
             headerTable.addCell(centerCell);
 
-            PdfPCell rightImageCell = createModernImageCell(RIGHT_LOGO_PATH, Element.ALIGN_RIGHT, 40);
+            PdfPCell rightImageCell = createModernImageCell(CAMEROON_FLAG_PATH, Element.ALIGN_RIGHT, 40);
             rightImageCell.setPadding(0);
             headerTable.addCell(rightImageCell);
 
