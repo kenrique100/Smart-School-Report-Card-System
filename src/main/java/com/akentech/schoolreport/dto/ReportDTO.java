@@ -29,6 +29,7 @@ public class ReportDTO {
     private Integer rankInClass;
     private Integer rankInDepartment;
     private Integer totalStudentsInClass;
+    private Integer totalStudentsInDepartment;
     private String remarks;
     private List<SubjectReport> subjectReports;
     private String academicYear;
