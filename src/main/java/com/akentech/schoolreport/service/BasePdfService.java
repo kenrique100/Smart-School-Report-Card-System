@@ -15,28 +15,40 @@ import java.io.IOException;
 @Slf4j
 public abstract class BasePdfService {
 
-    // Modern color palette
-    protected static final Color PRIMARY_COLOR = new Color(0, 102, 204);
-    protected static final Color SECONDARY_COLOR = new Color(102, 0, 204);
-    protected static final Color ACCENT_COLOR = new Color(0, 153, 153);
-    protected static final Color SUCCESS_COLOR = new Color(0, 153, 76);
-    protected static final Color WARNING_COLOR = new Color(255, 153, 0);
-    protected static final Color DANGER_COLOR = new Color(204, 0, 0);
-    protected static final Color INFO_COLOR = new Color(64, 64, 64);
-    protected static final Color A_GRADE_COLOR = new Color(0, 102, 204);
-    protected static final Color B_GRADE_COLOR = new Color(0, 153, 76);
-    protected static final Color C_GRADE_COLOR = new Color(255, 204, 0);
-    protected static final Color D_GRADE_COLOR = new Color(255, 102, 0);
-    protected static final Color E_GRADE_COLOR = new Color(149, 165, 166);
-    protected static final Color O_GRADE_COLOR = new Color(155, 89, 182);
-    protected static final Color U_GRADE_COLOR = new Color(204, 0, 0);
-    protected static final Color F_GRADE_COLOR = new Color(128, 0, 0);
-    protected static final Color ROW_COLOR1 = new Color(255, 255, 255);
-    protected static final Color ROW_COLOR2 = new Color(248, 249, 250);
+    // Modern professional color palette
+    protected static final Color PRIMARY_COLOR = new Color(25, 42, 86); // Deep navy blue
+    protected static final Color SECONDARY_COLOR = new Color(220, 53, 69); // Cameroon red
+    protected static final Color ACCENT_COLOR = new Color(0, 128, 96); // Cameroon green
+    protected static final Color GOLD_COLOR = new Color(255, 193, 7); // Cameroon yellow/gold
+    protected static final Color SUCCESS_COLOR = new Color(34, 139, 34); // Forest green
+    protected static final Color WARNING_COLOR = new Color(255, 152, 0); // Amber
+    protected static final Color DANGER_COLOR = new Color(220, 53, 69); // Red
+    protected static final Color INFO_COLOR = new Color(52, 58, 64); // Dark gray
+    protected static final Color LIGHT_GRAY = new Color(248, 249, 250); // Light background
+    protected static final Color MEDIUM_GRAY = new Color(222, 226, 230); // Border gray
+    protected static final Color TEXT_COLOR = new Color(33, 37, 41); // Primary text
+
+    // Grade colors - clean and professional
+    protected static final Color A_GRADE_COLOR = new Color(40, 167, 69); // Green
+    protected static final Color B_GRADE_COLOR = new Color(23, 162, 184); // Teal
+    protected static final Color C_GRADE_COLOR = new Color(255, 193, 7); // Yellow
+    protected static final Color D_GRADE_COLOR = new Color(255, 152, 0); // Orange
+    protected static final Color E_GRADE_COLOR = new Color(108, 117, 125); // Gray
+    protected static final Color O_GRADE_COLOR = new Color(111, 66, 193); // Purple
+    protected static final Color U_GRADE_COLOR = new Color(220, 53, 69); // Red
+    protected static final Color F_GRADE_COLOR = new Color(176, 42, 55); // Dark red
+
+    // Table styling
+    protected static final Color ROW_COLOR1 = new Color(255, 255, 255); // White
+    protected static final Color ROW_COLOR2 = new Color(248, 249, 250); // Very light gray
+    protected static final Color HEADER_BG = new Color(25, 42, 86); // Navy
+    protected static final Color HEADER_TEXT = Color.WHITE;
 
     // Image paths
-    protected static final String LEFT_LOGO_PATH = "static/images/school-logo.png";
-    protected static final String RIGHT_LOGO_PATH = "static/images/cameroon-flag.png";
+    protected static final String SCHOOL_LOGO_PATH = "static/images/school-logo.png";
+    protected static final String CAMEROON_FLAG_PATH = "static/images/cameroon-flag.png";
+    protected static final String CAMBRIDGE_BADGE_PATH = "static/images/cambridge-badge.png";
+    protected static final String DEFAULT_AVATAR_PATH = "static/images/avatar.png";
 
     protected final GradeService gradeService;
 
