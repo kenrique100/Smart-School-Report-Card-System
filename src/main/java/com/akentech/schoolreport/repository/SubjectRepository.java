@@ -77,6 +77,7 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     boolean existsBySubjectCode(String subjectCode);
     Optional<Subject> findBySubjectCode(String subjectCode);
     Optional<Subject> findByName(String name);
+    Optional<Subject> findByNameAndClassRoomId(String name, Long classRoomId);
 
     // NEW: Method for ordering
     @Query("SELECT s FROM Subject s LEFT JOIN FETCH s.department ORDER BY s.name ASC")
