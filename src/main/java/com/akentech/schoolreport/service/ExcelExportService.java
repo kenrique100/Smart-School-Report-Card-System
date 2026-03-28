@@ -14,6 +14,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,8 +35,9 @@ public class ExcelExportService {
     /**
      * Export assessments for a single term
      */
+    @Transactional(readOnly = true)
     public byte[] exportAssessmentTemplate(Long classRoomId, Integer term) throws IOException {
-        ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+        ClassRoom classRoom = classRoomRepository.findByIdWithStudents(classRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found with id: " + classRoomId));
 
         Workbook workbook = new XSSFWorkbook();
@@ -56,8 +58,9 @@ public class ExcelExportService {
     /**
      * Export assessments for all terms
      */
+    @Transactional(readOnly = true)
     public byte[] exportAssessmentTemplateAllTerms(Long classRoomId) throws IOException {
-        ClassRoom classRoom = classRoomRepository.findById(classRoomId)
+        ClassRoom classRoom = classRoomRepository.findByIdWithStudents(classRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found with id: " + classRoomId));
 
         Workbook workbook = new XSSFWorkbook();
