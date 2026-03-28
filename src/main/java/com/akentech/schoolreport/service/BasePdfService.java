@@ -47,7 +47,6 @@ public abstract class BasePdfService {
     // Image paths
     protected static final String SCHOOL_LOGO_PATH = "static/images/school-logo.png";
     protected static final String CAMEROON_FLAG_PATH = "static/images/cameroon-flag.png";
-    protected static final String CAMBRIDGE_BADGE_PATH = "static/images/cambridge-badge.png";
     protected static final String DEFAULT_AVATAR_PATH = "static/images/avatar.png";
 
     protected final GradeService gradeService;
