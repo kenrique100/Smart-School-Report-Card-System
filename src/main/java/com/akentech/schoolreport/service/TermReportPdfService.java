@@ -84,9 +84,6 @@ public class TermReportPdfService extends BasePdfService {
 
         document.add(headerTable);
 
-        // Add Cambridge badge below header
-        addCambridgeBadge(document);
-
         // Add decorative separator
         addModernSeparator(document);
     }
@@ -141,25 +138,6 @@ public class TermReportPdfService extends BasePdfService {
         contentCell.addElement(contact);
 
         return contentCell;
-    }
-
-    private void addCambridgeBadge(Document document) throws DocumentException {
-        try {
-            PdfPTable badgeTable = new PdfPTable(1);
-            badgeTable.setWidthPercentage(100);
-            badgeTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-            badgeTable.setSpacingBefore(2);
-            badgeTable.setSpacingAfter(2);
-
-            PdfPCell badgeCell = createModernImageCell(CAMBRIDGE_BADGE_PATH, Element.ALIGN_CENTER, 35);
-            badgeCell.setBorder(Rectangle.NO_BORDER);
-            badgeCell.setPadding(0);
-            badgeTable.addCell(badgeCell);
-
-            document.add(badgeTable);
-        } catch (IOException e) {
-            log.debug("Cambridge badge not available: {}", e.getMessage());
-        }
     }
 
     private void createModernFallbackHeader(Document document, ReportDTO report)
