@@ -4,6 +4,7 @@ import com.akentech.schoolreport.dto.ReportDTO;
 import com.akentech.schoolreport.dto.SubjectReport;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Generates a clean, print-ready A4 Term Report Card PDF.
+ *
+ * Layout (top → bottom):
+ *   gold rule (3.5 px)
+ *   HEADER: [emblem] [school name / motto / term badge / address] [flag]
+ *   gold rule (3 px)
+ *   PROFILE BLOCK  |  STUDENT INFORMATION BLOCK  (two bordered panels)
+ *   SUBJECT PERFORMANCE ANALYSIS  (navy title bar + table)
+ *   PERFORMANCE SUMMARY  |  SUBJECT STATISTICS   (two bordered cards)
+ *   SIGNATURE ROW: [Class Teacher] [Official Stamp] [Vice Principal]
+ *   gold rule (2 px) + footer note
+ */
 @Service
 @Slf4j
 public class TermReportPdfService extends BasePdfService {
@@ -22,645 +36,633 @@ public class TermReportPdfService extends BasePdfService {
         super(gradeService);
     }
 
-    public byte[] generateTermReportPdf(ReportDTO report) throws IOException, DocumentException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        // Reduced margins
-        Document document = new Document(PageSize.A4, 15, 15, 15, 15);
-        PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+    // ───────────────────────────────────────────────────────────────────────
+    //  PUBLIC ENTRY
+    // ───────────────────────────────────────────────────────────────────────
 
-        document.open();
+    public byte[] generateTermReportPdf(ReportDTO report)
+            throws IOException, DocumentException {
 
-        // Add modern header
-        addSchoolHeader(document, report, writer);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // A4 margins: left/right ≈ 11 mm (31 pt), top/bottom ≈ 9 mm (25 pt)
+        Document doc = new Document(PageSize.A4, 31, 31, 25, 25);
+        PdfWriter.getInstance(doc, out);
+        doc.open();
 
-        // Add student information
-        addStudentInfoSection(document, report);
+        buildHeader(doc, report);
+        buildProfileAndInfo(doc, report);
+        buildSubjectTable(doc, report);
+        buildSummaryRow(doc, report);
+        buildSignatureRow(doc);
+        buildFooter(doc);
 
-        // Add subject performance table
-        addSubjectPerformanceTable(document, report);
-
-        // Add summary section
-        addSummarySection(document, report);
-
-        // Add signature section
-        addSignatureSection(document, report);
-
-        document.close();
-        return outputStream.toByteArray();
+        doc.close();
+        return out.toByteArray();
     }
 
-    // ====== PRIVATE METHODS ======
+    // ───────────────────────────────────────────────────────────────────────
+    //  1.  HEADER
+    // ───────────────────────────────────────────────────────────────────────
 
-    private void addSchoolHeader(Document document, ReportDTO report, PdfWriter writer)
+    private void buildHeader(Document doc, ReportDTO report)
             throws DocumentException, IOException {
-        PdfPTable headerTable = new PdfPTable(3);
-        headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{2f, 6f, 2f});
-        headerTable.setSpacingBefore(5);
-        headerTable.setSpacingAfter(3);
+
+        doc.add(goldRule(3.5f));                         // top gold rule
+
+        PdfPTable hdr = new PdfPTable(3);
+        hdr.setWidthPercentage(100);
+        hdr.setWidths(new float[]{ 1.8f, 6.4f, 1.8f });
+        hdr.setSpacingBefore(0);
+        hdr.setSpacingAfter(0);
+
+        // Left  – national emblem
+        hdr.addCell(logoCell(LEFT_LOGO_PATH, Element.ALIGN_RIGHT));
+
+        // Centre – school text block
+        hdr.addCell(centreHeaderCell(report));
+
+        // Right  – Cameroon flag
+        hdr.addCell(logoCell(RIGHT_LOGO_PATH, Element.ALIGN_LEFT));
+
+        doc.add(hdr);
+
+        PdfPTable bottomRule = goldRule(3f);
+        bottomRule.setSpacingBefore(0);
+        bottomRule.setSpacingAfter(5);
+        doc.add(bottomRule);                             // bottom gold rule
+    }
+
+    private PdfPCell logoCell(String path, int align) {
+        PdfPCell c = blankCell();
+        c.setBackgroundColor(Color.WHITE);
+        c.setPadding(4);
+        try {
+            org.springframework.core.io.ClassPathResource res =
+                    new org.springframework.core.io.ClassPathResource(path);
+            if (res.exists()) {
+                Image img = Image.getInstance(res.getURL());
+                img.scaleToFit(56f, 56f);
+                c.addElement(img);
+                c.setHorizontalAlignment(align);
+                c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                return c;
+            }
+        } catch (Exception e) {
+            log.warn("Logo not found '{}': {}", path, e.getMessage());
+        }
+        // Fallback: inline Cameroon flag colours when RIGHT, empty when LEFT
+        if (align == Element.ALIGN_LEFT) {
+            return inlineFlagCell();
+        }
+        return c;
+    }
+
+    /** CSS-drawn Cameroon flag used as right-side fallback. */
+    private PdfPCell inlineFlagCell() {
+        PdfPTable flag = new PdfPTable(3);
+        flag.setWidthPercentage(100);
+        addStripe(flag, new Color(0, 122, 94));
+        addStripe(flag, new Color(206, 17, 38));
+        PdfPCell yc = new PdfPCell(new Phrase("\u2605",
+                FontFactory.getFont(FontFactory.HELVETICA, 9f, new Color(0, 122, 94))));
+        yc.setBackgroundColor(new Color(252, 209, 22)); yc.setBorder(Rectangle.NO_BORDER);
+        yc.setHorizontalAlignment(Element.ALIGN_CENTER);
+        yc.setVerticalAlignment(Element.ALIGN_MIDDLE); yc.setFixedHeight(34f);
+        flag.addCell(yc);
+
+        PdfPCell wrap = blankCell();
+        wrap.setBackgroundColor(Color.WHITE); wrap.setPadding(4);
+        wrap.addElement(flag);
+        Paragraph lbl = new Paragraph("CAMEROON",
+                FontFactory.getFont(FontFactory.HELVETICA, 5.5f, MUTED_CLR));
+        lbl.setAlignment(Element.ALIGN_LEFT); lbl.setSpacingBefore(2);
+        wrap.addElement(lbl);
+        return wrap;
+    }
+
+    private void addStripe(PdfPTable t, Color c) {
+        PdfPCell s = blankCell(); s.setBackgroundColor(c);
+        s.setFixedHeight(34f); t.addCell(s);
+    }
+
+    private PdfPCell centreHeaderCell(ReportDTO report) {
+        PdfPCell c = blankCell();
+        c.setBackgroundColor(Color.WHITE);
+        c.setPadding(5);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        c.addElement(centred("DEBOS Bilingual Secondary And High School Kombe",
+                FontFactory.HELVETICA_BOLD, 12.5f, NAVY, 2f));
+        c.addElement(centred(". . . . . . . . . . . . . . .",
+                FontFactory.HELVETICA, 5f, MUTED_CLR, 2f));
+        c.addElement(centred(
+                "Excellence  \u2022  In  \u2022  Creativity  \u2022  And  \u2022  Innovation",
+                FontFactory.HELVETICA_BOLD, 7f, GOLD, 5f));
+
+        // Term badge
+        PdfPTable badge = new PdfPTable(1);
+        badge.setWidthPercentage(66);
+        badge.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell bc = new PdfPCell(new Phrase(
+                "Academic Year: " + report.getAcademicYear() + "  |  TERM " + report.getTerm() + " REPORT",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, Color.WHITE)));
+        bc.setBackgroundColor(NAVY); bc.setBorder(Rectangle.NO_BORDER);
+        bc.setPadding(4); bc.setHorizontalAlignment(Element.ALIGN_CENTER);
+        badge.addCell(bc);
+        c.addElement(badge);
+
+        c.addElement(centred("Kotto Road Kombe  |  Phone: 677755377 / 670252217",
+                FontFactory.HELVETICA_OBLIQUE, 6f, MUTED_CLR, 0f));
+
+        return c;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    //  2.  PROFILE CIRCLE  +  STUDENT INFO BLOCK
+    // ───────────────────────────────────────────────────────────────────────
+
+    private void buildProfileAndInfo(Document doc, ReportDTO report)
+            throws DocumentException, IOException {
+
+        PdfPTable row = new PdfPTable(2);
+        row.setWidthPercentage(100);
+        row.setWidths(new float[]{ 1.15f, 5.85f });
+        row.setSpacingBefore(2);
+        row.setSpacingAfter(5);
+
+        // ── Profile block ─────────────────────────────────────────────────
+        PdfPCell profileBlock = new PdfPCell();
+        profileBlock.setBorder(Rectangle.BOX);
+        profileBlock.setBorderColor(BORDER_CLR);
+        profileBlock.setBorderWidth(0.6f);
+        profileBlock.setBackgroundColor(new Color(238, 242, 248));
+        profileBlock.setPadding(8);
+        profileBlock.setHorizontalAlignment(Element.ALIGN_CENTER);
+        profileBlock.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        PdfPTable circleWrap = new PdfPTable(1);
+        circleWrap.setWidthPercentage(88);
+        circleWrap.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        PdfPCell avatarCell = new PdfPCell();
+        avatarCell.setBorder(Rectangle.NO_BORDER);
+        avatarCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        avatarCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        avatarCell.setFixedHeight(68f);
 
         try {
-            // Left: School Logo
-            PdfPCell leftImageCell = createModernImageCell(SCHOOL_LOGO_PATH, Element.ALIGN_CENTER, 50);
-            leftImageCell.setPadding(5);
-            leftImageCell.setBorder(Rectangle.NO_BORDER);
-            headerTable.addCell(leftImageCell);
-
-            // Center: School Information
-            PdfPCell centerCell = createModernHeaderContentCell(report);
-            headerTable.addCell(centerCell);
-
-            // Right: Cameroon Flag
-            PdfPCell rightImageCell = createModernImageCell(CAMEROON_FLAG_PATH, Element.ALIGN_CENTER, 50);
-            rightImageCell.setPadding(5);
-            rightImageCell.setBorder(Rectangle.NO_BORDER);
-            headerTable.addCell(rightImageCell);
-
-        } catch (IOException e) {
-            log.warn("Could not load logo images: {}", e.getMessage());
-            createModernFallbackHeader(document, report);
-            return;
-        }
-
-        document.add(headerTable);
-
-        // Add decorative separator
-        addModernSeparator(document);
-    }
-
-    private PdfPCell createModernHeaderContentCell(ReportDTO report) {
-        PdfPCell contentCell = new PdfPCell();
-        contentCell.setBorder(Rectangle.NO_BORDER);
-        contentCell.setBackgroundColor(Color.WHITE);
-        contentCell.setPadding(5);
-        contentCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        contentCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-        // School name - larger and more prominent
-        Paragraph schoolName = new Paragraph("DEBOS BILINGUAL SECONDARY AND HIGH SCHOOL KOMBE",
-                FontFactory.getFont("Helvetica-Bold", 14, PRIMARY_COLOR));
-        schoolName.setAlignment(Element.ALIGN_CENTER);
-        schoolName.setSpacingAfter(3);
-        contentCell.addElement(schoolName);
-
-        // Motto - smaller and elegant
-        Paragraph motto = new Paragraph("Excellence • Creativity • Innovation",
-                FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 8, ACCENT_COLOR));
-        motto.setAlignment(Element.ALIGN_CENTER);
-        motto.setSpacingAfter(5);
-        contentCell.addElement(motto);
-
-        // Academic year badge - modern card style
-        PdfPTable badgeTable = new PdfPTable(1);
-        badgeTable.setWidthPercentage(70);
-        badgeTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        PdfPCell badgeCell = new PdfPCell();
-        badgeCell.setBorder(Rectangle.NO_BORDER);
-        badgeCell.setBackgroundColor(PRIMARY_COLOR);
-        badgeCell.setPadding(6);
-        badgeCell.setCellEvent(new RoundedBorderCellEvent(5, PRIMARY_COLOR, 0));
-
-        Paragraph academicInfo = new Paragraph(
-                String.format("ACADEMIC YEAR %s - TERM %d REPORT CARD", report.getAcademicYear(), report.getTerm()),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE));
-        academicInfo.setAlignment(Element.ALIGN_CENTER);
-        badgeCell.addElement(academicInfo);
-
-        badgeTable.addCell(badgeCell);
-        contentCell.addElement(badgeTable);
-
-        // Contact information - subtle
-        Paragraph contact = new Paragraph("P.O. Box 123 Kombe | Tel: 677755377 / 670252217",
-                FontFactory.getFont(FontFactory.HELVETICA, 7, INFO_COLOR));
-        contact.setAlignment(Element.ALIGN_CENTER);
-        contact.setSpacingBefore(4);
-        contentCell.addElement(contact);
-
-        return contentCell;
-    }
-
-    private void createModernFallbackHeader(Document document, ReportDTO report)
-            throws DocumentException {
-        PdfPTable headerTable = new PdfPTable(1);
-        headerTable.setWidthPercentage(100);
-        headerTable.setSpacingBefore(2);
-
-        PdfPCell headerCell = new PdfPCell();
-        headerCell.setBorder(Rectangle.NO_BORDER);
-        headerCell.setBackgroundColor(Color.WHITE);
-        headerCell.setPadding(4);
-        headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        Paragraph schoolName = new Paragraph("DEBOS Bilingual Secondary And High School",
-                FontFactory.getFont("Helvetica-Bold", 12, PRIMARY_COLOR));
-        schoolName.setAlignment(Element.ALIGN_CENTER);
-        schoolName.setSpacingAfter(1);
-        headerCell.addElement(schoolName);
-
-        Paragraph underline = new Paragraph();
-        for (int i = 0; i < 12; i++) {
-            underline.add(new Chunk("∼ ",
-                    FontFactory.getFont(FontFactory.HELVETICA, 5, ACCENT_COLOR)));
-        }
-        underline.setAlignment(Element.ALIGN_CENTER);
-        underline.setSpacingAfter(2);
-        headerCell.addElement(underline);
-
-        Paragraph motto = new Paragraph("Excellence • In • Creativity • And • Innovation",
-                FontFactory.getFont(FontFactory.HELVETICA, 8, SECONDARY_COLOR));
-        motto.setAlignment(Element.ALIGN_CENTER);
-        motto.setSpacingAfter(4);
-        headerCell.addElement(motto);
-
-        PdfPTable infoTable = new PdfPTable(1);
-        infoTable.setWidthPercentage(60);
-        infoTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        PdfPCell infoCell = new PdfPCell();
-        infoCell.setBorder(Rectangle.NO_BORDER);
-        infoCell.setBackgroundColor(new Color(240, 240, 240));
-        infoCell.setPadding(3);
-        infoCell.setCellEvent(new RoundedBorderCellEvent(4, PRIMARY_COLOR, 0.8f));
-
-        Paragraph academicInfo = new Paragraph(
-                String.format("ACADEMIC YEAR: %s | TERM %d REPORT", report.getAcademicYear(), report.getTerm()),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, INFO_COLOR));
-        academicInfo.setAlignment(Element.ALIGN_CENTER);
-        infoCell.addElement(academicInfo);
-
-        infoTable.addCell(infoCell);
-        headerCell.addElement(infoTable);
-
-        headerTable.addCell(headerCell);
-        document.add(headerTable);
-        addModernSeparator(document);
-    }
-
-    private void addStudentInfoSection(Document document, ReportDTO report) throws DocumentException {
-        // Modern card-based student information section
-        PdfPTable mainContainer = new PdfPTable(1);
-        mainContainer.setWidthPercentage(100);
-        mainContainer.setSpacingBefore(5);
-        mainContainer.setSpacingAfter(5);
-
-        PdfPCell containerCell = new PdfPCell();
-        containerCell.setBorder(Rectangle.NO_BORDER);
-        containerCell.setBackgroundColor(LIGHT_GRAY);
-        containerCell.setPadding(10);
-        containerCell.setCellEvent(new RoundedBorderCellEvent(8, MEDIUM_GRAY, 1f));
-
-        // Section title
-        Paragraph sectionTitle = new Paragraph("STUDENT INFORMATION",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, PRIMARY_COLOR));
-        sectionTitle.setAlignment(Element.ALIGN_CENTER);
-        sectionTitle.setSpacingAfter(8);
-        containerCell.addElement(sectionTitle);
-
-        // Student details grid - 3 columns for better space utilization
-        PdfPTable detailsGrid = new PdfPTable(6);
-        detailsGrid.setWidthPercentage(100);
-        detailsGrid.setWidths(new float[]{2f, 3f, 2f, 3f, 2f, 3f});
-        detailsGrid.setSpacingBefore(0);
-
-        // Add student details in a clean grid format
-        addCleanDetailRow(detailsGrid, "Student Name:", report.getStudentFullName());
-        addCleanDetailRow(detailsGrid, "Roll Number:", report.getRollNumber());
-        addCleanDetailRow(detailsGrid, "Student ID:", report.getStudentIdString());
-
-        addCleanDetailRow(detailsGrid, "Class:", report.getClassName());
-        addCleanDetailRow(detailsGrid, "Department:", report.getDepartment());
-        addCleanDetailRow(detailsGrid, "Specialty:", report.getSpecialty());
-
-        addCleanDetailRow(detailsGrid, "Date of Birth:", report.getFormattedDateOfBirth());
-        addCleanDetailRow(detailsGrid, "Gender:", report.getStudentGender());
-        addCleanDetailRow(detailsGrid, "Academic Year:", report.getAcademicYear());
-
-        containerCell.addElement(detailsGrid);
-        mainContainer.addCell(containerCell);
-
-        document.add(mainContainer);
-    }
-
-    private void addCleanDetailRow(PdfPTable table, String label, String value) {
-        // Label cell - bold and distinct
-        PdfPCell labelCell = new PdfPCell(new Phrase(label,
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, INFO_COLOR)));
-        labelCell.setBorder(Rectangle.NO_BORDER);
-        labelCell.setBackgroundColor(Color.WHITE);
-        labelCell.setPadding(5);
-        labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        labelCell.setCellEvent(new RoundedBorderCellEvent(3, MEDIUM_GRAY, 0.5f));
-
-        // Value cell - regular weight
-        PdfPCell valueCell = new PdfPCell(new Phrase(value != null ? value : "N/A",
-                FontFactory.getFont(FontFactory.HELVETICA, 8, TEXT_COLOR)));
-        valueCell.setBorder(Rectangle.NO_BORDER);
-        valueCell.setBackgroundColor(Color.WHITE);
-        valueCell.setPadding(5);
-        valueCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-        valueCell.setCellEvent(new RoundedBorderCellEvent(3, MEDIUM_GRAY, 0.5f));
-
-        table.addCell(labelCell);
-        table.addCell(valueCell);
-    }
-
-
-    private void addSubjectPerformanceTable(Document document, ReportDTO report) throws DocumentException {
-        // Section title with modern styling
-        PdfPTable titleTable = new PdfPTable(1);
-        titleTable.setWidthPercentage(100);
-        titleTable.setSpacingBefore(5);
-        titleTable.setSpacingAfter(3);
-
-        PdfPCell titleCell = new PdfPCell(new Phrase("ACADEMIC PERFORMANCE",
-                FontFactory.getFont("Helvetica-Bold", 11, PRIMARY_COLOR)));
-        titleCell.setBorder(Rectangle.NO_BORDER);
-        titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        titleCell.setPaddingBottom(3);
-        titleTable.addCell(titleCell);
-
-        document.add(titleTable);
-
-        List<SubjectReport> subjectReports = report.getSubjectReports();
-        int term = report.getTerm();
-        String className = report.getClassName();
-
-        // Create compact subject table
-        PdfPTable subjectTable = new PdfPTable(getColumnCount(term));
-        subjectTable.setWidthPercentage(100);
-        subjectTable.setWidths(getColumnWidths(term));
-        subjectTable.setSpacingBefore(0);
-        subjectTable.setSpacingAfter(3);
-
-        addCompactTableHeader(subjectTable, term);
-
-        boolean alternate = false;
-        for (SubjectReport subject : subjectReports) {
-            addCompactSubjectRow(subjectTable, subject, term, alternate, className);
-            alternate = !alternate;
-        }
-
-        document.add(subjectTable);
-    }
-
-    private int getColumnCount(int term) {
-        return term == 3 ? 7 : 8;
-    }
-
-    private float[] getColumnWidths(int term) {
-        if (term == 3) {
-            return new float[]{2f, 0.6f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f};
-        } else {
-            return new float[]{2f, 0.6f, 0.8f, 0.8f, 0.9f, 0.9f, 0.9f, 0.9f};
-        }
-    }
-
-    private String[] getHeadersForTerm(int term) {
-        if (term == 3) {
-            return new String[]{"SUBJECT", "COEFF", "EXAM", "TOTAL", "AVERAGE", "GRADE", "STATUS"};
-        } else if (term == 1) {
-            return new String[]{"SUBJECT", "COEFF", "A1", "A2", "TOTAL", "AVERAGE", "GRADE", "STATUS"};
-        } else {
-            return new String[]{"SUBJECT", "COEFF", "A3", "A4", "TOTAL", "AVERAGE", "GRADE", "STATUS"};
-        }
-    }
-
-    private void addCompactTableHeader(PdfPTable table, int term) {
-        String[] headers = getHeadersForTerm(term);
-
-        for (String header : headers) {
-            PdfPCell cell = new PdfPCell(new Phrase(header,
-                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, HEADER_TEXT)));
-            cell.setBackgroundColor(HEADER_BG);
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-            cell.setPadding(6);
-            cell.setBorder(Rectangle.NO_BORDER);
-            table.addCell(cell);
-        }
-    }
-
-    private void addCompactSubjectRow(PdfPTable table, SubjectReport subject, int term, boolean alternate, String className) {
-        Color rowColor = alternate ? ROW_COLOR2 : ROW_COLOR1;
-
-        // Subject name cell
-        PdfPCell subjectCell = new PdfPCell(new Phrase(subject.getSubjectName(),
-                FontFactory.getFont(FontFactory.HELVETICA, 8, TEXT_COLOR)));
-        subjectCell.setBackgroundColor(rowColor);
-        subjectCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-        subjectCell.setPadding(5);
-        subjectCell.setBorder(Rectangle.BOTTOM);
-        subjectCell.setBorderColor(MEDIUM_GRAY);
-        subjectCell.setBorderWidth(0.5f);
-        table.addCell(subjectCell);
-
-        // Coefficient cell
-        PdfPCell coeffCell = new PdfPCell(new Phrase(
-                subject.getCoefficient() != null ? String.valueOf(subject.getCoefficient()) : "1",
-                FontFactory.getFont(FontFactory.HELVETICA, 8, TEXT_COLOR)));
-        coeffCell.setBackgroundColor(rowColor);
-        coeffCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        coeffCell.setPadding(5);
-        coeffCell.setBorder(Rectangle.BOTTOM);
-        coeffCell.setBorderColor(MEDIUM_GRAY);
-        coeffCell.setBorderWidth(0.5f);
-        table.addCell(coeffCell);
-
-        // Assessment cells
-        if (term == 3) {
-            addCompactAssessmentCell(table, subject.getAssessment1(), rowColor);
-        } else {
-            addCompactAssessmentCell(table, subject.getAssessment1(), rowColor);
-            addCompactAssessmentCell(table, subject.getAssessment2(), rowColor);
-        }
-
-        // Total score cell
-        Double total = subject.getTotalScore(term);
-        Color totalColor = (total != null && total >= 10) ? SUCCESS_COLOR : DANGER_COLOR;
-        PdfPCell totalCell = new PdfPCell(new Phrase(formatDecimal(total),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, totalColor)));
-        totalCell.setBackgroundColor(rowColor);
-        totalCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        totalCell.setPadding(5);
-        totalCell.setBorder(Rectangle.BOTTOM);
-        totalCell.setBorderColor(MEDIUM_GRAY);
-        totalCell.setBorderWidth(0.5f);
-        table.addCell(totalCell);
-
-        // Average cell with colored background
-        Double average = subject.getSubjectAverage();
-        Color avgBgColor = (average != null && average >= 10) ? new Color(220, 255, 220) : new Color(255, 220, 220);
-        PdfPCell avgCell = new PdfPCell(new Phrase(formatDecimal(average),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, TEXT_COLOR)));
-        avgCell.setBackgroundColor(avgBgColor);
-        avgCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        avgCell.setPadding(5);
-        avgCell.setBorder(Rectangle.BOTTOM);
-        avgCell.setBorderColor(MEDIUM_GRAY);
-        avgCell.setBorderWidth(0.5f);
-        table.addCell(avgCell);
-
-        // Grade cell with colored background
-        String grade = subject.getLetterGrade() != null ? subject.getLetterGrade() : "U";
-        Color gradeColor = getGradeColor(grade);
-        PdfPCell gradeCell = new PdfPCell(new Phrase(grade,
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, getContrastColor(gradeColor))));
-        gradeCell.setBackgroundColor(gradeColor);
-        gradeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        gradeCell.setPadding(5);
-        gradeCell.setBorder(Rectangle.BOTTOM);
-        gradeCell.setBorderColor(MEDIUM_GRAY);
-        gradeCell.setBorderWidth(0.5f);
-        table.addCell(gradeCell);
-
-        // Pass/Fail status cell
-        boolean passed = isSubjectPassing(grade, className);
-        String status = passed ? "PASS" : "FAIL";
-        Color statusColor = passed ? SUCCESS_COLOR : DANGER_COLOR;
-        PdfPCell statusCell = new PdfPCell(new Phrase(status,
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE)));
-        statusCell.setBackgroundColor(statusColor);
-        statusCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        statusCell.setPadding(5);
-        statusCell.setBorder(Rectangle.BOTTOM);
-        statusCell.setBorderColor(MEDIUM_GRAY);
-        statusCell.setBorderWidth(0.5f);
-        table.addCell(statusCell);
-    }
-
-    private void addCompactAssessmentCell(PdfPTable table, Double score, Color rowColor) {
-        Font scoreFont;
-        Color textColor;
-
-        if (score != null) {
-            if (score < 10) {
-                textColor = DANGER_COLOR;
-                scoreFont = FontFactory.getFont(FontFactory.HELVETICA, 8, textColor);
+            org.springframework.core.io.ClassPathResource res =
+                    new org.springframework.core.io.ClassPathResource(AVATAR_PATH);
+            if (res.exists()) {
+                Image avatar = Image.getInstance(res.getURL());
+                avatar.scaleToFit(60f, 60f);
+                avatarCell.setBackgroundColor(new Color(238, 242, 248));
+                avatarCell.addElement(avatar);
             } else {
-                textColor = SUCCESS_COLOR;
-                scoreFont = FontFactory.getFont(FontFactory.HELVETICA, 8, textColor);
+                throw new IOException("avatar not found");
             }
-        } else {
-            textColor = INFO_COLOR;
-            scoreFont = FontFactory.getFont(FontFactory.HELVETICA, 8, textColor);
+        } catch (Exception e) {
+            // Coloured initial fallback
+            boolean male = "MALE".equalsIgnoreCase(report.getStudentGender());
+            Color bg = male ? new Color(37, 99, 160) : new Color(190, 80, 130);
+            avatarCell.setBackgroundColor(bg);
+            avatarCell.setCellEvent(new RoundedBorderCellEvent(34f, bg, 0f));
+            Paragraph init = new Paragraph(male ? "M" : "F",
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 28f, Color.WHITE));
+            init.setAlignment(Element.ALIGN_CENTER);
+            avatarCell.addElement(init);
         }
 
-        PdfPCell cell = new PdfPCell(new Phrase(
-                score != null ? formatDecimal(score) : "-",
-                scoreFont));
-        cell.setBackgroundColor(rowColor);
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        cell.setPadding(5);
-        cell.setBorder(Rectangle.BOTTOM);
-        cell.setBorderColor(MEDIUM_GRAY);
-        cell.setBorderWidth(0.5f);
-        table.addCell(cell);
+        circleWrap.addCell(avatarCell);
+        profileBlock.addElement(circleWrap);
+        row.addCell(profileBlock);
+
+        // ── Student info block ────────────────────────────────────────────
+        PdfPCell infoBlock = blankCell();
+        infoBlock.setPadding(0);
+
+        PdfPTable titleBar = new PdfPTable(1);
+        titleBar.setWidthPercentage(100);
+        PdfPCell tc = new PdfPCell(new Phrase("  STUDENT INFORMATION",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9f, Color.WHITE)));
+        tc.setBackgroundColor(NAVY); tc.setBorder(Rectangle.NO_BORDER); tc.setPadding(5);
+        titleBar.addCell(tc);
+        infoBlock.addElement(titleBar);
+
+        PdfPTable grid = new PdfPTable(4);
+        grid.setWidthPercentage(100);
+        grid.setWidths(new float[]{ 1.7f, 2.8f, 1.7f, 2.8f });
+
+        addInfoRow(grid, "Full Name:",     report.getStudentFullName(),
+                "Roll No:",       report.getRollNumber(),          0);
+        addInfoRow(grid, "Student ID:",    report.getStudentIdString(),
+                "Class:",         report.getClassName(),            1);
+        addInfoRow(grid, "Department:",    report.getDepartment(),
+                "Specialty:",     report.getSpecialty(),            0);
+        addInfoRow(grid, "Date of Birth:", report.getFormattedDateOfBirth(),
+                "Gender:",        report.getStudentGender(),        1);
+
+        infoBlock.addElement(grid);
+        row.addCell(infoBlock);
+        doc.add(row);
     }
 
-    private boolean isSubjectPassing(String grade, String className) {
-        if (grade == null || className == null) return false;
-        boolean isAdvancedLevel = isAdvancedLevelClass(className);
-        if (isAdvancedLevel) {
-            return grade.matches("[ABCDE]");
-        } else {
-            return grade.matches("[ABC]");
-        }
+    private void addInfoRow(PdfPTable t,
+                            String l1, String v1,
+                            String l2, String v2,
+                            int idx) {
+        Color bg = idx % 2 == 0 ? ROW_EVEN : ROW_ODD;
+        t.addCell(iLbl(l1, bg)); t.addCell(iVal(v1, bg));
+        t.addCell(iLbl(l2, bg)); t.addCell(iVal(v2, bg));
     }
 
-    private void addSummarySection(Document document, ReportDTO report) throws DocumentException {
-        // Modern summary section with two-column layout
-        PdfPTable summaryTable = new PdfPTable(2);
-        summaryTable.setWidthPercentage(100);
-        summaryTable.setWidths(new float[]{1, 1});
-        summaryTable.setSpacingBefore(5);
-        summaryTable.setSpacingAfter(5);
-
-        Double termAverage = report.getTermAverage();
-        double passRate = report.getPassRate() != null ? report.getPassRate() : 0.0;
-        Integer subjectsPassed = report.getSubjectsPassed() != null ? report.getSubjectsPassed() : 0;
-        int totalSubjects = report.getTotalSubjects() != null ? report.getTotalSubjects() : 0;
-        boolean overallPassed = report.getPassed() != null ? report.getPassed() : false;
-        String className = report.getClassName();
-
-        // Left card: Performance Summary
-        PdfPCell leftCell = createSummaryCard("PERFORMANCE SUMMARY", PRIMARY_COLOR);
-
-        // Performance status badge
-        Color performanceColor = getPerformanceColor(termAverage);
-        String performanceStatus = gradeService.getPerformanceStatus(termAverage);
-
-        PdfPTable statusBadge = new PdfPTable(1);
-        statusBadge.setWidthPercentage(80);
-        statusBadge.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        PdfPCell statusCell = new PdfPCell(new Phrase(performanceStatus,
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.WHITE)));
-        statusCell.setBorder(Rectangle.NO_BORDER);
-        statusCell.setBackgroundColor(performanceColor);
-        statusCell.setPadding(8);
-        statusCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        statusCell.setCellEvent(new RoundedBorderCellEvent(5, performanceColor, 0));
-        statusBadge.addCell(statusCell);
-        leftCell.addElement(statusBadge);
-
-        // Performance metrics
-        addSummaryMetric(leftCell, "Term Average:", report.getFormattedAverage(), termAverage);
-        addSummaryMetric(leftCell, "Overall Grade:",
-                gradeService.calculateLetterGrade(termAverage, className), null);
-        addSummaryMetric(leftCell, "Class Rank:",
-                report.getRankInClass() + " of " + report.getTotalStudentsInClass(), null);
-
-        if (report.getRankInDepartment() != null && !report.getDepartment().equals("N/A")) {
-            addSummaryMetric(leftCell, "Department Rank:",
-                    String.valueOf(report.getRankInDepartment()), null);
-        }
-
-        Color statusColor = overallPassed ? SUCCESS_COLOR : DANGER_COLOR;
-        addSummaryMetric(leftCell, "Term Status:", overallPassed ? "PASSED ✓" : "FAILED ✗", null);
-
-        // Right card: Subject Statistics & Remarks
-        PdfPCell rightCell = createSummaryCard("SUBJECT STATISTICS", SECONDARY_COLOR);
-
-        // Pass rate bar
-        addProgressMetric(rightCell, "Pass Rate:", passRate,
-                passRate >= 60 ? SUCCESS_COLOR : (passRate >= 40 ? WARNING_COLOR : DANGER_COLOR));
-
-        String passingCriteria = isAdvancedLevelClass(className) ?
-                "(Grades A-E passing)" : "(Grades A-C passing)";
-        addSummaryMetric(rightCell, "Subjects Passed:",
-                subjectsPassed + " / " + totalSubjects + " " + passingCriteria, null);
-
-        // Teacher's remarks section
-        Paragraph remarksTitle = new Paragraph("Teacher's Remarks:",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, ACCENT_COLOR));
-        remarksTitle.setSpacingBefore(6);
-        remarksTitle.setSpacingAfter(3);
-        rightCell.addElement(remarksTitle);
-
-        PdfPTable remarksBox = new PdfPTable(1);
-        remarksBox.setWidthPercentage(100);
-
-        PdfPCell remarksCell = new PdfPCell(new Phrase(report.getRemarks(),
-                FontFactory.getFont(FontFactory.HELVETICA, 8, TEXT_COLOR)));
-        remarksCell.setBorder(Rectangle.NO_BORDER);
-        remarksCell.setBackgroundColor(Color.WHITE);
-        remarksCell.setPadding(8);
-        remarksCell.setMinimumHeight(40);
-        remarksCell.setCellEvent(new RoundedBorderCellEvent(4, MEDIUM_GRAY, 0.5f));
-        remarksBox.addCell(remarksCell);
-        rightCell.addElement(remarksBox);
-
-        summaryTable.addCell(leftCell);
-        summaryTable.addCell(rightCell);
-        document.add(summaryTable);
+    private PdfPCell iLbl(String text, Color bg) {
+        PdfPCell c = new PdfPCell(new Phrase(text,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR)));
+        c.setBackgroundColor(bg);
+        c.setBorder(Rectangle.BOTTOM); c.setBorderColor(BORDER_CLR); c.setBorderWidth(0.4f);
+        c.setPadding(4.5f); c.setPaddingLeft(8f);
+        return c;
     }
 
-    private PdfPCell createSummaryCard(String title, Color titleColor) {
-        PdfPCell cell = new PdfPCell();
-        cell.setBorder(Rectangle.NO_BORDER);
-        cell.setBackgroundColor(LIGHT_GRAY);
-        cell.setPadding(10);
-        cell.setCellEvent(new RoundedBorderCellEvent(8, MEDIUM_GRAY, 1f));
-
-        Paragraph titleParagraph = new Paragraph(title,
-                FontFactory.getFont("Helvetica-Bold", 10, titleColor));
-        titleParagraph.setAlignment(Element.ALIGN_CENTER);
-        titleParagraph.setSpacingAfter(8);
-        cell.addElement(titleParagraph);
-        return cell;
+    private PdfPCell iVal(String text, Color bg) {
+        String s = (text != null && !text.isBlank()) ? text : "N/A";
+        PdfPCell c = new PdfPCell(new Phrase(s,
+                FontFactory.getFont(FontFactory.HELVETICA, 7.5f, VALUE_CLR)));
+        c.setBackgroundColor(bg);
+        c.setBorder(Rectangle.BOTTOM); c.setBorderColor(BORDER_CLR); c.setBorderWidth(0.4f);
+        c.setPadding(4.5f);
+        return c;
     }
 
-    private void addSummaryMetric(PdfPCell cell, String label, String value, Double numericValue) {
-        Paragraph metric = new Paragraph();
-        metric.add(new Chunk(label + " ",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, INFO_COLOR)));
+    // ───────────────────────────────────────────────────────────────────────
+    //  3.  SUBJECT PERFORMANCE TABLE
+    // ───────────────────────────────────────────────────────────────────────
 
-        Color valueColor = TEXT_COLOR;
-        if (numericValue != null) {
-            valueColor = (numericValue >= 10) ? SUCCESS_COLOR : DANGER_COLOR;
+    private void buildSubjectTable(Document doc, ReportDTO report)
+            throws DocumentException {
+
+        doc.add(navyBar("  SUBJECT PERFORMANCE ANALYSIS"));
+
+        int term      = report.getTerm();
+        boolean t3    = (term == 3);
+        String[] hdrs = t3
+                ? new String[]{ "SUBJECT","COEFF","EXAM","TOTAL","AVERAGE","GRADE","STATUS" }
+                : (term == 1)
+                ? new String[]{ "SUBJECT","COEFF","A1","A2","TOTAL","AVERAGE","GRADE","STATUS" }
+                : new String[]{ "SUBJECT","COEFF","A3","A4","TOTAL","AVERAGE","GRADE","STATUS" };
+        float[] widths = t3
+                ? new float[]{ 3.4f, 0.6f, 1f, 1f, 1f, 0.9f, 1.1f }
+                : new float[]{ 3.2f, 0.6f, 0.85f, 0.85f, 1f, 1f, 0.9f, 1.1f };
+
+        PdfPTable tbl = new PdfPTable(hdrs.length);
+        tbl.setWidthPercentage(100);
+        tbl.setWidths(widths);
+        tbl.setSpacingBefore(1);
+        tbl.setSpacingAfter(5);
+
+        // Header row
+        for (int i = 0; i < hdrs.length; i++) {
+            PdfPCell h = new PdfPCell(new Phrase(hdrs[i],
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, Color.WHITE)));
+            h.setBackgroundColor(NAVY); h.setBorder(Rectangle.NO_BORDER);
+            h.setPadding(4.5f);
+            h.setPaddingLeft(i == 0 ? 8f : 4f);
+            h.setHorizontalAlignment(i == 0 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
+            tbl.addCell(h);
         }
 
-        metric.add(new Chunk(value,
-                FontFactory.getFont(FontFactory.HELVETICA, 8, valueColor)));
-        metric.setSpacingBefore(4);
-        cell.addElement(metric);
+        // Data rows
+        List<SubjectReport> subjects = report.getSubjectReports();
+        String cn = report.getClassName();
+
+        for (int i = 0; i < subjects.size(); i++) {
+            SubjectReport s  = subjects.get(i);
+            Color rowBg      = (i % 2 == 0) ? ROW_EVEN : ROW_ODD;
+
+            // Subject name
+            PdfPCell nc = new PdfPCell(new Phrase(s.getSubjectName(),
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, VALUE_CLR)));
+            nc.setBackgroundColor(rowBg); setBorder(nc); nc.setPaddingLeft(8f); nc.setPadding(4.5f);
+            tbl.addCell(nc);
+
+            // Coefficient
+            tbl.addCell(dCell(s.getCoefficient() != null ? String.valueOf(s.getCoefficient()) : "1",
+                    rowBg, VALUE_CLR));
+
+            // Assessment columns
+            if (t3) {
+                tbl.addCell(sCell(s.getAssessment1(), rowBg));
+            } else {
+                tbl.addCell(sCell(s.getAssessment1(), rowBg));
+                tbl.addCell(sCell(s.getAssessment2(), rowBg));
+            }
+
+            // Total
+            Double tot = s.getTotalScore(term);
+            tbl.addCell(dCell(formatDecimal(tot), rowBg,
+                    tot != null && tot >= 10 ? VALUE_CLR : FAIL_RED));
+
+            // Average – tinted background
+            Double avg   = s.getSubjectAverage();
+            boolean aPass = avg != null && avg >= 10;
+            PdfPCell ac  = new PdfPCell(new Phrase(formatDecimal(avg),
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f,
+                            aPass ? PASS_GREEN : FAIL_RED)));
+            ac.setBackgroundColor(aPass ? PASS_BG : FAIL_BG);
+            setBorder(ac); ac.setPadding(4.5f);
+            ac.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tbl.addCell(ac);
+
+            // Grade pill
+            String grade  = s.getLetterGrade() != null ? s.getLetterGrade() : "U";
+            PdfPCell gc   = new PdfPCell(new Phrase(grade,
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8f, getGradeTextColor(grade))));
+            gc.setBackgroundColor(getGradeColor(grade));
+            gc.setBorder(Rectangle.NO_BORDER); gc.setPadding(4.5f);
+            gc.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tbl.addCell(gc);
+
+            // Status
+            boolean pass  = isSubjectPassing(grade, cn);
+            PdfPCell sc2  = new PdfPCell(new Phrase(pass ? "PASS" : "FAIL",
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f,
+                            pass ? PASS_GREEN : FAIL_RED)));
+            sc2.setBackgroundColor(pass ? PASS_BG : FAIL_BG);
+            sc2.setBorder(Rectangle.NO_BORDER); sc2.setPadding(4.5f);
+            sc2.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tbl.addCell(sc2);
+        }
+
+        doc.add(tbl);
     }
 
-    private void addProgressMetric(PdfPCell cell, String label, double percentage, Color color) {
-        Paragraph progress = new Paragraph();
-        progress.add(new Chunk(label + " ",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, INFO_COLOR)));
-        progress.add(new Chunk(String.format("%.1f%%", percentage),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, color)));
-        progress.setSpacingBefore(4);
-
-        // Progress bar visualization
-        int filledBars = (int) (percentage / 10);
-        String progressBar = "█".repeat(Math.min(filledBars, 10)) + "░".repeat(10 - Math.min(filledBars, 10));
-        Paragraph bar = new Paragraph(progressBar,
-                FontFactory.getFont(FontFactory.HELVETICA, 10, color));
-        bar.setSpacingBefore(2);
-
-        cell.addElement(progress);
-        cell.addElement(bar);
+    private void setBorder(PdfPCell c) {
+        c.setBorder(Rectangle.BOTTOM);
+        c.setBorderColor(BORDER_CLR);
+        c.setBorderWidth(0.4f);
     }
 
-    private void addSignatureSection(Document document, ReportDTO report) throws DocumentException {
-        // Modern signature section
-        PdfPTable signatureTable = new PdfPTable(1);
-        signatureTable.setWidthPercentage(100);
-        signatureTable.setSpacingBefore(10);
+    private PdfPCell dCell(String text, Color bg, Color tc) {
+        PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "—",
+                FontFactory.getFont(FontFactory.HELVETICA, 7.5f, tc)));
+        c.setBackgroundColor(bg); setBorder(c);
+        c.setPadding(4.5f); c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        return c;
+    }
 
-        PdfPCell signatureCell = new PdfPCell();
-        signatureCell.setBorder(Rectangle.NO_BORDER);
-        signatureCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        signatureCell.setPadding(0);
+    private PdfPCell sCell(Double score, Color bg) {
+        String txt = score != null ? formatDecimal(score) : "—";
+        Color  tc  = score == null ? MUTED_CLR : (score < 10 ? FAIL_RED : PASS_GREEN);
+        PdfPCell c = new PdfPCell(new Phrase(txt,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, tc)));
+        c.setBackgroundColor(bg); setBorder(c);
+        c.setPadding(4.5f); c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        return c;
+    }
 
-        // Signature line
-        PdfPTable signatureLineTable = new PdfPTable(1);
-        signatureLineTable.setWidthPercentage(40);
-        signatureLineTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
+    private boolean isSubjectPassing(String grade, String cn) {
+        if (grade == null || cn == null) return false;
+        return isAdvancedLevelClass(cn) ? grade.matches("[ABCDE]") : grade.matches("[ABC]");
+    }
 
-        PdfPCell lineCell = new PdfPCell();
-        lineCell.setBorder(Rectangle.TOP);
-        lineCell.setBorderColor(PRIMARY_COLOR);
-        lineCell.setBorderWidth(1.5f);
-        lineCell.setFixedHeight(1);
-        signatureLineTable.addCell(lineCell);
+    // ───────────────────────────────────────────────────────────────────────
+    //  4.  SUMMARY ROW
+    // ───────────────────────────────────────────────────────────────────────
 
-        signatureCell.addElement(signatureLineTable);
+    private void buildSummaryRow(Document doc, ReportDTO report)
+            throws DocumentException {
 
-        // Vice Principal title
-        Paragraph vpTitle = new Paragraph("VICE PRINCIPAL",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, PRIMARY_COLOR));
-        vpTitle.setAlignment(Element.ALIGN_RIGHT);
-        vpTitle.setSpacingBefore(3);
-        signatureCell.addElement(vpTitle);
+        String  cn       = report.getClassName();
+        Double  avg      = report.getTermAverage();
+        double  passRate = report.getPassRate()       != null ? report.getPassRate()       : 0.0;
+        int     passed   = report.getSubjectsPassed() != null ? report.getSubjectsPassed() : 0;
+        int     total    = report.getTotalSubjects()  != null ? report.getTotalSubjects()  : 0;
+        boolean overall  = Boolean.TRUE.equals(report.getPassed());
 
-        // Name
-        Paragraph vpName = new Paragraph("Kohsu Rodolphe Rinwi",
-                FontFactory.getFont(FontFactory.HELVETICA, 8, TEXT_COLOR));
-        vpName.setAlignment(Element.ALIGN_RIGHT);
-        vpName.setSpacingBefore(1);
-        signatureCell.addElement(vpName);
+        PdfPTable row = new PdfPTable(2);
+        row.setWidthPercentage(100);
+        row.setWidths(new float[]{ 1f, 1f });
+        row.setSpacingBefore(2); row.setSpacingAfter(5);
 
-        // Official stamp note
-        Paragraph stamp = new Paragraph("OFFICIAL STAMP",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, SECONDARY_COLOR));
-        stamp.setAlignment(Element.ALIGN_RIGHT);
-        stamp.setSpacingBefore(4);
-        signatureCell.addElement(stamp);
+        // ── LEFT: Performance Summary ──────────────────────────────────────
+        PdfPCell left = cardCell("PERFORMANCE SUMMARY", NAVY);
 
-        signatureTable.addCell(signatureCell);
-        document.add(signatureTable);
+        // Performance badge
+        PdfPTable pb = new PdfPTable(1);
+        pb.setWidthPercentage(56); pb.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell pbc = new PdfPCell(new Phrase(gradeService.getPerformanceStatus(avg),
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9f, Color.WHITE)));
+        Color pc = getPerformanceColor(avg);
+        pbc.setBackgroundColor(pc); pbc.setBorder(Rectangle.NO_BORDER);
+        pbc.setPadding(5); pbc.setHorizontalAlignment(Element.ALIGN_CENTER);
+        pb.addCell(pbc);
+        left.addElement(pb);
+        left.addElement(thinRule());
 
-        // Disclaimer note at bottom
-        Paragraph disclaimer = new Paragraph(
-                "This is an official document. Any unauthorized alteration renders it invalid.",
-                FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 6, INFO_COLOR));
-        disclaimer.setAlignment(Element.ALIGN_CENTER);
-        disclaimer.setSpacingBefore(8);
-        document.add(disclaimer);
+        sumLine(left, "Term Average:",  report.getFormattedAverage() + "/20",
+                avg != null && avg >= 10);
+        sumNeutral(left, "Overall Grade:",
+                gradeService.calculateLetterGrade(avg, cn));
+        sumNeutral(left, "Class Rank:",
+                report.getRankInClass() + " / " + report.getTotalStudentsInClass());
+
+        if (report.getRankInDepartment() != null
+                && !"N/A".equalsIgnoreCase(report.getDepartment())) {
+            sumNeutral(left,
+                    "Department Rank (" + report.getDepartment() + "):",
+                    String.valueOf(report.getRankInDepartment()));
+        }
+
+        Paragraph stLine = new Paragraph();
+        stLine.add(new Chunk("Overall Status:  ",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR)));
+        stLine.add(new Chunk(overall ? "PASSED" : "FAILED",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, overall ? PASS_GREEN : FAIL_RED)));
+        stLine.setSpacingBefore(4);
+        left.addElement(stLine);
+        row.addCell(left);
+
+        // ── RIGHT: Subject Statistics ──────────────────────────────────────
+        PdfPCell right = cardCell("SUBJECT STATISTICS", TEAL);
+
+        Paragraph rl = new Paragraph();
+        rl.add(new Chunk("Pass Rate:  ",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR)));
+        rl.add(new Chunk(String.format("%.1f%%", passRate),
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, PASS_GREEN)));
+        rl.setSpacingBefore(4);
+        right.addElement(rl);
+
+        int filled = Math.min((int)(passRate / 10), 10);
+        Paragraph barP = new Paragraph(
+                "\u2588".repeat(filled) + "\u2591".repeat(10 - filled),
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, PASS_GREEN));
+        barP.setSpacingBefore(1);
+        right.addElement(barP);
+
+        right.addElement(thinRule());
+
+        String crit = isAdvancedLevelClass(cn) ? " (A–E are passing)" : " (A–C are passing)";
+        sumNeutral(right, "Subjects Passed:", passed + " of " + total + " subjects" + crit);
+
+        right.addElement(thinRule());
+
+        Paragraph rlbl = new Paragraph("TEACHER'S REMARKS:",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR));
+        rlbl.setSpacingBefore(4); rlbl.setSpacingAfter(3);
+        right.addElement(rlbl);
+
+        PdfPTable rmk = new PdfPTable(1);
+        rmk.setWidthPercentage(100);
+        PdfPCell rc = new PdfPCell(new Phrase(
+                report.getRemarks() != null ? report.getRemarks() : "—",
+                FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 7.5f, VALUE_CLR)));
+        rc.setBackgroundColor(new Color(250, 251, 253));
+        rc.setBorder(Rectangle.BOX); rc.setBorderColor(BORDER_CLR); rc.setBorderWidth(0.5f);
+        rc.setPadding(5);
+        rmk.addCell(rc);
+        right.addElement(rmk);
+
+        row.addCell(right);
+        doc.add(row);
+    }
+
+    private PdfPCell cardCell(String title, Color hdrColor) {
+        PdfPCell card = new PdfPCell();
+        card.setBorder(Rectangle.BOX);
+        card.setBorderColor(BORDER_CLR); card.setBorderWidth(0.6f);
+        card.setPaddingLeft(9); card.setPaddingRight(9);
+        card.setPaddingBottom(9); card.setPaddingTop(0);
+
+        PdfPTable tb = new PdfPTable(1); tb.setWidthPercentage(100);
+        PdfPCell tc = new PdfPCell(new Phrase("  " + title,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8f, Color.WHITE)));
+        tc.setBackgroundColor(hdrColor); tc.setBorder(Rectangle.NO_BORDER); tc.setPadding(5);
+        tb.addCell(tc);
+        card.addElement(tb);
+        return card;
+    }
+
+    private void sumLine(PdfPCell cell, String lbl, String val, boolean pos) {
+        Paragraph p = new Paragraph();
+        p.add(new Chunk(lbl + "  ",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR)));
+        p.add(new Chunk(val,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, pos ? PASS_GREEN : FAIL_RED)));
+        p.setSpacingBefore(4); cell.addElement(p);
+    }
+
+    private void sumNeutral(PdfPCell cell, String lbl, String val) {
+        Paragraph p = new Paragraph();
+        p.add(new Chunk(lbl + "  ",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, LABEL_CLR)));
+        p.add(new Chunk(val, FontFactory.getFont(FontFactory.HELVETICA, 7.5f, VALUE_CLR)));
+        p.setSpacingBefore(4); cell.addElement(p);
+    }
+
+    private PdfPTable thinRule() {
+        PdfPTable t = new PdfPTable(1); t.setWidthPercentage(100);
+        t.setSpacingBefore(5); t.setSpacingAfter(0);
+        PdfPCell c = blankCell(); c.setFixedHeight(0.6f); c.setBackgroundColor(BORDER_CLR);
+        t.addCell(c); return t;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    //  5.  SIGNATURE ROW
+    // ───────────────────────────────────────────────────────────────────────
+
+    private void buildSignatureRow(Document doc) throws DocumentException {
+        PdfPTable row = new PdfPTable(3);
+        row.setWidthPercentage(100);
+        row.setWidths(new float[]{ 1f, 1f, 1f });
+        row.setSpacingBefore(6); row.setSpacingAfter(3);
+
+        row.addCell(sigCell("CLASS TEACHER", null));
+
+        // Official Stamp
+        PdfPCell stampWrap = blankCell();
+        stampWrap.setHorizontalAlignment(Element.ALIGN_CENTER);
+        stampWrap.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        PdfPTable sb = new PdfPTable(1);
+        sb.setWidthPercentage(65);
+        sb.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell sc = new PdfPCell(new Phrase("OFFICIAL STAMP",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7f, BORDER_CLR)));
+        sc.setBorder(Rectangle.BOX); sc.setBorderColor(BORDER_CLR); sc.setBorderWidth(0.8f);
+        sc.setFixedHeight(38f); sc.setPadding(5);
+        sc.setHorizontalAlignment(Element.ALIGN_CENTER); sc.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        sb.addCell(sc);
+        stampWrap.addElement(sb);
+        row.addCell(stampWrap);
+
+        row.addCell(sigCell("VICE PRINCIPAL", "Kohsu Rodolphe Rinwi"));
+        doc.add(row);
+    }
+
+    private PdfPCell sigCell(String role, String name) {
+        PdfPCell c = blankCell();
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        // Space above line
+        PdfPTable space = new PdfPTable(1); space.setWidthPercentage(72);
+        space.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell sp = blankCell(); sp.setFixedHeight(22f); sp.setBackgroundColor(Color.WHITE);
+        space.addCell(sp); c.addElement(space);
+
+        // Signature underline
+        PdfPTable ul = new PdfPTable(1); ul.setWidthPercentage(72);
+        ul.setHorizontalAlignment(Element.ALIGN_CENTER);
+        PdfPCell uc = blankCell(); uc.setFixedHeight(0.8f); uc.setBackgroundColor(new Color(170,170,170));
+        ul.addCell(uc); c.addElement(ul);
+
+        if (name != null) {
+            Paragraph nm = new Paragraph(name,
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, NAVY));
+            nm.setAlignment(Element.ALIGN_CENTER); nm.setSpacingBefore(2);
+            c.addElement(nm);
+        }
+
+        Paragraph rp = new Paragraph(role,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7f, NAVY_LIGHT));
+        rp.setAlignment(Element.ALIGN_CENTER); rp.setSpacingBefore(1);
+        c.addElement(rp);
+        return c;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    //  6.  FOOTER
+    // ───────────────────────────────────────────────────────────────────────
+
+    private void buildFooter(Document doc) throws DocumentException {
+        PdfPTable rule = goldRule(2f); rule.setSpacingBefore(6); doc.add(rule);
+        Paragraph note = new Paragraph(
+                "Note: This is an official document. Any alteration renders it invalid.",
+                FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 6.5f, MUTED_CLR));
+        note.setAlignment(Element.ALIGN_CENTER); note.setSpacingBefore(4);
+        doc.add(note);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    //  TINY HELPERS
+    // ───────────────────────────────────────────────────────────────────────
+
+    /** Full-width navy title bar — used for section headings. */
+    private PdfPTable navyBar(String text) {
+        PdfPTable t = new PdfPTable(1); t.setWidthPercentage(100);
+        t.setSpacingBefore(2); t.setSpacingAfter(1);
+        PdfPCell c = new PdfPCell(new Phrase(text,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9f, Color.WHITE)));
+        c.setBackgroundColor(NAVY); c.setBorder(Rectangle.NO_BORDER); c.setPadding(5);
+        t.addCell(c); return t;
+    }
+
+    /** Centred paragraph with bottom spacing. */
+    private Paragraph centred(String text, String font, float size, Color color, float spacingAfter) {
+        Paragraph p = new Paragraph(text, FontFactory.getFont(font, size, color));
+        p.setAlignment(Element.ALIGN_CENTER);
+        p.setSpacingAfter(spacingAfter);
+        return p;
     }
 }
