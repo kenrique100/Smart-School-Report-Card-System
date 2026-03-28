@@ -195,32 +195,123 @@ public class TermReportPdfService extends BasePdfService {
     }
 
     private void addStudentInfoSection(Document document, ReportDTO report) throws DocumentException {
-        PdfPTable infoTable = new PdfPTable(4);
+        // Create main container with profile picture and info
+        PdfPTable mainContainer = new PdfPTable(2);
+        mainContainer.setWidthPercentage(100);
+        mainContainer.setWidths(new float[]{1.5f, 6f});
+        mainContainer.setSpacingBefore(3);
+        mainContainer.setSpacingAfter(5);
+
+        // LEFT: Profile Picture Section
+        PdfPCell profileCell = new PdfPCell();
+        profileCell.setBorder(Rectangle.NO_BORDER);
+        profileCell.setBackgroundColor(new Color(245, 247, 250));
+        profileCell.setPadding(8);
+        profileCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        profileCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        profileCell.setCellEvent(new RoundedBorderCellEvent(8, PRIMARY_COLOR, 2f));
+
+        // Add profile picture icon based on gender
+        PdfPTable profileIconTable = createProfileIcon(report.getStudentGender());
+        profileCell.addElement(profileIconTable);
+
+        // Add "STUDENT" label under profile
+        Paragraph studentLabel = new Paragraph("STUDENT",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6, PRIMARY_COLOR));
+        studentLabel.setAlignment(Element.ALIGN_CENTER);
+        studentLabel.setSpacingBefore(2);
+        profileCell.addElement(studentLabel);
+
+        mainContainer.addCell(profileCell);
+
+        // RIGHT: Student Information Section
+        PdfPCell infoContainer = new PdfPCell();
+        infoContainer.setBorder(Rectangle.NO_BORDER);
+        infoContainer.setPadding(0);
+
+        // Header for student info
+        PdfPTable infoTable = new PdfPTable(1);
         infoTable.setWidthPercentage(100);
-        infoTable.setWidths(new float[]{2, 3, 2, 3});
-        infoTable.setSpacingBefore(2);
-        infoTable.setSpacingAfter(4);
 
         PdfPCell headerCell = new PdfPCell(new Phrase("STUDENT INFORMATION",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE)));
-        headerCell.setColspan(4);
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.WHITE)));
+        headerCell.setColspan(1);
         headerCell.setBackgroundColor(PRIMARY_COLOR);
         headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        headerCell.setPadding(3);
+        headerCell.setPadding(5);
         headerCell.setBorder(Rectangle.NO_BORDER);
-        headerCell.setCellEvent(new RoundedBorderCellEvent(3, PRIMARY_COLOR, 0));
+        headerCell.setCellEvent(new RoundedBorderCellEvent(5, PRIMARY_COLOR, 0));
         infoTable.addCell(headerCell);
 
-        addModernInfoRow(infoTable, "Full Name:", report.getStudentFullName(), 0);
-        addModernInfoRow(infoTable, "Roll Number:", report.getRollNumber(), 1);
-        addModernInfoRow(infoTable, "Student ID:", report.getStudentIdString(), 0);
-        addModernInfoRow(infoTable, "Class:", report.getClassName(), 1);
-        addModernInfoRow(infoTable, "Department:", report.getDepartment(), 0);
-        addModernInfoRow(infoTable, "Specialty:", report.getSpecialty(), 1);
-        addModernInfoRow(infoTable, "Date of Birth:", report.getFormattedDateOfBirth(), 0);
-        addModernInfoRow(infoTable, "Gender:", report.getStudentGender(), 1);
+        infoContainer.addElement(infoTable);
 
-        document.add(infoTable);
+        // Grid layout for student details
+        PdfPTable detailsGrid = new PdfPTable(4);
+        detailsGrid.setWidthPercentage(100);
+        detailsGrid.setWidths(new float[]{2f, 3f, 2f, 3f});
+        detailsGrid.setSpacingBefore(3);
+
+        // Add student details with modern styling
+        addModernDetailRow(detailsGrid, "Full Name:", report.getStudentFullName(), 0);
+        addModernDetailRow(detailsGrid, "Roll No:", report.getRollNumber(), 1);
+        addModernDetailRow(detailsGrid, "Student ID:", report.getStudentIdString(), 0);
+        addModernDetailRow(detailsGrid, "Class:", report.getClassName(), 1);
+        addModernDetailRow(detailsGrid, "Department:", report.getDepartment(), 0);
+        addModernDetailRow(detailsGrid, "Specialty:", report.getSpecialty(), 1);
+        addModernDetailRow(detailsGrid, "Date of Birth:", report.getFormattedDateOfBirth(), 0);
+        addModernDetailRow(detailsGrid, "Gender:", report.getStudentGender(), 1);
+
+        infoContainer.addElement(detailsGrid);
+        mainContainer.addCell(infoContainer);
+
+        document.add(mainContainer);
+    }
+
+    private PdfPTable createProfileIcon(String gender) {
+        PdfPTable iconTable = new PdfPTable(1);
+        iconTable.setWidthPercentage(90);
+
+        PdfPCell iconCell = new PdfPCell();
+        iconCell.setBorder(Rectangle.NO_BORDER);
+        iconCell.setFixedHeight(70);
+        iconCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        iconCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        // Background circle color based on gender
+        Color bgColor = "MALE".equalsIgnoreCase(gender) ?
+                new Color(100, 149, 237) : new Color(255, 182, 193);
+        iconCell.setBackgroundColor(bgColor);
+        iconCell.setCellEvent(new RoundedBorderCellEvent(35, bgColor, 0));
+
+        // Add icon text (emoji-like representation)
+        String iconText = "MALE".equalsIgnoreCase(gender) ? "M" : "F";
+        Paragraph icon = new Paragraph(iconText,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 36, Color.WHITE));
+        icon.setAlignment(Element.ALIGN_CENTER);
+        iconCell.addElement(icon);
+
+        iconTable.addCell(iconCell);
+        return iconTable;
+    }
+
+    private void addModernDetailRow(PdfPTable table, String label, String value, int rowType) {
+        Color bgColor = rowType % 2 == 0 ? new Color(255, 255, 255) : new Color(248, 250, 252);
+
+        PdfPCell labelCell = new PdfPCell(new Phrase(label,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(71, 85, 105))));
+        labelCell.setBorder(Rectangle.NO_BORDER);
+        labelCell.setBackgroundColor(bgColor);
+        labelCell.setPadding(5);
+        labelCell.setPaddingLeft(8);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(value != null ? value : "N/A",
+                FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(15, 23, 42))));
+        valueCell.setBorder(Rectangle.NO_BORDER);
+        valueCell.setBackgroundColor(bgColor);
+        valueCell.setPadding(5);
+
+        table.addCell(labelCell);
+        table.addCell(valueCell);
     }
 
     private void addModernInfoRow(PdfPTable table, String label, String value, int rowType) {
@@ -439,6 +530,13 @@ public class TermReportPdfService extends BasePdfService {
                 gradeService.calculateLetterGrade(termAverage, className));
         addModernSummaryItem(leftCell, "Class Rank:",
                 report.getRankInClass() + " / " + report.getTotalStudentsInClass());
+
+        // Add department rank if available
+        if (report.getRankInDepartment() != null && !report.getDepartment().equals("N/A")) {
+            addModernSummaryItem(leftCell, "Department Rank (" + report.getDepartment() + "):",
+                    String.valueOf(report.getRankInDepartment()));
+        }
+
         addModernSummaryItem(leftCell, "Overall Status:",
                 overallPassed ? "PASSED" : "FAILED");
 

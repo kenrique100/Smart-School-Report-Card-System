@@ -10,5 +10,6 @@ public class StudentRank {
     private Student student;
     private Double average;
     private Integer rank;
+    private Integer rankInDepartment;
     private String remarks;
 }

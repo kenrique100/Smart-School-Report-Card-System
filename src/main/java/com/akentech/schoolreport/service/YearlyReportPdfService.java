@@ -29,6 +29,7 @@ public class YearlyReportPdfService extends BasePdfService {
         document.open();
 
         addSchoolHeader(document, report, writer);
+        addStudentInfoSection(document, report);
         addYearlySummarySection(document, report);
         addTermComparisonSection(document, report);
         addYearlySubjectPerformance(document, report);
@@ -182,6 +183,91 @@ public class YearlyReportPdfService extends BasePdfService {
         addModernSeparator(document);
     }
 
+    private void addStudentInfoSection(Document document, YearlyReportDTO report) throws DocumentException {
+        // Compact student profile for landscape yearly report
+        PdfPTable mainContainer = new PdfPTable(2);
+        mainContainer.setWidthPercentage(100);
+        mainContainer.setWidths(new float[]{1f, 8f});
+        mainContainer.setSpacingBefore(2);
+        mainContainer.setSpacingAfter(3);
+
+        // LEFT: Compact Profile Icon
+        PdfPCell profileCell = new PdfPCell();
+        profileCell.setBorder(Rectangle.NO_BORDER);
+        profileCell.setBackgroundColor(new Color(245, 247, 250));
+        profileCell.setPadding(5);
+        profileCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        profileCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        profileCell.setCellEvent(new RoundedBorderCellEvent(5, PRIMARY_COLOR, 1.5f));
+
+        PdfPTable iconTable = createCompactProfileIcon(report.getStudentGender());
+        profileCell.addElement(iconTable);
+
+        mainContainer.addCell(profileCell);
+
+        // RIGHT: Student Details in horizontal layout
+        PdfPCell infoContainer = new PdfPCell();
+        infoContainer.setBorder(Rectangle.NO_BORDER);
+        infoContainer.setPadding(0);
+
+        PdfPTable detailsTable = new PdfPTable(8);
+        detailsTable.setWidthPercentage(100);
+        detailsTable.setWidths(new float[]{1.2f, 2f, 1f, 1.5f, 1f, 1.5f, 1f, 1.5f});
+
+        addCompactDetailCell(detailsTable, "Name:", report.getStudentFullName());
+        addCompactDetailCell(detailsTable, "Class:", report.getClassName());
+        addCompactDetailCell(detailsTable, "Dept:", report.getDepartment());
+        addCompactDetailCell(detailsTable, "Roll:", report.getRollNumber());
+
+        infoContainer.addElement(detailsTable);
+        mainContainer.addCell(infoContainer);
+
+        document.add(mainContainer);
+    }
+
+    private PdfPTable createCompactProfileIcon(String gender) {
+        PdfPTable iconTable = new PdfPTable(1);
+        iconTable.setWidthPercentage(100);
+
+        PdfPCell iconCell = new PdfPCell();
+        iconCell.setBorder(Rectangle.NO_BORDER);
+        iconCell.setFixedHeight(40);
+        iconCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        iconCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        Color bgColor = "MALE".equalsIgnoreCase(gender) ?
+                new Color(100, 149, 237) : new Color(255, 182, 193);
+        iconCell.setBackgroundColor(bgColor);
+        iconCell.setCellEvent(new RoundedBorderCellEvent(20, bgColor, 0));
+
+        String iconText = "MALE".equalsIgnoreCase(gender) ? "M" : "F";
+        Paragraph icon = new Paragraph(iconText,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, Color.WHITE));
+        icon.setAlignment(Element.ALIGN_CENTER);
+        iconCell.addElement(icon);
+
+        iconTable.addCell(iconCell);
+        return iconTable;
+    }
+
+    private void addCompactDetailCell(PdfPTable table, String label, String value) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(label,
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(71, 85, 105))));
+        labelCell.setBorder(Rectangle.NO_BORDER);
+        labelCell.setBackgroundColor(new Color(248, 250, 252));
+        labelCell.setPadding(3);
+        labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(value != null ? value : "N/A",
+                FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(15, 23, 42))));
+        valueCell.setBorder(Rectangle.NO_BORDER);
+        valueCell.setBackgroundColor(Color.WHITE);
+        valueCell.setPadding(3);
+
+        table.addCell(labelCell);
+        table.addCell(valueCell);
+    }
+
     private void addYearlySummarySection(Document document, YearlyReportDTO report) throws DocumentException {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
@@ -206,6 +292,15 @@ public class YearlyReportPdfService extends BasePdfService {
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, INFO_COLOR));
         rankParagraph.setAlignment(Element.ALIGN_CENTER);
         summaryCell.addElement(rankParagraph);
+
+        // Add department rank if available
+        if (report.getYearlyDepartmentRank() != null && report.getDepartment() != null && !report.getDepartment().equals("N/A")) {
+            Paragraph deptRankParagraph = new Paragraph("Department Rank (" + report.getDepartment() + "): " + report.getYearlyDepartmentRank(),
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, INFO_COLOR));
+            deptRankParagraph.setAlignment(Element.ALIGN_CENTER);
+            deptRankParagraph.setSpacingAfter(3);
+            summaryCell.addElement(deptRankParagraph);
+        }
 
         Color statusColor = report.getPassed() ? SUCCESS_COLOR : DANGER_COLOR;
         Paragraph statusParagraph = new Paragraph(report.getPassed() ? "PASSED" : "FAILED",

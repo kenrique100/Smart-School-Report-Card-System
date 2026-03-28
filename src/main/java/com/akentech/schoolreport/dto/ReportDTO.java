@@ -27,6 +27,7 @@ public class ReportDTO {
     private Double termAverage;
     private String formattedAverage;
     private Integer rankInClass;
+    private Integer rankInDepartment;
     private Integer totalStudentsInClass;
     private String remarks;
     private List<SubjectReport> subjectReports;
