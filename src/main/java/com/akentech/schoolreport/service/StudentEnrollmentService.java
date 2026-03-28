@@ -73,7 +73,7 @@ public class StudentEnrollmentService {
         List<Subject> newSubjects = subjectService.getSubjectsByIds(newSubjectIds);
 
         // Get student from existing enrollment (or you could fetch it separately)
-        Student student = existingEnrollments.isEmpty() ? null : existingEnrollments.getFirst().getStudent();
+        Student student = existingEnrollments.isEmpty() ? null : existingEnrollments.get(0).getStudent();
         if (student == null) {
             throw new EntityNotFoundException("Student", studentId);
         }
@@ -110,7 +110,7 @@ public class StudentEnrollmentService {
                 .collect(Collectors.toSet());
 
         // Get student info
-        Student student = currentEnrollments.isEmpty() ? null : currentEnrollments.getFirst().getStudent();
+        Student student = currentEnrollments.isEmpty() ? null : currentEnrollments.get(0).getStudent();
         if (student == null || student.getClassRoom() == null || student.getDepartment() == null) {
             return new ArrayList<>();
         }

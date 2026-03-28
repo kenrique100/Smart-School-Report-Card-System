@@ -732,8 +732,8 @@ public class ReportController {
                 .collect(Collectors.toList());
 
         Map<String, Double> subjectAverages = new HashMap<>();
-        if (!reports.isEmpty() && reports.getFirst().getSubjectReports() != null) {
-            for (SubjectReport subject : reports.getFirst().getSubjectReports()) {
+        if (!reports.isEmpty() && reports.get(0).getSubjectReports() != null) {
+            for (SubjectReport subject : reports.get(0).getSubjectReports()) {
                 String subjectName = subject.getSubjectName();
                 double average = reports.stream()
                         .map(r -> {
