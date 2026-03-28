@@ -163,7 +163,7 @@ public class StudentController {
         if (defaultDepartment != null) {
             student.setDepartment(defaultDepartment);
         } else if (!departments.isEmpty()) {
-            student.setDepartment(departments.getFirst());
+            student.setDepartment(departments.get(0));
         }
 
         if (specialty != null && !specialty.trim().isEmpty() && !"null".equals(specialty)) {

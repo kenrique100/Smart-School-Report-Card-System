@@ -4,6 +4,7 @@ import com.akentech.schoolreport.dto.ImportResult;
 import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.Subject;
+import com.akentech.schoolreport.model.enums.AssessmentType;
 import com.akentech.schoolreport.repository.AssessmentRepository;
 import com.akentech.schoolreport.repository.StudentRepository;
 import com.akentech.schoolreport.repository.SubjectRepository;
@@ -147,14 +148,14 @@ public class ExcelImportService {
             }
 
             // Find subject by name
-            List<Subject> subjects = subjectRepository.findByName(header.subjectName);
-            if (subjects.isEmpty()) {
+            Optional<Subject> subjectOpt = subjectRepository.findByName(header.subjectName);
+            if (subjectOpt.isEmpty()) {
                 result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
                               ": Subject '" + header.subjectName + "' not found in system");
                 continue;
             }
 
-            Subject subject = subjects.get(0);
+            Subject subject = subjectOpt.get();
 
             // Check if student is enrolled in the subject
             if (!enrolledSubjectIds.contains(subject.getId())) {
@@ -181,7 +182,13 @@ public class ExcelImportService {
 
             // Save or update assessment
             try {
-                saveOrUpdateAssessment(student, subject, term, header.assessmentType, score, result);
+                AssessmentType assessmentType = mapToAssessmentType(term, header.assessmentType);
+                if (assessmentType == null) {
+                    result.addWarning("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
+                                    ": Skipping unsupported assessment type '" + header.assessmentType + "' for term " + term);
+                    continue;
+                }
+                saveOrUpdateAssessment(student, subject, term, assessmentType, score, result);
             } catch (Exception e) {
                 result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
                               ": Failed to save assessment - " + e.getMessage());
@@ -190,7 +197,7 @@ public class ExcelImportService {
     }
 
     private void saveOrUpdateAssessment(Student student, Subject subject, Integer term,
-                                       String assessmentType, Double score, ImportResult result) {
+                                       AssessmentType assessmentType, Double score, ImportResult result) {
         // Check if assessment already exists
         Optional<Assessment> existingAssessment = assessmentRepository
                 .findByStudentAndSubjectAndTermAndType(student, subject, term, assessmentType);
@@ -218,6 +225,23 @@ public class ExcelImportService {
             result.addSuccess("Created: " + student.getStudentId() + " - " + subject.getName() +
                             " - " + assessmentType + " (Term " + term + "): " + score);
         }
+    }
+
+    private AssessmentType mapToAssessmentType(Integer term, String assessmentCode) {
+        return switch (term) {
+            case 1 -> switch (assessmentCode) {
+                case "Assessment1" -> AssessmentType.ASSESSMENT_1;
+                case "Assessment2" -> AssessmentType.ASSESSMENT_2;
+                default -> null;
+            };
+            case 2 -> switch (assessmentCode) {
+                case "Assessment1" -> AssessmentType.ASSESSMENT_3;
+                case "Assessment2" -> AssessmentType.ASSESSMENT_4;
+                default -> null;
+            };
+            case 3 -> "Assessment1".equals(assessmentCode) ? AssessmentType.ASSESSMENT_5 : null;
+            default -> null;
+        };
     }
 
     private List<SubjectAssessmentHeader> parseHeaders(Row headerRow) {

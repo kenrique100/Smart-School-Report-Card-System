@@ -4,6 +4,7 @@ import com.akentech.schoolreport.model.Assessment;
 import com.akentech.schoolreport.model.ClassRoom;
 import com.akentech.schoolreport.model.Student;
 import com.akentech.schoolreport.model.Subject;
+import com.akentech.schoolreport.model.enums.AssessmentType;
 import com.akentech.schoolreport.repository.AssessmentRepository;
 import com.akentech.schoolreport.repository.ClassRoomRepository;
 import com.akentech.schoolreport.repository.SubjectRepository;
@@ -89,7 +90,7 @@ public class ExcelExportService {
         List<Subject> allSubjects = subjectRepository.findAll();
 
         // Fetch existing assessments for this class and term
-        List<Assessment> existingAssessments = assessmentRepository.findByClassRoomIdAndTerm(classRoom.getId(), term);
+        List<Assessment> existingAssessments = assessmentRepository.findByClassIdAndTerm(classRoom.getId(), term);
         Map<String, Map<String, Map<String, Double>>> assessmentMap = buildAssessmentMap(existingAssessments);
 
         // Create styles
@@ -106,12 +107,13 @@ public class ExcelExportService {
         createHeaderCell(headerRow, colIndex++, "First Name", headerStyle);
         createHeaderCell(headerRow, colIndex++, "Last Name", headerStyle);
 
-        // Subject columns (for each assessment type)
+        // Subject columns (for each assessment type in this term)
+        AssessmentType[] termAssessmentTypes = AssessmentType.getAssessmentsForTerm(term);
         List<String> subjectHeaders = new ArrayList<>();
         for (Subject subject : allSubjects) {
-            subjectHeaders.add(subject.getName() + "-A1");
-            subjectHeaders.add(subject.getName() + "-A2");
-            subjectHeaders.add(subject.getName() + "-Exam");
+            for (int i = 0; i < termAssessmentTypes.length; i++) {
+                subjectHeaders.add(subject.getName() + "-A" + (i + 1));
+            }
         }
 
         for (String header : subjectHeaders) {
@@ -136,14 +138,15 @@ public class ExcelExportService {
             for (Subject subject : allSubjects) {
                 boolean isEnrolled = enrolledSubjectIds.contains(subject.getId());
 
-                for (String assessmentType : Arrays.asList("Assessment1", "Assessment2", "Exam")) {
+                for (int i = 0; i < termAssessmentTypes.length; i++) {
+                    String assessmentKey = termAssessmentTypes[i].name();
                     if (!isEnrolled) {
                         // Not enrolled - mark as N/A and lock
                         createLockedCell(row, colIndex++, "N/A", lockedStyle);
                     } else {
                         // Enrolled - get existing score or leave blank for entry
                         Double existingScore = getExistingScore(assessmentMap, student.getStudentId(),
-                                                               subject.getName(), assessmentType);
+                                                               subject.getName(), assessmentKey);
                         if (existingScore != null) {
                             createUnlockedCell(row, colIndex++, existingScore.toString(), unlockedStyle);
                         } else {
@@ -294,7 +297,7 @@ public class ExcelExportService {
         for (Assessment assessment : assessments) {
             String studentId = assessment.getStudent().getStudentId();
             String subjectName = assessment.getSubject().getName();
-            String assessmentType = assessment.getType();
+            String assessmentType = assessment.getType().name();
             Double score = assessment.getScore();
 
             map.putIfAbsent(studentId, new HashMap<>());

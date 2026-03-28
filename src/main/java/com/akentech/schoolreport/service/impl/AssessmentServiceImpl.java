@@ -124,8 +124,8 @@ public class AssessmentServiceImpl implements AssessmentService {
         log.info("Saved {} assessments", saved.size());
 
         if (!saved.isEmpty()) {
-            Long studentId = saved.getFirst().getStudent().getId();
-            Integer term = saved.getFirst().getTerm();
+            Long studentId = saved.get(0).getStudent().getId();
+            Integer term = saved.get(0).getTerm();
             try {
                 studentPerformanceService.updateStudentSubjectScores(studentId, term);
             } catch (Exception e) {

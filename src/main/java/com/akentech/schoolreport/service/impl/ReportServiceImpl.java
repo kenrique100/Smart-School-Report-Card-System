@@ -869,7 +869,7 @@ public class ReportServiceImpl implements ReportService {
 
             double yearlyAvg = calculateYearlySubjectAverage(term1Avg, term2Avg, term3Avg);
 
-            String className = !termReports.isEmpty() ? termReports.getFirst().getClassName() : "";
+            String className = !termReports.isEmpty() ? termReports.get(0).getClassName() : "";
             String yearlyGrade = gradeService.calculateLetterGrade(yearlyAvg, className);
             boolean passed = gradeService.isSubjectPassing(yearlyGrade, className);
 
