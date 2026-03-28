@@ -89,8 +89,8 @@ public class ExcelExportService {
             log.warn("No students found in classroom: {}", classRoom.getName());
         }
 
-        // Fetch all subjects
-        List<Subject> allSubjects = subjectRepository.findAll();
+        // Fetch subjects for this specific classroom only
+        List<Subject> allSubjects = subjectRepository.findByClassRoomId(classRoom.getId());
 
         // Fetch existing assessments for this class and term
         List<Assessment> existingAssessments = assessmentRepository.findByClassIdAndTerm(classRoom.getId(), term);

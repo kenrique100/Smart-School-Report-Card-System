@@ -147,11 +147,15 @@ public class ExcelImportService {
                 continue;
             }
 
-            // Find subject by name
-            Optional<Subject> subjectOpt = subjectRepository.findByName(header.subjectName);
+            // Find subject by name and student's classroom
+            Optional<Subject> subjectOpt = subjectRepository.findByNameAndClassRoomId(
+                    header.subjectName,
+                    student.getClassRoom().getId()
+            );
             if (subjectOpt.isEmpty()) {
                 result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
-                              ": Subject '" + header.subjectName + "' not found in system");
+                              ": Subject '" + header.subjectName + "' not found for classroom '" +
+                              student.getClassRoom().getName() + "'");
                 continue;
             }
 
