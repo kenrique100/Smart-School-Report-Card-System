@@ -92,6 +92,16 @@ public class ExcelExportService {
         // Fetch subjects for this specific classroom only
         List<Subject> allSubjects = subjectRepository.findByClassRoomId(classRoom.getId());
 
+        // Deduplicate subjects by name to prevent duplicate columns in Excel
+        // Keep track of unique subject names and their first occurrence
+        Map<String, Subject> uniqueSubjects = new LinkedHashMap<>();
+        for (Subject subject : allSubjects) {
+            if (!uniqueSubjects.containsKey(subject.getName())) {
+                uniqueSubjects.put(subject.getName(), subject);
+            }
+        }
+        List<Subject> deduplicatedSubjects = new ArrayList<>(uniqueSubjects.values());
+
         // Fetch existing assessments for this class and term
         List<Assessment> existingAssessments = assessmentRepository.findByClassIdAndTerm(classRoom.getId(), term);
         Map<String, Map<String, Map<String, Double>>> assessmentMap = buildAssessmentMap(existingAssessments);
@@ -113,7 +123,7 @@ public class ExcelExportService {
         // Subject columns (for each assessment type in this term)
         AssessmentType[] termAssessmentTypes = AssessmentType.getAssessmentsForTerm(term);
         List<String> subjectHeaders = new ArrayList<>();
-        for (Subject subject : allSubjects) {
+        for (Subject subject : deduplicatedSubjects) {
             for (int i = 0; i < termAssessmentTypes.length; i++) {
                 subjectHeaders.add(subject.getName() + "-A" + (i + 1));
             }
@@ -137,9 +147,13 @@ public class ExcelExportService {
             // Get student's enrolled subjects
             List<Long> enrolledSubjectIds = student.getSelectedSubjectIds();
 
-            // Assessment scores
-            for (Subject subject : allSubjects) {
-                boolean isEnrolled = enrolledSubjectIds.contains(subject.getId());
+            // Assessment scores - use deduplicated subjects
+            for (Subject subject : deduplicatedSubjects) {
+                // Check if student is enrolled in ANY subject with this name (not just this specific subject ID)
+                // This handles cases where multiple subject IDs exist for the same subject name
+                boolean isEnrolled = allSubjects.stream()
+                        .filter(s -> s.getName().equals(subject.getName()))
+                        .anyMatch(s -> enrolledSubjectIds.contains(s.getId()));
 
                 for (int i = 0; i < termAssessmentTypes.length; i++) {
                     String assessmentKey = termAssessmentTypes[i].name();
