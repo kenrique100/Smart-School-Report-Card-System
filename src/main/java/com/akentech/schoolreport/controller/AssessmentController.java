@@ -53,10 +53,84 @@ public class AssessmentController {
     private final StudentEnrollmentService studentEnrollmentService;
 
     @GetMapping("/entry")
-    public String entryForm(Model model) {
-        model.addAttribute("students", studentRepository.findAll());
-        model.addAttribute("subjects", subjectRepository.findAll());
+    public String entryForm(@RequestParam(required = false) Long classRoomId,
+                           @RequestParam(required = false) Long studentId,
+                           @RequestParam(required = false) Integer term,
+                           @RequestParam(required = false) Integer assessmentNumber,
+                           @RequestParam(required = false) Long departmentId,
+                           @RequestParam(required = false) String specialty,
+                           Model model) {
+        // Get all classrooms for filter dropdown
         model.addAttribute("classrooms", classRoomRepository.findAll());
+
+        // Filter students based on classroom, department, and specialty
+        List<Student> students = getFilteredStudents(classRoomId, departmentId, specialty);
+        model.addAttribute("students", students);
+
+        // Get subjects - filter by classroom if a student is selected or classroom is selected
+        List<Subject> subjects;
+        Student selectedStudent = null;
+
+        if (studentId != null) {
+            try {
+                selectedStudent = studentService.getStudentByIdOrThrow(studentId);
+                model.addAttribute("selectedStudent", selectedStudent);
+                model.addAttribute("selectedStudentId", studentId);
+
+                // Get subjects for the student's classroom to avoid duplicates
+                if (selectedStudent.getClassRoom() != null) {
+                    subjects = subjectRepository.findByClassRoomId(selectedStudent.getClassRoom().getId());
+                } else {
+                    subjects = List.of();
+                }
+
+                // Set assessment type info if term and assessment number are provided
+                if (term != null && assessmentNumber != null) {
+                    try {
+                        AssessmentType assessmentType = AssessmentType.fromTermAndNumber(term, assessmentNumber);
+                        model.addAttribute("currentAssessmentType", assessmentType);
+                        model.addAttribute("assessmentName", assessmentType.getDisplayName());
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Invalid assessment combination: term={}, assessment={}", term, assessmentNumber);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error loading student {}", studentId, e);
+                subjects = List.of();
+            }
+        } else if (classRoomId != null) {
+            // If no student selected but classroom is selected, filter subjects by classroom
+            subjects = subjectRepository.findByClassRoomId(classRoomId);
+        } else {
+            // No filtering - but this will show duplicates, so we'll load empty list
+            subjects = List.of();
+        }
+
+        model.addAttribute("subjects", subjects);
+
+        // Add filter parameters back to model for form persistence
+        model.addAttribute("classRoomId", classRoomId);
+        model.addAttribute("term", term);
+        model.addAttribute("assessmentNumber", assessmentNumber);
+        model.addAttribute("departmentId", departmentId);
+        model.addAttribute("specialty", specialty);
+
+        // Add term options (1, 2, 3)
+        model.addAttribute("terms", List.of(1, 2, 3));
+
+        // Add assessment number options based on term
+        if (term != null) {
+            List<Integer> assessmentNumbers = switch (term) {
+                case 1 -> List.of(1, 2);
+                case 2 -> List.of(3, 4);
+                case 3 -> List.of(5);
+                default -> List.of();
+            };
+            model.addAttribute("assessmentNumbers", assessmentNumbers);
+        } else {
+            model.addAttribute("assessmentNumbers", List.of(1, 2, 3, 4, 5));
+        }
+
         model.addAttribute("assessment", new Assessment());
         return "assessments";
     }
