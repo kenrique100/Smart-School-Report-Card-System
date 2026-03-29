@@ -29,7 +29,7 @@ public class ExcelImportService {
     private final AssessmentRepository assessmentRepository;
 
     @Transactional
-    public ImportResult importAssessments(MultipartFile file) {
+    public ImportResult importAssessments(MultipartFile file, String academicYear) {
         ImportResult result = ImportResult.builder().build();
 
         try {
@@ -42,6 +42,22 @@ public class ExcelImportService {
             if (!file.getOriginalFilename().endsWith(".xlsx")) {
                 result.addError("Invalid file format. Only .xlsx files are supported");
                 return result;
+            }
+
+            // Parse academic year if provided
+            Integer academicYearStart = null;
+            Integer academicYearEnd = null;
+            if (academicYear != null && !academicYear.isEmpty()) {
+                try {
+                    String[] parts = academicYear.split("-");
+                    if (parts.length == 2) {
+                        academicYearStart = Integer.parseInt(parts[0]);
+                        academicYearEnd = Integer.parseInt(parts[1]);
+                    }
+                } catch (Exception e) {
+                    result.addError("Invalid academic year format: " + academicYear);
+                    return result;
+                }
             }
 
             Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -64,7 +80,7 @@ public class ExcelImportService {
                 }
 
                 // Process the sheet
-                processSheet(sheet, term, result);
+                processSheet(sheet, term, result, academicYearStart, academicYearEnd);
             }
 
             workbook.close();
@@ -80,7 +96,7 @@ public class ExcelImportService {
         return result;
     }
 
-    private void processSheet(Sheet sheet, Integer term, ImportResult result) {
+    private void processSheet(Sheet sheet, Integer term, ImportResult result, Integer academicYearStart, Integer academicYearEnd) {
         // Read header row to get subject-assessment mapping
         Row headerRow = sheet.getRow(0);
         if (headerRow == null) {
@@ -98,7 +114,7 @@ public class ExcelImportService {
             }
 
             try {
-                processRow(row, rowIndex, headers, term, result);
+                processRow(row, rowIndex, headers, term, result, academicYearStart, academicYearEnd);
             } catch (Exception e) {
                 result.addError("Row " + (rowIndex + 1) + ": " + e.getMessage());
             }
@@ -106,7 +122,7 @@ public class ExcelImportService {
     }
 
     private void processRow(Row row, int rowIndex, List<SubjectAssessmentHeader> headers,
-                           Integer term, ImportResult result) {
+                           Integer term, ImportResult result, Integer academicYearStart, Integer academicYearEnd) {
         // Read student info from first 3 columns
         String studentId = getCellValueAsString(row.getCell(0));
         String firstName = getCellValueAsString(row.getCell(1));
@@ -132,6 +148,25 @@ public class ExcelImportService {
             result.addWarning("Row " + (rowIndex + 1) + ": Student name mismatch. " +
                             "Expected: " + student.getFullName() + ", Found: " + firstName + " " + lastName);
         }
+
+        // Validate academic year against student's academic year if provided
+        if (academicYearStart != null && academicYearEnd != null) {
+            Integer studentYearStart = student.getAcademicYearStart();
+            Integer studentYearEnd = student.getAcademicYearEnd();
+
+            if (studentYearStart != null && studentYearEnd != null) {
+                if (!academicYearStart.equals(studentYearStart) || !academicYearEnd.equals(studentYearEnd)) {
+                    result.addError("Row " + (rowIndex + 1) + ": Academic year mismatch. " +
+                                  "Upload academic year: " + academicYearStart + "-" + academicYearEnd + ", " +
+                                  "Student's academic year: " + studentYearStart + "-" + studentYearEnd);
+                    return;
+                }
+            }
+        }
+
+        // Determine which academic year to use for new assessments
+        Integer targetYearStart = academicYearStart != null ? academicYearStart : student.getAcademicYearStart();
+        Integer targetYearEnd = academicYearEnd != null ? academicYearEnd : student.getAcademicYearEnd();
 
         // Get student's enrolled subjects
         List<Long> enrolledSubjectIds = student.getSelectedSubjectIds();
@@ -192,7 +227,7 @@ public class ExcelImportService {
                                     ": Skipping unsupported assessment type '" + header.assessmentType + "' for term " + term);
                     continue;
                 }
-                saveOrUpdateAssessment(student, subject, term, assessmentType, score, result);
+                saveOrUpdateAssessment(student, subject, term, assessmentType, score, result, targetYearStart, targetYearEnd);
             } catch (Exception e) {
                 result.addError("Row " + (rowIndex + 1) + ", Column " + getColumnLetter(colIndex) +
                               ": Failed to save assessment - " + e.getMessage());
@@ -201,7 +236,8 @@ public class ExcelImportService {
     }
 
     private void saveOrUpdateAssessment(Student student, Subject subject, Integer term,
-                                       AssessmentType assessmentType, Double score, ImportResult result) {
+                                       AssessmentType assessmentType, Double score, ImportResult result,
+                                       Integer academicYearStart, Integer academicYearEnd) {
         // Check if assessment already exists
         Optional<Assessment> existingAssessment = assessmentRepository
                 .findByStudentAndSubjectAndTermAndType(student, subject, term, assessmentType);
@@ -211,19 +247,33 @@ public class ExcelImportService {
             Assessment assessment = existingAssessment.get();
             Double oldScore = assessment.getScore();
             assessment.setScore(score);
+            // Update academic year if different
+            if (academicYearStart != null && academicYearEnd != null) {
+                assessment.setAcademicYearStart(academicYearStart);
+                assessment.setAcademicYearEnd(academicYearEnd);
+                assessment.setAcademicYear(academicYearStart + "-" + academicYearEnd);
+            }
             assessmentRepository.save(assessment);
 
             result.addSuccess("Updated: " + student.getStudentId() + " - " + subject.getName() +
                             " - " + assessmentType + " (Term " + term + "): " + oldScore + " → " + score);
         } else {
             // Create new assessment
-            Assessment assessment = Assessment.builder()
+            Assessment.AssessmentBuilder builder = Assessment.builder()
                     .student(student)
                     .subject(subject)
                     .term(term)
                     .type(assessmentType)
-                    .score(score)
-                    .build();
+                    .score(score);
+
+            // Add academic year if available
+            if (academicYearStart != null && academicYearEnd != null) {
+                builder.academicYearStart(academicYearStart)
+                       .academicYearEnd(academicYearEnd)
+                       .academicYear(academicYearStart + "-" + academicYearEnd);
+            }
+
+            Assessment assessment = builder.build();
             assessmentRepository.save(assessment);
 
             result.addSuccess("Created: " + student.getStudentId() + " - " + subject.getName() +

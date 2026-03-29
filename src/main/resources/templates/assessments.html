@@ -116,6 +116,22 @@
                                 <option value="all">All Terms</option>
                             </select>
                         </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-sm text-gray-600 mb-1">Academic Year (Optional)</label>
+                            <select id="academicYearSelectDownload" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Years</option>
+                                <option value="2025-2026">2025-2026</option>
+                                <option value="2026-2027">2026-2027</option>
+                                <option value="2027-2028">2027-2028</option>
+                                <option value="2028-2029">2028-2029</option>
+                                <option value="2029-2030">2029-2030</option>
+                                <option value="2030-2031">2030-2031</option>
+                                <option value="2031-2032">2031-2032</option>
+                                <option value="2032-2033">2032-2033</option>
+                                <option value="2033-2034">2033-2034</option>
+                                <option value="2034-2035">2034-2035</option>
+                            </select>
+                        </div>
                     </div>
                     <button onclick="downloadExcelTemplate()" class="mt-3 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
                         <i class="fas fa-download mr-2"></i>Download Excel Template
@@ -130,6 +146,23 @@
                             <label for="fileInput" class="block text-sm text-gray-600 mb-1">Choose Excel File (.xlsx)</label>
                             <input type="file" id="fileInput" name="file" accept=".xlsx" required
                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        <div>
+                            <label for="academicYearSelectUpload" class="block text-sm text-gray-600 mb-1">Academic Year (Optional)</label>
+                            <select id="academicYearSelectUpload" name="academicYear" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">Use Student's Current Year</option>
+                                <option value="2025-2026">2025-2026</option>
+                                <option value="2026-2027">2026-2027</option>
+                                <option value="2027-2028">2027-2028</option>
+                                <option value="2028-2029">2028-2029</option>
+                                <option value="2029-2030">2029-2030</option>
+                                <option value="2030-2031">2030-2031</option>
+                                <option value="2031-2032">2031-2032</option>
+                                <option value="2032-2033">2032-2033</option>
+                                <option value="2033-2034">2033-2034</option>
+                                <option value="2034-2035">2034-2035</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">If not selected, will use the student's assigned academic year</p>
                         </div>
                         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition self-start">
                             <i class="fas fa-upload mr-2"></i>Upload & Import Assessments
@@ -1072,6 +1105,7 @@
     function downloadExcelTemplate() {
         const classRoomId = document.getElementById('classRoomSelect').value;
         const term = document.getElementById('termSelect').value;
+        const academicYear = document.getElementById('academicYearSelectDownload').value;
 
         if (!classRoomId) {
             alert('Please select a class');
@@ -1088,6 +1122,12 @@
             downloadUrl = `/assessments/download-excel-all-terms?classRoomId=${classRoomId}`;
         } else {
             downloadUrl = `/assessments/download-excel?classRoomId=${classRoomId}&term=${term}`;
+        }
+
+        // Add academic year if selected
+        if (academicYear) {
+            const [yearStart, yearEnd] = academicYear.split('-');
+            downloadUrl += `&academicYearStart=${yearStart}&academicYearEnd=${yearEnd}`;
         }
 
         // Trigger download

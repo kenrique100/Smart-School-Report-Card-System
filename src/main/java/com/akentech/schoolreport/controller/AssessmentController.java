@@ -349,12 +349,14 @@ public class AssessmentController {
     @GetMapping("/download-excel")
     public ResponseEntity<byte[]> downloadExcelTemplate(
             @RequestParam Long classRoomId,
-            @RequestParam Integer term) {
+            @RequestParam Integer term,
+            @RequestParam(required = false) Integer academicYearStart,
+            @RequestParam(required = false) Integer academicYearEnd) {
         try {
             ClassRoom classRoom = classRoomRepository.findById(classRoomId)
                     .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found"));
 
-            byte[] excelData = excelExportService.exportAssessmentTemplate(classRoomId, term);
+            byte[] excelData = excelExportService.exportAssessmentTemplate(classRoomId, term, academicYearStart, academicYearEnd);
             String fileName = excelExportService.generateFileName(classRoom, term);
 
             HttpHeaders headers = new HttpHeaders();
@@ -374,12 +376,15 @@ public class AssessmentController {
      * Download Excel template for all terms
      */
     @GetMapping("/download-excel-all-terms")
-    public ResponseEntity<byte[]> downloadExcelTemplateAllTerms(@RequestParam Long classRoomId) {
+    public ResponseEntity<byte[]> downloadExcelTemplateAllTerms(
+            @RequestParam Long classRoomId,
+            @RequestParam(required = false) Integer academicYearStart,
+            @RequestParam(required = false) Integer academicYearEnd) {
         try {
             ClassRoom classRoom = classRoomRepository.findById(classRoomId)
                     .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found"));
 
-            byte[] excelData = excelExportService.exportAssessmentTemplateAllTerms(classRoomId);
+            byte[] excelData = excelExportService.exportAssessmentTemplateAllTerms(classRoomId, academicYearStart, academicYearEnd);
             String fileName = excelExportService.generateFileName(classRoom, null);
 
             HttpHeaders headers = new HttpHeaders();
@@ -400,9 +405,10 @@ public class AssessmentController {
      */
     @PostMapping("/upload-excel")
     public String uploadExcel(@RequestParam("file") MultipartFile file,
+                              @RequestParam(value = "academicYear", required = false) String academicYear,
                              RedirectAttributes redirectAttributes) {
         try {
-            ImportResult result = excelImportService.importAssessments(file);
+            ImportResult result = excelImportService.importAssessments(file, academicYear);
 
             if (result.hasErrors()) {
                 redirectAttributes.addFlashAttribute("errorMessage",

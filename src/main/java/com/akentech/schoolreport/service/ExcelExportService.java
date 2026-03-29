@@ -36,14 +36,14 @@ public class ExcelExportService {
      * Export assessments for a single term
      */
     @Transactional(readOnly = true)
-    public byte[] exportAssessmentTemplate(Long classRoomId, Integer term) throws IOException {
+    public byte[] exportAssessmentTemplate(Long classRoomId, Integer term, Integer academicYearStart, Integer academicYearEnd) throws IOException {
         ClassRoom classRoom = classRoomRepository.findByIdWithStudents(classRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found with id: " + classRoomId));
 
         Workbook workbook = new XSSFWorkbook();
 
         // Create the term sheet
-        createTermSheet(workbook, classRoom, term);
+        createTermSheet(workbook, classRoom, term, academicYearStart, academicYearEnd);
 
         // Create instructions sheet
         createInstructionsSheet(workbook);
@@ -59,7 +59,7 @@ public class ExcelExportService {
      * Export assessments for all terms
      */
     @Transactional(readOnly = true)
-    public byte[] exportAssessmentTemplateAllTerms(Long classRoomId) throws IOException {
+    public byte[] exportAssessmentTemplateAllTerms(Long classRoomId, Integer academicYearStart, Integer academicYearEnd) throws IOException {
         ClassRoom classRoom = classRoomRepository.findByIdWithStudents(classRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("ClassRoom not found with id: " + classRoomId));
 
@@ -67,7 +67,7 @@ public class ExcelExportService {
 
         // Create sheets for all 3 terms
         for (int term = 1; term <= 3; term++) {
-            createTermSheet(workbook, classRoom, term);
+            createTermSheet(workbook, classRoom, term, academicYearStart, academicYearEnd);
         }
 
         // Create instructions sheet
@@ -80,13 +80,24 @@ public class ExcelExportService {
         return outputStream.toByteArray();
     }
 
-    private void createTermSheet(Workbook workbook, ClassRoom classRoom, Integer term) {
+    private void createTermSheet(Workbook workbook, ClassRoom classRoom, Integer term, Integer academicYearStart, Integer academicYearEnd) {
         Sheet sheet = workbook.createSheet("Term " + term);
 
         // Fetch all students in the classroom
         List<Student> students = classRoom.getStudents();
+
+        // Filter students by academic year if specified
+        if (academicYearStart != null && academicYearEnd != null) {
+            students = students.stream()
+                    .filter(s -> s.getAcademicYearStart() != null && s.getAcademicYearEnd() != null)
+                    .filter(s -> s.getAcademicYearStart().equals(academicYearStart) &&
+                                 s.getAcademicYearEnd().equals(academicYearEnd))
+                    .collect(Collectors.toList());
+        }
+
         if (students.isEmpty()) {
-            log.warn("No students found in classroom: {}", classRoom.getName());
+            log.warn("No students found in classroom: {} for academic year: {}-{}",
+                    classRoom.getName(), academicYearStart, academicYearEnd);
         }
 
         // Fetch subjects for this specific classroom only
@@ -104,6 +115,16 @@ public class ExcelExportService {
 
         // Fetch existing assessments for this class and term
         List<Assessment> existingAssessments = assessmentRepository.findByClassIdAndTerm(classRoom.getId(), term);
+
+        // Filter assessments by academic year if specified
+        if (academicYearStart != null && academicYearEnd != null) {
+            existingAssessments = existingAssessments.stream()
+                    .filter(a -> a.getAcademicYearStart() != null && a.getAcademicYearEnd() != null)
+                    .filter(a -> a.getAcademicYearStart().equals(academicYearStart) &&
+                                 a.getAcademicYearEnd().equals(academicYearEnd))
+                    .collect(Collectors.toList());
+        }
+
         Map<String, Map<String, Map<String, Double>>> assessmentMap = buildAssessmentMap(existingAssessments);
 
         // Create styles
